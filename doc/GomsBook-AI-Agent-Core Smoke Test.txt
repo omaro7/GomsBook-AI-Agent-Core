@@ -18,3 +18,40 @@ GomsBook-AI-Agent-Core Test
 [GomsBook AI Core] Tool Calls = 0
 [GomsBook AI Core] -------------------------
 [GomsBook AI Core] Ollama smoke test success
+
+2.DefaultAgentToolCallingSmokeTest.java
+→ Right Click
+→ Run As
+→ Java Application
+
+[GomsBook AI Core] Agent Tool Calling smoke test start
+[GomsBook AI] Available tools = 1
+[GomsBook AI] Tool = echo
+[GomsBook AI] Agent iteration = 1
+[GomsBook AI] LLM response model = gemma4:31b
+[GomsBook AI] LLM tool call count = 1
+[GomsBook AI] Tool Call = echo
+[GomsBook AI] Tool Call ID = ollama-tool-call-0
+[GomsBook AI] Tool Arguments = {message=hello-gomsbook}
+[GomsBook AI Core] ToolExecutor called
+[GomsBook AI Core] Tool Name = echo
+[GomsBook AI Core] Arguments = {message=hello-gomsbook}
+[GomsBook AI] Tool Result = ToolResult{requestId='core-tool-smoke-001', toolCallId='ollama-tool-call-0', toolName='echo', status=SUCCESS, message='Echo Tool executed successfully.', dataNames=[message], issueCount=0, errorCode='null', errorMessage='null', startedAt=null, completedAt=null}
+[GomsBook AI] Tool Message = {"toolName":"echo","status":"SUCCESS","message":"Echo Tool executed successfully.","data":{"message":"hello-gomsbook"}}
+[GomsBook AI] Agent iteration = 2
+[GomsBook AI] LLM response model = gemma4:31b
+[GomsBook AI] LLM tool call count = 0
+[GomsBook AI] No Tool Call. Agent execution completed.
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Request ID = core-tool-smoke-001
+[GomsBook AI Core] Status = COMPLETED
+[GomsBook AI Core] Model = gemma4:31b
+[GomsBook AI Core] Content = echo 도구의 실행 결과는 "hello-gomsbook"입니다.
+[GomsBook AI Core] Iterations = 2
+[GomsBook AI Core] Tool Results = 1
+[GomsBook AI Core] Tool Execution Count = 1
+[GomsBook AI Core] Tool Result Name = echo
+[GomsBook AI Core] Tool Result Status = SUCCESS
+[GomsBook AI Core] Tool Result Data = {message=hello-gomsbook}
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] DefaultAgentToolCallingSmokeTest success
