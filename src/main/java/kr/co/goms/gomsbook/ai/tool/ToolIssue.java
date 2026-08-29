@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 GomsBook (JungHoon Han)1
+ * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
  */
 package kr.co.goms.gomsbook.ai.tool;
