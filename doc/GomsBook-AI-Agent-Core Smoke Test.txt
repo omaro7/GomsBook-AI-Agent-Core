@@ -1,0 +1,20 @@
+GomsBook-AI-Agent-Core Test
+
+1.OllamaLlmClientSmokeTest.java
+→ Right Click
+→ Run As
+→ Java Application
+
+결과
+[GomsBook AI Core] Ollama smoke test start
+[GomsBook AI Core] Base URL = http://localhost:11434
+[GomsBook AI Core] Model = gemma4:31b-cloud
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Response Model = gemma4:31b-cloud
+[GomsBook AI Core] Content = 안녕하세요. 무엇을 도와드릴까요?
+[GomsBook AI Core] Done = true
+[GomsBook AI Core] Prompt Tokens = ...
+[GomsBook AI Core] Completion Tokens = ...
+[GomsBook AI Core] Tool Calls = 0
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Ollama smoke test success
