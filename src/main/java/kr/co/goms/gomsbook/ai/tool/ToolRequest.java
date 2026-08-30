@@ -4,10 +4,13 @@
  */
 package kr.co.goms.gomsbook.ai.tool;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import kr.co.goms.gomsbook.ai.util.ToolUtil;
 
 /**
  * Agent가 Tool 실행을 요청할 때 사용하는 표준 요청 객체입니다.
@@ -371,50 +374,11 @@ public final class ToolRequest {
 
             copied.put(
                     name.trim(),
-                    deepCopyValue(entry.getValue())
+                    ToolUtil.deepCopy(entry.getValue())
             );
         }
 
         return Collections.unmodifiableMap(copied);
-    }
-
-    /**
-     * 중첩 Map과 Iterable을 복사하여 외부 변경 영향을 줄입니다.
-     */
-    private static Object deepCopyValue(Object value) {
-        if (value instanceof Map<?, ?> map) {
-            Map<String, Object> copied =
-                    new LinkedHashMap<>();
-
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                if (entry.getKey() == null) {
-                    throw new IllegalArgumentException(
-                            "Nested Tool argument Map "
-                                    + "must not contain null keys"
-                    );
-                }
-
-                copied.put(
-                        String.valueOf(entry.getKey()),
-                        deepCopyValue(entry.getValue())
-                );
-            }
-
-            return Collections.unmodifiableMap(copied);
-        }
-
-        if (value instanceof Iterable<?> iterable) {
-            java.util.List<Object> copied =
-                    new java.util.ArrayList<>();
-
-            for (Object item : iterable) {
-                copied.add(deepCopyValue(item));
-            }
-
-            return Collections.unmodifiableList(copied);
-        }
-
-        return value;
     }
 
     private static void validateArgumentName(String name) {

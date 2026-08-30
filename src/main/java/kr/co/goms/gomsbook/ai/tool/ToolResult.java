@@ -4,6 +4,7 @@
  */
 package kr.co.goms.gomsbook.ai.tool;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import kr.co.goms.gomsbook.ai.util.ToolUtil;
 
 /**
  * Tool 실행 결과를 나타내는 표준 응답 객체입니다.
@@ -510,47 +512,11 @@ public final class ToolResult {
 
             copied.put(
                     key.trim(),
-                    deepCopyValue(entry.getValue())
+                    ToolUtil.deepCopy(entry.getValue())
             );
         }
 
         return Collections.unmodifiableMap(copied);
-    }
-
-    private static Object deepCopyValue(Object value) {
-        if (value instanceof Map<?, ?> map) {
-            Map<String, Object> copied =
-                    new LinkedHashMap<>();
-
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                if (entry.getKey() == null) {
-                    throw new IllegalArgumentException(
-                            "Nested Tool result data Map "
-                                    + "must not contain null keys"
-                    );
-                }
-
-                copied.put(
-                        String.valueOf(entry.getKey()),
-                        deepCopyValue(entry.getValue())
-                );
-            }
-
-            return Collections.unmodifiableMap(copied);
-        }
-
-        if (value instanceof Iterable<?> iterable) {
-            List<Object> copied =
-                    new ArrayList<>();
-
-            for (Object item : iterable) {
-                copied.add(deepCopyValue(item));
-            }
-
-            return Collections.unmodifiableList(copied);
-        }
-
-        return value;
     }
 
     private static void validateDataName(String name) {

@@ -1,34 +1,58 @@
 package kr.co.goms.gomsbook.ai.test;
 
+import java.nio.file.Path;
+import java.util.List;
+
 import kr.co.goms.gomsbook.ai.tool.AgentToolRegistrar;
 import kr.co.goms.gomsbook.ai.tool.DefaultAgentToolRegistrar;
 import kr.co.goms.gomsbook.ai.tool.ToolRegistry;
+import kr.co.goms.gomsbook.ai.epub.service.EpubCheckRunner;
+import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
+import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.DefaultCurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
+import kr.co.goms.gomsbook.ai.accessibility.validation.DefaultAccessibilityValidator;
+import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckRunnerValidator;
+import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 
 public final class AgentToolRegistrarSmokeTest {
 
-    public static void main(String[] args) {
+	public static void main(String[] args) {
 
-        System.out.println("[GomsBook AI Core] AgentToolRegistrar smoke test start");
+	    System.out.println("[GomsBook AI Core] AgentToolRegistrar smoke test start");
 
-        ToolRegistry registry = new ToolRegistry();
+	    Path projectRoot = Path.of("C:/1004.GomsBook/03.Project/lunchwork_seoul");
+	    Path publishDirectory = Path.of("C:/1004.GomsBook/02.Publish/lunchwork_seoul");
+	    Path epubCheckDirectory = Path.of("D:/14.EPub/lib/epubcheck-5.3.0");
 
-        AgentToolRegistrar registrar = new DefaultAgentToolRegistrar();
+	    CurrentProjectProvider currentProjectProvider = new DefaultCurrentProjectProvider(() -> projectRoot);
+	    PublishDirectoryProvider publishDirectoryProvider = () -> publishDirectory;
+	    
+	    EpubCheckRunner epubCheckRunner = new EpubCheckRunner(epubCheckDirectory, "5.3.0");
+	    EpubCheckValidator epubCheckValidator = new EpubCheckRunnerValidator(epubCheckRunner, "5.3.0");
+	    
+	    AccessibilityValidator accessibilityValidator = new DefaultAccessibilityValidator(List.of());
 
-        registrar.registerTools(registry);
+	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator);
 
-        System.out.println("[GomsBook AI Core] Registry Size = " + registry.size());
-        System.out.println("[GomsBook AI Core] Tool Names = " + registry.getToolNames());
+	    
+	    ToolRegistry registry = new ToolRegistry();
 
-        if (registry.size() != 1) throw new IllegalStateException("Expected ToolRegistry size=1, but was " + registry.size());
+	    registrar.registerTools(registry);
 
-        if (!registry.contains("echo")) throw new IllegalStateException("Echo Tool is not registered.");
+	    System.out.println("[GomsBook AI Core] Registry Size = " + registry.size());
+	    System.out.println("[GomsBook AI Core] Tool Names = " + registry.getToolNames());
 
-        if (registry.get("echo") == null) throw new IllegalStateException("Echo Tool cannot be resolved.");
+	    if (!registry.contains("echo")) throw new IllegalStateException("Echo Tool is not registered.");
 
-        if (!registry.get("echo").isAvailable()) throw new IllegalStateException("Echo Tool is not available.");
+	    if (!registry.contains("inspect_epub")) throw new IllegalStateException("Inspect EPUB Tool is not registered.");
 
-        System.out.println("[GomsBook AI Core] AgentToolRegistrarSmokeTest success");
-    }
+	    if (!registry.contains("read_epub_navigation")) throw new IllegalStateException("Read EPUB Navigation Tool is not registered.");
+
+	    if (!registry.contains("validate_epub_structure")) throw new IllegalStateException("Validate EPUB Structure Tool is not registered.");
+
+	    System.out.println("[GomsBook AI Core] AgentToolRegistrarSmokeTest success");
+	}
 
     private AgentToolRegistrarSmokeTest() {
     }

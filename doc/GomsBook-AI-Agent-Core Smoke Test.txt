@@ -55,3 +55,244 @@ GomsBook-AI-Agent-Core Test
 [GomsBook AI Core] Tool Result Data = {message=hello-gomsbook}
 [GomsBook AI Core] -------------------------
 [GomsBook AI Core] DefaultAgentToolCallingSmokeTest success
+
+3.AgentToolRegistrarSmokeTest.java
+Inspect EPUB Tool 등록 후 테스트. 총 2개 toos 등록 완료. 추후 지속적인 tool 등록 후 확인
+
+[GomsBook AI Core] AgentToolRegistrar smoke test start
+[GomsBook AI Core] Registry Size = 2
+[GomsBook AI Core] Tool Names = [echo, inspect_epub]
+[GomsBook AI Core] AgentToolRegistrarSmokeTest success
+
+4.InspectEpubToolSmokeTest 
+[GomsBook AI Core] InspectEpubTool smoke test start
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Tool Name = inspect_epub
+[GomsBook AI Core] Status = SUCCESS
+[GomsBook AI Core] Message = EPUB inspection completed [version=unknown, manifest=0, spine=0, xhtml=19, images=11, nav=false, ncx=false]
+[GomsBook AI Core] Data = {inspectionResult=EPUB inspection completed [version=unknown, manifest=0, spine=0, xhtml=19, images=11, nav=false, ncx=false], epubFile=C:\1004.GomsBook\02.Publish\lunchwork_seoul\lunchwork_seoul-202608163712.epub, fileSize=35543164, entryCount=39, xhtmlCount=19, cssCount=3, imageCount=11, fontCount=3, audioCount=0, videoCount=0, manifestItemCount=0, spineItemCount=0, linearSpineItemCount=0, navigationDocumentPresent=false, ncxPresent=false, mimetypePresent=true, mimetypeValid=true, mimetypeStored=true, mimetypeFirstEntry=true, containerPresent=true, packageDocumentPresent=true, accessModePresent=false, accessibilityFeaturePresent=false, accessibilityHazardPresent=false, accessibilitySummaryPresent=false, basicAccessibilityMetadata=false, structuralWarnings=true, entryPaths=[META-INF/container.xml, OEBPS/Fonts/KoPubBatangBold.ttf, OEBPS/Fonts/KoPubBatangLight.ttf, OEBPS/Fonts/KoPubBatangMedium.ttf, OEBPS/Images/bg_chapter.png, OEBPS/Images/bg_toc.png, OEBPS/Images/bookmark_bg.png, OEBPS/Images/chapter10_1_img_01.png, OEBPS/Images/chapter10_2_img_01.png, OEBPS/Images/chapter10_3_img_01.png, OEBPS/Images/chapter10_4_img_01.png, OEBPS/Images/chapter10_5_img_01.png, OEBPS/Images/cover.png, OEBPS/Images/cover_pdf.png, OEBPS/Images/part01.png, OEBPS/Styles/nav.css, OEBPS/Styles/quiz.css, OEBPS/Styles/style1.css, OEBPS/Text/chapter00_1.xhtml, OEBPS/Text/chapter10_1.xhtml, OEBPS/Text/chapter10_10.xhtml, OEBPS/Text/chapter10_11.xhtml, OEBPS/Text/chapter10_12.xhtml, OEBPS/Text/chapter10_2.xhtml, OEBPS/Text/chapter10_3.xhtml, OEBPS/Text/chapter10_4.xhtml, OEBPS/Text/chapter10_5.xhtml, OEBPS/Text/chapter10_6.xhtml, OEBPS/Text/chapter10_7.xhtml, OEBPS/Text/chapter10_8.xhtml, OEBPS/Text/chapter10_9.xhtml, OEBPS/Text/copyright.xhtml, OEBPS/Text/cover.xhtml, OEBPS/Text/epilogue.xhtml, OEBPS/Text/nav.xhtml, OEBPS/Text/part01.xhtml, OEBPS/Text/quiz.xhtml, OEBPS/content.opf, mimetype], mimetype=application/epub+zip, packageDocumentPath=OEBPS/content.opf}
+[GomsBook AI Core] Issues = [ToolIssue{code='EPUB_INSPECT_PACKAGE_READ_ERROR', severity=WARNING, message='Failed to read EPUB Package Document: Duplicate EPUB manifest resource id: cover_png', field='null', detailNames=[]}]
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] InspectEpubToolSmokeTest success
+
+
+5.ReadEpubNavigationToolSmokeTest 
+[GomsBook AI Core] ReadEpubNavigationTool smoke test start
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Tool Name = read_epub_navigation
+[GomsBook AI Core] Status = SUCCESS
+[GomsBook AI Core] Message = EPUB navigation table of contents was read successfully.
+[GomsBook AI Core] Project Name = lunchwork_seoul
+[GomsBook AI Core] Nav File = C:\1004.GomsBook\03.Project\lunchwork_seoul\OEBPS\Text\nav.xhtml
+[GomsBook AI Core] Entry Count = 39
+[GomsBook AI Core] TOC = [{title=프롤로그. 하루 한 시간이 여행이 되었다, href=Text/chapter00_1.xhtml, depth=1, children=[]}, {title=1부. 예술이 있는 점심, href=Text/part01.xhtml, depth=1, children=[{title=1장. 서울시립미술관, href=Text/chapter10_1.xhtml, depth=2, children=[]}, {title=2장. 덕수궁 돌담길, href=Text/chapter10_2.xhtml, depth=2, children=[]}, {title=3장. 정동길의 오후, href=Text/chapter10_3.xhtml, depth=2, children=[]}, {title=4장. 서소문성지 역사박물관, href=Text/chapter10_4.xhtml, depth=2, children=[]}, {title=5장. 서울도서관, href=Text/chapter10_5.xhtml, depth=2, children=[]}, {title=6장. 대한성공회 서울주교좌성당, href=Text/chapter10_6.xhtml, depth=2, children=[]}]}, {title=2부. 궁궐이 있는 점심, href=Text/part02.xhtml, depth=1, children=[{title=1장. 점심시간, 경복궁으로 향하다, href=Text/chapter10_1.xhtml, depth=2, children=[]}, {title=2장. 흥례문 앞에서 숨을 고르다, href=Text/chapter10_2.xhtml, depth=2, children=[]}, {title=3장. 근정전이 들려준 시간, href=Text/chapter10_3.xhtml, depth=2, children=[]}, {title=4장. 국립고궁박물관에서 만난 조선, href=Text/chapter10_4.xhtml, depth=2, children=[]}, {title=5장. 광화문광장의 오후, href=Text/chapter10_5.xhtml, depth=2, children=[]}, {title=6장. 문화가 있는 날은 덕수궁, href=Text/chapter10_5.xhtml, depth=2, children=[]}]}, {title=3부. 시간을 걷다, href=Text/part03.xhtml, depth=1, children=[{title=1장. 한국은행 화폐박물관, href=Text/chapter20_1.xhtml, depth=2, children=[]}, {title=2장. 서울광장, href=Text/chapter20_2.xhtml, depth=2, children=[]}, {title=3장. 명동성당, href=Text/chapter20_3.xhtml, depth=2, children=[]}, {title=4장. 경교장, href=Text/chapter20_4.xhtml, depth=2, children=[]}, {title=5장. 청계천, href=Text/chapter20_5.xhtml, depth=2, children=[]}, {title=6장. 남대문시장, href=Text/chapter20_6.xhtml, depth=2, children=[]}]}, {title=4부. 계절이 머무는 서울, href=Text/part03.xhtml, depth=1, children=[{title=1장. 봄의 경복궁, href=Text/chapter10_1.xhtml, depth=2, children=[]}, {title=2장. 여름의 덕수궁, href=Text/chapter10_2.xhtml, depth=2, children=[]}, {title=3장. 가을의 정동길, href=Text/chapter10_3.xhtml, depth=2, children=[]}, {title=4장. 겨울의 광화문, href=Text/chapter10_4.xhtml, depth=2, children=[]}, {title=5장. 비 오는 서울, href=Text/chapter10_5.xhtml, depth=2, children=[]}, {title=6장. 눈 내리는 궁궐, href=Text/chapter10_5.xhtml, depth=2, children=[]}]}, {title=5부. 오늘도 나는 걷는다, href=Text/part03.xhtml, depth=1, children=[{title=1장. 걷는 사람이 보게 되는 것, href=Text/chapter10_1.xhtml, depth=2, children=[]}, {title=2장. 점심시간이 여행이 되는 순간, href=Text/chapter10_2.xhtml, depth=2, children=[]}, {title=3장. 혼자 걷는 즐거움, href=Text/chapter10_3.xhtml, depth=2, children=[]}, {title=4장. 서울이 나를 위로한 날, href=Text/chapter10_4.xhtml, depth=2, children=[]}, {title=5장. 다시 근무처로 돌아가는 길, href=Text/chapter10_4.xhtml, depth=2, children=[]}, {title=6장. 내일도 점심걷기, href=Text/chapter10_4.xhtml, depth=2, children=[]}]}, {title=에필로그. 서울은 아직 다 걷지 못했다, href=Text/epilogue.xhtml, depth=1, children=[]}, {title=퀴즈, href=Text/quiz.xhtml, depth=1, children=[]}, {title=판권, href=Text/copyright.xhtml, depth=1, children=[]}]
+[GomsBook AI Core] Issues = []
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] - title=프롤로그. 하루 한 시간이 여행이 되었다, href=Text/chapter00_1.xhtml, depth=1
+[GomsBook AI Core] - title=1부. 예술이 있는 점심, href=Text/part01.xhtml, depth=1
+[GomsBook AI Core]   - title=1장. 서울시립미술관, href=Text/chapter10_1.xhtml, depth=2
+[GomsBook AI Core]   - title=2장. 덕수궁 돌담길, href=Text/chapter10_2.xhtml, depth=2
+[GomsBook AI Core]   - title=3장. 정동길의 오후, href=Text/chapter10_3.xhtml, depth=2
+[GomsBook AI Core]   - title=4장. 서소문성지 역사박물관, href=Text/chapter10_4.xhtml, depth=2
+[GomsBook AI Core]   - title=5장. 서울도서관, href=Text/chapter10_5.xhtml, depth=2
+[GomsBook AI Core]   - title=6장. 대한성공회 서울주교좌성당, href=Text/chapter10_6.xhtml, depth=2
+[GomsBook AI Core] - title=2부. 궁궐이 있는 점심, href=Text/part02.xhtml, depth=1
+[GomsBook AI Core]   - title=1장. 점심시간, 경복궁으로 향하다, href=Text/chapter10_1.xhtml, depth=2
+[GomsBook AI Core]   - title=2장. 흥례문 앞에서 숨을 고르다, href=Text/chapter10_2.xhtml, depth=2
+[GomsBook AI Core]   - title=3장. 근정전이 들려준 시간, href=Text/chapter10_3.xhtml, depth=2
+[GomsBook AI Core]   - title=4장. 국립고궁박물관에서 만난 조선, href=Text/chapter10_4.xhtml, depth=2
+[GomsBook AI Core]   - title=5장. 광화문광장의 오후, href=Text/chapter10_5.xhtml, depth=2
+[GomsBook AI Core]   - title=6장. 문화가 있는 날은 덕수궁, href=Text/chapter10_5.xhtml, depth=2
+[GomsBook AI Core] - title=3부. 시간을 걷다, href=Text/part03.xhtml, depth=1
+[GomsBook AI Core]   - title=1장. 한국은행 화폐박물관, href=Text/chapter20_1.xhtml, depth=2
+[GomsBook AI Core]   - title=2장. 서울광장, href=Text/chapter20_2.xhtml, depth=2
+[GomsBook AI Core]   - title=3장. 명동성당, href=Text/chapter20_3.xhtml, depth=2
+[GomsBook AI Core]   - title=4장. 경교장, href=Text/chapter20_4.xhtml, depth=2
+[GomsBook AI Core]   - title=5장. 청계천, href=Text/chapter20_5.xhtml, depth=2
+[GomsBook AI Core]   - title=6장. 남대문시장, href=Text/chapter20_6.xhtml, depth=2
+[GomsBook AI Core] - title=4부. 계절이 머무는 서울, href=Text/part03.xhtml, depth=1
+[GomsBook AI Core]   - title=1장. 봄의 경복궁, href=Text/chapter10_1.xhtml, depth=2
+[GomsBook AI Core]   - title=2장. 여름의 덕수궁, href=Text/chapter10_2.xhtml, depth=2
+[GomsBook AI Core]   - title=3장. 가을의 정동길, href=Text/chapter10_3.xhtml, depth=2
+[GomsBook AI Core]   - title=4장. 겨울의 광화문, href=Text/chapter10_4.xhtml, depth=2
+[GomsBook AI Core]   - title=5장. 비 오는 서울, href=Text/chapter10_5.xhtml, depth=2
+[GomsBook AI Core]   - title=6장. 눈 내리는 궁궐, href=Text/chapter10_5.xhtml, depth=2
+[GomsBook AI Core] - title=5부. 오늘도 나는 걷는다, href=Text/part03.xhtml, depth=1
+[GomsBook AI Core]   - title=1장. 걷는 사람이 보게 되는 것, href=Text/chapter10_1.xhtml, depth=2
+[GomsBook AI Core]   - title=2장. 점심시간이 여행이 되는 순간, href=Text/chapter10_2.xhtml, depth=2
+[GomsBook AI Core]   - title=3장. 혼자 걷는 즐거움, href=Text/chapter10_3.xhtml, depth=2
+[GomsBook AI Core]   - title=4장. 서울이 나를 위로한 날, href=Text/chapter10_4.xhtml, depth=2
+[GomsBook AI Core]   - title=5장. 다시 근무처로 돌아가는 길, href=Text/chapter10_4.xhtml, depth=2
+[GomsBook AI Core]   - title=6장. 내일도 점심걷기, href=Text/chapter10_4.xhtml, depth=2
+[GomsBook AI Core] - title=에필로그. 서울은 아직 다 걷지 못했다, href=Text/epilogue.xhtml, depth=1
+[GomsBook AI Core] - title=퀴즈, href=Text/quiz.xhtml, depth=1
+[GomsBook AI Core] - title=판권, href=Text/copyright.xhtml, depth=1
+[GomsBook AI Core] ReadEpubNavigationToolSmokeTest success
+
+
+6.ValidateEpubStructureToolSmokeTest
+[GomsBook AI Core] ValidateEpubStructureTool smoke test start
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Tool Name = validate_epub_structure
+[GomsBook AI Core] Status = SUCCESS
+[GomsBook AI Core] Message = EPUB structure validation: INVALID, manifestItems=37, spineItems=19, errors=3, warnings=1
+[GomsBook AI Core] EPUB File = C:\1004.GomsBook\02.Publish\lunchwork_seoul\lunchwork_seoul-202608163712.epub
+[GomsBook AI Core] Valid = false
+[GomsBook AI Core] Package Path = OEBPS/content.opf
+[GomsBook AI Core] Manifest Item Count = 37
+[GomsBook AI Core] Spine Item Count = 19
+[GomsBook AI Core] Nav ID = nav_xhtml
+[GomsBook AI Core] Nav Href = Text/nav.xhtml
+[GomsBook AI Core] Issue Count = 4
+[GomsBook AI Core] Error Count = 3
+[GomsBook AI Core] Warning Count = 1
+[GomsBook AI Core] Issues = [ToolIssue{code='MANIFEST_RESOURCE_MISSING', severity=ERROR, message='Manifest resource does not exist in EPUB archive: Text/author.xhtml', field='null', detailNames=[]}, ToolIssue{code='MANIFEST_ID_DUPLICATED', severity=ERROR, message='Duplicate EPUB manifest resource id: cover_png', field='null', detailNames=[]}, ToolIssue{code='MANIFEST_RESOURCE_MISSING', severity=ERROR, message='Manifest resource does not exist in EPUB archive: Text/loi.xhtml', field='null', detailNames=[]}, ToolIssue{code='SPINE_NAV_REFERENCE', severity=WARNING, message='Navigation Document is referenced by spine: nav_xhtml', field='null', detailNames=[]}]
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] ValidateEpubStructureToolSmokeTest success
+
+7.InspectEpubImagesToolSmokeTest
+[GomsBook AI Core] InspectEpubImagesTool smoke test start
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Tool Name = list_epub_images
+[GomsBook AI Core] Status = SUCCESS
+[GomsBook AI Core] Message = EPUB image listing completed. 7 image reference(s) found. Display src, xhtml, imgId, alt and raw role values exactly as stored in XHTML
+[GomsBook AI Core] Project Name = lunchwork_seoul
+[GomsBook AI Core] Text Directory = C:\1004.GomsBook\03.Project\lunchwork_seoul\OEBPS\Text
+[GomsBook AI Core] Image Count = 7
+[GomsBook AI Core] Missing Alt Count = 0
+[GomsBook AI Core] Aria Hidden Count = 0
+[GomsBook AI Core] Images = [{xhtmlFile=chapter10_1.xhtml, xhtmlPath=OEBPS/Text/chapter10_1.xhtml, index=0, src=../Images/chapter10_1_img_01.png, imgId=chapter10_1_img_01, alt=새벽빛이 비치기 시작한 언덕길과 조용한 마을을 그린 수채화 일러스트, role=, ariaHidden=, altMissing=false}, {xhtmlFile=chapter10_3.xhtml, xhtmlPath=OEBPS/Text/chapter10_3.xhtml, index=0, src=../Images/chapter10_2_img_01.png, imgId=chapter10_2_img_01, alt=비가 그친 뒤 젖은 돌길과 지붕, 가로등, 담장 위의 식물이 보이는 조용한 골목을 그린 수채화 일러스트, role=, ariaHidden=, altMissing=false}, {xhtmlFile=chapter10_5.xhtml, xhtmlPath=OEBPS/Text/chapter10_5.xhtml, index=0, src=../Images/chapter10_3_img_01.png, imgId=chapter10_3_img_01, alt=큰 나무 아래 놓인 벤치와 멀리 펼쳐진 풍경을 그린 수채화 일러스트, role=, ariaHidden=, altMissing=false}, {xhtmlFile=chapter10_7.xhtml, xhtmlPath=OEBPS/Text/chapter10_7.xhtml, index=0, src=../Images/chapter10_4_img_01.png, imgId=chapter10_4_img_01, alt=햇살이 들어오는 열린 창문과 커피잔, 책, 들꽃이 놓인 창가 너머로 조용한 마을이 펼쳐진 수채화 일러스트, role=, ariaHidden=, altMissing=false}, {xhtmlFile=chapter10_9.xhtml, xhtmlPath=OEBPS/Text/chapter10_9.xhtml, index=0, src=../Images/chapter10_5_img_01.png, imgId=chapter10_5_img_01, alt=검은 돌담 사이로 이어진 골목길 끝에 바다와 황금빛 햇살이 펼쳐진 조용한 해안 마을의 수채화 일러스트, role=, ariaHidden=, altMissing=false}, {xhtmlFile=cover.xhtml, xhtmlPath=OEBPS/Text/cover.xhtml, index=0, src=../Images/cover.png, imgId=cover, alt=점심시간, 서울을 걷다 점심걷기로 만난 서울의 풍경과 마음 글·사진·그림 곰스, role=doc-cover, ariaHidden=, altMissing=false}, {xhtmlFile=part01.xhtml, xhtmlPath=OEBPS/Text/part01.xhtml, index=0, src=../Images/part01.png, imgId=part01, alt=오른쪽 아래에는 나무 벤치가 놓여 있고, 멀리 잔잔한 호수와 마을, 산이 보이는 수채화 일러스트, role=, ariaHidden=, altMissing=false}]
+[GomsBook AI Core] Issues = []
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Image | xhtml=chapter10_1.xhtml | src=../Images/chapter10_1_img_01.png | imgId=chapter10_1_img_01 | alt=새벽빛이 비치기 시작한 언덕길과 조용한 마을을 그린 수채화 일러스트 | role= | ariaHidden= | altMissing=false
+[GomsBook AI Core] Image | xhtml=chapter10_3.xhtml | src=../Images/chapter10_2_img_01.png | imgId=chapter10_2_img_01 | alt=비가 그친 뒤 젖은 돌길과 지붕, 가로등, 담장 위의 식물이 보이는 조용한 골목을 그린 수채화 일러스트 | role= | ariaHidden= | altMissing=false
+[GomsBook AI Core] Image | xhtml=chapter10_5.xhtml | src=../Images/chapter10_3_img_01.png | imgId=chapter10_3_img_01 | alt=큰 나무 아래 놓인 벤치와 멀리 펼쳐진 풍경을 그린 수채화 일러스트 | role= | ariaHidden= | altMissing=false
+[GomsBook AI Core] Image | xhtml=chapter10_7.xhtml | src=../Images/chapter10_4_img_01.png | imgId=chapter10_4_img_01 | alt=햇살이 들어오는 열린 창문과 커피잔, 책, 들꽃이 놓인 창가 너머로 조용한 마을이 펼쳐진 수채화 일러스트 | role= | ariaHidden= | altMissing=false
+[GomsBook AI Core] Image | xhtml=chapter10_9.xhtml | src=../Images/chapter10_5_img_01.png | imgId=chapter10_5_img_01 | alt=검은 돌담 사이로 이어진 골목길 끝에 바다와 황금빛 햇살이 펼쳐진 조용한 해안 마을의 수채화 일러스트 | role= | ariaHidden= | altMissing=false
+[GomsBook AI Core] Image | xhtml=cover.xhtml | src=../Images/cover.png | imgId=cover | alt=점심시간, 서울을 걷다 점심걷기로 만난 서울의 풍경과 마음 글·사진·그림 곰스 | role=doc-cover | ariaHidden= | altMissing=false
+[GomsBook AI Core] Image | xhtml=part01.xhtml | src=../Images/part01.png | imgId=part01 | alt=오른쪽 아래에는 나무 벤치가 놓여 있고, 멀리 잔잔한 호수와 마을, 산이 보이는 수채화 일러스트 | role= | ariaHidden= | altMissing=false
+[GomsBook AI Core] InspectEpubImagesToolSmokeTest success
+
+8.EpubCheckRunnerSmokeTest
+[GomsBook AI Core] EpubCheckRunner smoke test start
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Target = lunchwork_seoul-202608163712.epub
+[GomsBook AI Core] EPUBCheck Version = 5.3.0
+[GomsBook AI Core] Valid = false
+[GomsBook AI Core] Fatal Count = 0
+[GomsBook AI Core] Error Count = 28
+[GomsBook AI Core] Warning Count = 0
+[GomsBook AI Core] Usage Count = 0
+[GomsBook AI Core] Info Count = 0
+[GomsBook AI Core] Message Count = 28
+[GomsBook AI Core] Summary = EPUBCheck validation: INVALID, fatal=0, errors=28, warnings=0, usage=0, info=0
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] ERROR | id=CSS-008 | location=OEBPS/Styles/nav.css:3:2 | message=CSS 파싱 중 오류 발생: 토큰 "@font-face"은(는) 여기에 사용할 수 없습니다.
+[GomsBook AI Core] ERROR | id=RSC-001 | location=OEBPS/Text/author.xhtml | message="OEBPS/Text/author.xhtml" 파일을 찾을 수 없습니다.
+[GomsBook AI Core] ERROR | id=RSC-001 | location=OEBPS/Text/loi.xhtml | message="OEBPS/Text/loi.xhtml" 파일을 찾을 수 없습니다.
+[GomsBook AI Core] ERROR | id=RSC-005 | location=OEBPS/Text/chapter10_10.xhtml:11:26 | message=파일 ""meta" 요소에 요구되는 속성이 없습니다. "content""를(을) 파싱하는 동안 오류가 발생했습니다.
+[GomsBook AI Core] ERROR | id=RSC-005 | location=OEBPS/content.opf:46:75 | message=파일 "Duplicate "cover_png""를(을) 파싱하는 동안 오류가 발생했습니다.
+[GomsBook AI Core] ERROR | id=RSC-005 | location=OEBPS/Text/chapter00_1.xhtml:26:42 | message=파일 "속성의 값 "role"이(가) 유효하지 않습니다. ; 반드시 "main"와(과) 같아야 합니다."를(을) 파싱하는 동안 오류가 발생했습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/chapter10_11.xhtml:28:28 | message=EPUB 파일에 포함되지 않은 "OEBPS/Images/chapter10_6_img_01.png" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:14:54 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter00_1.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:20:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_1.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:23:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_2.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:26:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_3.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:29:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_4.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:32:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_5.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:35:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_6.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:66:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_1.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:69:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_2.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:72:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_3.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:75:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_4.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:78:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_5.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:81:62 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_6.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:138:52 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/copyright.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:132:51 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/epilogue.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:17:49 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/part01.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:40:49 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/part02.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:63:49 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/part03.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-007 | location=OEBPS/Text/nav.xhtml:135:47 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/quiz.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-008 | location=OEBPS/Styles/style1.css:942:3 | message=OPF manifest에서 정의하지 않은 "OEBPS/Images/bg_chapter.png" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | id=RSC-008 | location=OEBPS/Styles/nav.css:49:5 | message=OPF manifest에서 정의하지 않은 "OEBPS/Images/bg_toc.png" 리소스를 사용하였습니다.
+[GomsBook AI Core] EpubCheckRunnerSmokeTest success
+
+9.EpubCheckRunnerValidatorSmokeTest
+[GomsBook AI Core] EpubCheckRunnerValidator smoke test start
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Validator Name = Optional[EPUBCheck]
+[GomsBook AI Core] Validator Version = Optional[5.3.0]
+[GomsBook AI Core] Status = FAILED
+[GomsBook AI Core] Performed = true
+[GomsBook AI Core] Fatal Count = 0
+[GomsBook AI Core] Error Count = 28
+[GomsBook AI Core] Warning Count = 0
+[GomsBook AI Core] Info Count = 0
+[GomsBook AI Core] Issue Count = 28
+[GomsBook AI Core] Message = EPUBCheck validation: INVALID, fatal=0, errors=28, warnings=0, usage=0, info=0
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] ERROR | code=EPUBCHECK-CSS-008 | message=CSS 파싱 중 오류 발생: 토큰 "@font-face"은(는) 여기에 사용할 수 없습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-001 | message="OEBPS/Text/author.xhtml" 파일을 찾을 수 없습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-001 | message="OEBPS/Text/loi.xhtml" 파일을 찾을 수 없습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-005 | message=파일 ""meta" 요소에 요구되는 속성이 없습니다. "content""를(을) 파싱하는 동안 오류가 발생했습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-005 | message=파일 "Duplicate "cover_png""를(을) 파싱하는 동안 오류가 발생했습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-005 | message=파일 "속성의 값 "role"이(가) 유효하지 않습니다. ; 반드시 "main"와(과) 같아야 합니다."를(을) 파싱하는 동안 오류가 발생했습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Images/chapter10_6_img_01.png" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter00_1.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_1.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_2.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_3.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_4.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_5.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_6.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_1.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_2.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_3.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_4.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_5.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_6.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/copyright.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/epilogue.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/part01.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/part02.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/part03.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-007 | message=EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/quiz.xhtml" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-008 | message=OPF manifest에서 정의하지 않은 "OEBPS/Images/bg_chapter.png" 리소스를 사용하였습니다.
+[GomsBook AI Core] ERROR | code=EPUBCHECK-RSC-008 | message=OPF manifest에서 정의하지 않은 "OEBPS/Images/bg_toc.png" 리소스를 사용하였습니다.
+[GomsBook AI Core] EpubCheckRunnerValidatorSmokeTest success
+
+
+10.ValidateEpubToolSmokeTest
+[GomsBook AI Core] ValidateEpubTool smoke test start
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Tool Name = validate_epub
+[GomsBook AI Core] Status = VALIDATION_FAILED
+[GomsBook AI Core] Message = EPUBCheck validation: INVALID, fatal=0, errors=28, warnings=0, usage=0, info=0
+[GomsBook AI Core] Data = {validationResult=EpubValidationResult{status=FAILED, validatorName='EPUBCheck', target='C:\1004.GomsBook\02.Publish\lunchwork_seoul\lunchwork_seoul-202608163712.epub', issueCount=28, fatalCount=0, errorCount=28, warningCount=0, infoCount=0, durationMillis=10280, partial=false}, epubFile=C:\1004.GomsBook\02.Publish\lunchwork_seoul\lunchwork_seoul-202608163712.epub, validationMode=EPUB_CHECK, validationStatus=FAILED, issueCount=28, fatalCount=0, errorCount=28, warningCount=0, infoCount=0, autoFixableIssueCount=0, durationMillis=10280, validator=EPUBCheck, validatorVersion=5.3.0}
+[GomsBook AI Core] Issues = [ToolIssue{code='EPUBCHECK-CSS-008', severity=ERROR, message='[ERROR] EPUBCHECK-CSS-008 - CSS 파싱 중 오류 발생: 토큰 "@font-face"은(는) 여기에 사용할 수 없습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-001', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-001 - "OEBPS/Text/author.xhtml" 파일을 찾을 수 없습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-001', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-001 - "OEBPS/Text/loi.xhtml" 파일을 찾을 수 없습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-005', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-005 - 파일 ""meta" 요소에 요구되는 속성이 없습니다. "content""를(을) 파싱하는 동안 오류가 발생했습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-005', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-005 - 파일 "Duplicate "cover_png""를(을) 파싱하는 동안 오류가 발생했습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-005', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-005 - 파일 "속성의 값 "role"이(가) 유효하지 않습니다. ; 반드시 "main"와(과) 같아야 합니다."를(을) 파싱하는 동안 오류가 발생했습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Images/chapter10_6_img_01.png" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter00_1.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_1.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_2.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_3.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_4.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_5.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter10_6.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_1.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_2.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_3.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_4.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_5.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/chapter20_6.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/copyright.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/epilogue.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/part01.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/part02.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/part03.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-007', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-007 - EPUB 파일에 포함되지 않은 "OEBPS/Text/Text/quiz.xhtml" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-008', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-008 - OPF manifest에서 정의하지 않은 "OEBPS/Images/bg_chapter.png" 리소스를 사용하였습니다.', field='null', detailNames=[]}, ToolIssue{code='EPUBCHECK-RSC-008', severity=ERROR, message='[ERROR] EPUBCHECK-RSC-008 - OPF manifest에서 정의하지 않은 "OEBPS/Images/bg_toc.png" 리소스를 사용하였습니다.', field='null', detailNames=[]}]
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Resolved EPUB = C:\1004.GomsBook\02.Publish\lunchwork_seoul\lunchwork_seoul-202608163712.epub
+[GomsBook AI Core] Validation Status = FAILED
+[GomsBook AI Core] Fatal Count = 0
+[GomsBook AI Core] Error Count = 28
+[GomsBook AI Core] Warning Count = 0
+[GomsBook AI Core] ValidateEpubToolSmokeTest success
+
+
+11.ValidateAccessibilityToolSmokeTest
+[GomsBook AI Core] ValidateAccessibilityTool smoke test start
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Tool Name = validate_accessibility
+[GomsBook AI Core] Status = SUCCESS
+[GomsBook AI Core] Message = Accessibility validation completed with no issues.
+[GomsBook AI Core] Data = {documentPath=OEBPS/Text/chapter10_2.xhtml, validationCompleted=true, passed=true, clean=true, blocksPublication=false, totalIssueCount=0, errorCount=0, warningCount=0, infoCount=0, automaticallyFixableCount=0, manualReviewCount=0, validatorName=DefaultAccessibilityValidator, durationMillis=105, issues=[], warnings=[], severityCounts={error=0, warning=0, info=0}, categoryCounts={image=0, document=0, metadata=0, heading=0, link=0, table=0, aria=0, navigation=0, structure=0, form=0, media=0, visual=0, general=0}, metadata={toolName=validate_accessibility, documentType=XHTML, executedRuleCount=0, registeredRuleCount=0}}
+[GomsBook AI Core] Issues = []
+[GomsBook AI Core] -------------------------
+[GomsBook AI Core] Document Path = OEBPS/Text/chapter10_2.xhtml
+[GomsBook AI Core] Validation Completed = true
+[GomsBook AI Core] Passed = true
+[GomsBook AI Core] Total Issue Count = 0
+[GomsBook AI Core] Error Count = 0
+[GomsBook AI Core] Warning Count = 0
+[GomsBook AI Core] Info Count = 0
+[GomsBook AI Core] ValidateAccessibilityToolSmokeTest success

@@ -10,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import kr.co.goms.gomsbook.ai.util.ToolUtil;
+
 /**
  * Tool 실행 중 공유되는 컨텍스트 정보입니다.
  *
@@ -631,7 +633,7 @@ public final class ToolContext {
 
             copied.put(
                     name.trim(),
-                    deepCopyValue(
+                    ToolUtil.deepCopy(
                             entry.getValue()
                     )
             );
@@ -640,64 +642,6 @@ public final class ToolContext {
         return Collections.unmodifiableMap(
                 copied
         );
-    }
-
-    /**
-     * 중첩 Map과 Iterable을 복사하여 외부 변경 영향을 줄입니다.
-     */
-    private static Object deepCopyValue(
-            Object value) {
-
-        if (value instanceof Map<?, ?> map) {
-
-            Map<String, Object> copied =
-                    new LinkedHashMap<>();
-
-            for (Map.Entry<?, ?> entry
-                    : map.entrySet()) {
-
-                if (entry.getKey() == null) {
-                    throw new IllegalArgumentException(
-                            "Nested Tool context attribute Map "
-                                    + "must not contain null keys"
-                    );
-                }
-
-                copied.put(
-                        String.valueOf(
-                                entry.getKey()
-                        ),
-                        deepCopyValue(
-                                entry.getValue()
-                        )
-                );
-            }
-
-            return Collections.unmodifiableMap(
-                    copied
-            );
-        }
-
-        if (value
-                instanceof Iterable<?> iterable) {
-
-            java.util.List<Object> copied =
-                    new java.util.ArrayList<>();
-
-            for (Object item : iterable) {
-                copied.add(
-                        deepCopyValue(
-                                item
-                        )
-                );
-            }
-
-            return Collections.unmodifiableList(
-                    copied
-            );
-        }
-
-        return value;
     }
 
     private static void validateAttributeName(
