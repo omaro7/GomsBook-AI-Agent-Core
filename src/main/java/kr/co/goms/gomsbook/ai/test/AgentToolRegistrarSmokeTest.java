@@ -12,6 +12,10 @@ import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.DefaultCurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
 import kr.co.goms.gomsbook.ai.accessibility.validation.DefaultAccessibilityValidator;
+import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
+import kr.co.goms.gomsbook.ai.agent.approval.DefaultAgentApprovalService;
+import kr.co.goms.gomsbook.ai.agent.event.AgentEventPublisher;
+import kr.co.goms.gomsbook.ai.agent.event.DefaultAgentEventPublisher;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckRunnerValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 
@@ -33,7 +37,12 @@ public final class AgentToolRegistrarSmokeTest {
 	    
 	    AccessibilityValidator accessibilityValidator = new DefaultAccessibilityValidator(List.of());
 
-	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator);
+	    AgentApprovalService approvalService = new DefaultAgentApprovalService();
+
+	    AgentEventPublisher eventPublisher = new DefaultAgentEventPublisher();
+	    
+	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
+	    		approvalService, eventPublisher);
 
 	    
 	    ToolRegistry registry = new ToolRegistry();
