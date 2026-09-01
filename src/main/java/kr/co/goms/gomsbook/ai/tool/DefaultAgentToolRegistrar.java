@@ -15,6 +15,11 @@ import kr.co.goms.gomsbook.ai.tool.accessibility.ValidateAccessibilityTool;
 import kr.co.goms.gomsbook.ai.tool.epub.generation.chapter.CreateBasicXhtmlTool;
 import kr.co.goms.gomsbook.ai.tool.epub.inspect.InspectCurrentProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.inspect.InspectEpubTool;
+import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubFontManifestTool;
+import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubImageManifestTool;
+import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubJsManifestTool;
+import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubStyleManifestTool;
+import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubTextManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.manifest.ReadEpubManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.metadata.ReadEpubMetadataTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.ReadEpubNavigationTool;
@@ -76,6 +81,12 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new ReadEpubMetadataTool(currentProjectProvider,publishDirectoryProvider));	// 현재 프로젝트의 최신 EPUB metadata 정보를 보여주세요.
         registerIfAbsent(registry, new ReadEpubManifestTool(currentProjectProvider,publishDirectoryProvider));
         registerIfAbsent(registry, new ReadEpubSpineTool(currentProjectProvider,publishDirectoryProvider));
+
+        registerIfAbsent(registry, new CompareEpubTextManifestTool(currentProjectProvider,publishDirectoryProvider));
+        registerIfAbsent(registry, new CompareEpubImageManifestTool(currentProjectProvider,publishDirectoryProvider));
+        registerIfAbsent(registry, new CompareEpubFontManifestTool(currentProjectProvider,publishDirectoryProvider));
+        registerIfAbsent(registry, new CompareEpubStyleManifestTool(currentProjectProvider,publishDirectoryProvider));
+        registerIfAbsent(registry, new CompareEpubJsManifestTool(currentProjectProvider,publishDirectoryProvider));
         
         
         
