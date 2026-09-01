@@ -13,8 +13,13 @@ import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.tool.accessibility.ValidateAccessibilityTool;
 import kr.co.goms.gomsbook.ai.tool.epub.generation.chapter.CreateBasicXhtmlTool;
+import kr.co.goms.gomsbook.ai.tool.epub.inspect.InspectCurrentProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.inspect.InspectEpubTool;
+import kr.co.goms.gomsbook.ai.tool.epub.manifest.ReadEpubManifestTool;
+import kr.co.goms.gomsbook.ai.tool.epub.metadata.ReadEpubMetadataTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.ReadEpubNavigationTool;
+import kr.co.goms.gomsbook.ai.tool.epub.pkg.ReadEpubPackageTool;
+import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubStructureTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubTool;
 import kr.co.goms.gomsbook.ai.tool.image.InspectEpubImagesTool;
@@ -58,6 +63,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
 
         registerIfAbsent(registry, new EchoTool());
         registerIfAbsent(registry, new InspectEpubTool());
+        registerIfAbsent(registry, new InspectCurrentProjectTool(currentProjectProvider));
         registerIfAbsent(registry, new ReadEpubNavigationTool(currentProjectProvider));
         registerIfAbsent(registry, new ValidateEpubStructureTool(currentProjectProvider, publishDirectoryProvider));
         registerIfAbsent(registry, new InspectEpubImagesTool(currentProjectProvider));
@@ -65,6 +71,13 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new ValidateEpubTool(null, null, epubCheckValidator, null, publishDirectoryProvider));
         registerIfAbsent(registry, new ValidateAccessibilityTool(accessibilityValidator));
         registerIfAbsent(registry, new CreateBasicXhtmlTool(currentProjectProvider, approvalService, eventPublisher));
+        
+        registerIfAbsent(registry, new ReadEpubPackageTool(currentProjectProvider, publishDirectoryProvider));
+        registerIfAbsent(registry, new ReadEpubMetadataTool(currentProjectProvider,publishDirectoryProvider));	// 현재 프로젝트의 최신 EPUB metadata 정보를 보여주세요.
+        registerIfAbsent(registry, new ReadEpubManifestTool(currentProjectProvider,publishDirectoryProvider));
+        registerIfAbsent(registry, new ReadEpubSpineTool(currentProjectProvider,publishDirectoryProvider));
+        
+        
         
     }
 

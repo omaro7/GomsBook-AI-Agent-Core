@@ -33,7 +33,7 @@ import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
 
 /**
  * 생성된 EPUB 파일을 검증하는 Agent Tool입니다.
- *
+ * Epubcheck5.3.0
  * <p>EpubRuntime 전체에 의존하지 않고 검증기만 직접 주입받습니다.</p>
  */
 public final class ValidateEpubTool implements AgentTool {

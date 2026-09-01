@@ -125,8 +125,13 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\to
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\DefaultToolExecutor.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\EchoTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\generation\chapter\CreateBasicXhtmlTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\inspect\InspectCurrentProjectTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\inspect\InspectEpubTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\manifest\ReadEpubManifestTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\metadata\ReadEpubMetadataTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\navigation\ReadEpubNavigationTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\pkg\ReadEpubPackageTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\spine\ReadEpubSpineTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubStructureTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\image\InspectEpubImagesTool.java

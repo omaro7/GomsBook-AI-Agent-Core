@@ -26,6 +26,7 @@ kr\co\goms\gomsbook\ai\epub\model\EpubPackage.class
 kr\co\goms\gomsbook\ai\json\GsonJsonMapper.class
 kr\co\goms\gomsbook\ai\test\DefaultAgentToolCallingSmokeTest$1.class
 kr\co\goms\gomsbook\ai\agent\event\AgentEventType.class
+kr\co\goms\gomsbook\ai\tool\epub\metadata\ReadEpubMetadataTool.class
 kr\co\goms\gomsbook\ai\epub\generation\xhtml\DefaultBasicXhtmlService.class
 kr\co\goms\gomsbook\ai\tool\ToolContext.class
 kr\co\goms\gomsbook\ai\llm\LlmAttachment.class
@@ -111,6 +112,7 @@ kr\co\goms\gomsbook\ai\test\ValidateEpubToolSmokeTest.class
 kr\co\goms\gomsbook\ai\llm\LlmToolCall.class
 kr\co\goms\gomsbook\ai\test\ToolDefinitionProviderSmokeTest.class
 kr\co\goms\gomsbook\ai\epub\model\EpubOrientation.class
+kr\co\goms\gomsbook\ai\tool\epub\inspect\InspectCurrentProjectTool.class
 kr\co\goms\gomsbook\ai\epub\model\EpubPublicationType.class
 kr\co\goms\gomsbook\ai\epub\model\EpubMetadataItem$Kind.class
 kr\co\goms\gomsbook\ai\epub\model\EpubResourceType$Category.class
@@ -160,6 +162,7 @@ kr\co\goms\gomsbook\ai\epub\model\EpubPathConfiguration$Builder.class
 kr\co\goms\gomsbook\ai\json\GsonFactory$DurationAdapter.class
 kr\co\goms\gomsbook\ai\test\OllamaLlmClientSmokeTest.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubValidator.class
+kr\co\goms\gomsbook\ai\tool\epub\spine\ReadEpubSpineTool.class
 kr\co\goms\gomsbook\ai\epub\validation\CompositeEpubValidator.class
 kr\co\goms\gomsbook\ai\util\ToolUtil.class
 kr\co\goms\gomsbook\ai\epub\model\EpubInspectionResult$Builder.class
@@ -176,6 +179,7 @@ kr\co\goms\gomsbook\ai\tool\xhtml\ApplyXhtmlTool$ApplyXhtmlResponse.class
 kr\co\goms\gomsbook\ai\epub\model\EpubPageProgressionDirection.class
 kr\co\goms\gomsbook\ai\llm\LlmToolCallFunction.class
 kr\co\goms\gomsbook\ai\agent\event\AgentEventPublisher.class
+kr\co\goms\gomsbook\ai\tool\epub\pkg\ReadEpubPackageTool.class
 kr\co\goms\gomsbook\ai\epub\validation\CompositeEpubValidator$1.class
 kr\co\goms\gomsbook\ai\agent\AgentRequest.class
 kr\co\goms\gomsbook\ai\epub\model\EpubManifestItem$Builder.class
@@ -186,6 +190,7 @@ kr\co\goms\gomsbook\ai\epub\validation\EpubAccessibilityValidator.class
 kr\co\goms\gomsbook\ai\epub\model\EpubSpine.class
 kr\co\goms\gomsbook\ai\epub\model\EpubImage.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubCheckValidator$ExecutionMode.class
+kr\co\goms\gomsbook\ai\tool\epub\manifest\ReadEpubManifestTool.class
 kr\co\goms\gomsbook\ai\agent\approval\AgentApproval.class
 kr\co\goms\gomsbook\ai\tool\ToolResult$Builder.class
 kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubTool$1.class
