@@ -3,13 +3,13 @@ package kr.co.goms.gomsbook.ai.test;
 import java.nio.file.Path;
 import java.util.List;
 
-import kr.co.goms.gomsbook.ai.tool.AgentToolRegistrar;
-import kr.co.goms.gomsbook.ai.tool.DefaultAgentToolRegistrar;
-import kr.co.goms.gomsbook.ai.tool.ToolRegistry;
+import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlanService;
+import kr.co.goms.gomsbook.ai.epub.project.plan.DefaultCreateEpubProjectPlanService;
 import kr.co.goms.gomsbook.ai.epub.service.EpubCheckRunner;
 import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.DefaultCurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.tool.ToolRegistry;
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
 import kr.co.goms.gomsbook.ai.accessibility.validation.DefaultAccessibilityValidator;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
@@ -18,6 +18,10 @@ import kr.co.goms.gomsbook.ai.agent.event.AgentEventPublisher;
 import kr.co.goms.gomsbook.ai.agent.event.DefaultAgentEventPublisher;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckRunnerValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
+import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlanStore;
+import kr.co.goms.gomsbook.ai.epub.project.plan.InMemoryCreateEpubProjectPlanStore;
+import kr.co.goms.gomsbook.ai.tool.DefaultAgentToolRegistrar;
+import kr.co.goms.gomsbook.ai.tool.AgentToolRegistrar;
 
 public final class AgentToolRegistrarSmokeTest {
 
@@ -41,8 +45,16 @@ public final class AgentToolRegistrarSmokeTest {
 
 	    AgentEventPublisher eventPublisher = new DefaultAgentEventPublisher();
 	    
+	    CreateEpubProjectPlanStore createEpubProjectPlanStore = new InMemoryCreateEpubProjectPlanStore();
+
+	    CreateEpubProjectPlanService createEpubProjectPlanService =
+	            new DefaultCreateEpubProjectPlanService(
+	                    createEpubProjectPlanStore);
+
+	    Path epubProjectsRoot = Path.of("C:\\1004.GomsBook\\03.Project");
+	    
 	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
-	    		approvalService, eventPublisher);
+	    		approvalService, eventPublisher, createEpubProjectPlanService, epubProjectsRoot);
 
 	    
 	    ToolRegistry registry = new ToolRegistry();

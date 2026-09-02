@@ -5,9 +5,11 @@
 
 package kr.co.goms.gomsbook.ai.tool;
 
+import java.nio.file.Path;
 import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
+import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlanService;
 import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
@@ -24,6 +26,10 @@ import kr.co.goms.gomsbook.ai.tool.epub.manifest.ReadEpubManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.metadata.ReadEpubMetadataTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.ReadEpubNavigationTool;
 import kr.co.goms.gomsbook.ai.tool.epub.pkg.ReadEpubPackageTool;
+import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubBaseFilesTool;
+import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectPlanTool;
+import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectStructureTool;
+import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubStructureTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubTool;
@@ -42,18 +48,24 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     private final AccessibilityValidator accessibilityValidator;
     private final AgentApprovalService approvalService;
     private final AgentEventPublisher eventPublisher;
+    private final CreateEpubProjectPlanService createEpubProjectPlanService;
+    private final Path epubProjectsRoot;
     
     public DefaultAgentToolRegistrar(CurrentProjectProvider currentProjectProvider, PublishDirectoryProvider publishDirectoryProvider, EpubCheckValidator epubCheckValidator, 
     		AccessibilityValidator accessibilityValidator,
             AgentApprovalService approvalService,
-            AgentEventPublisher eventPublisher) {
+            AgentEventPublisher eventPublisher,
+            CreateEpubProjectPlanService createEpubProjectPlanService,
+            Path epubProjectsRoot) {
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
         this.epubCheckValidator = Objects.requireNonNull(epubCheckValidator, "epubCheckValidator must not be null");
         this.accessibilityValidator = Objects.requireNonNull(accessibilityValidator, "accessibilityValidator must not be null");
         this.approvalService = Objects.requireNonNull(approvalService, "approvalService must not be null");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher must not be null");
-    }
+        this.createEpubProjectPlanService = Objects.requireNonNull(createEpubProjectPlanService, "createEpubProjectPlanService must not be null");
+        this.epubProjectsRoot = Objects.requireNonNull(epubProjectsRoot, "epubProjectsRoot must not be null").toAbsolutePath().normalize();
+     }
 
 
     @Override
@@ -88,6 +100,24 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new CompareEpubStyleManifestTool(currentProjectProvider,publishDirectoryProvider));
         registerIfAbsent(registry, new CompareEpubJsManifestTool(currentProjectProvider,publishDirectoryProvider));
         
+        registerIfAbsent(registry, new CreateEpubProjectPlanTool(createEpubProjectPlanService,approvalService));
+
+        
+        /*
+         * EPUB project root creation.
+         */
+        registerIfAbsent(registry, new CreateEpubProjectTool(createEpubProjectPlanService, epubProjectsRoot));
+
+
+        /*
+         * EPUB project directory structure creation.
+         */
+        registerIfAbsent(registry, new CreateEpubProjectStructureTool(createEpubProjectPlanService, epubProjectsRoot));
+
+        /*
+         * EPUB project base files creation.
+         */
+        registerIfAbsent(registry, new CreateEpubBaseFilesTool(createEpubProjectPlanService,epubProjectsRoot));
         
         
     }
