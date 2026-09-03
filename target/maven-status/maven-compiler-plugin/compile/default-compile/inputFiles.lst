@@ -20,12 +20,18 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\ag
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\AgentStatus.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\AgentToolResultListener.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\AgentApproval.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalAction.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalExecutor.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalHandler.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalHandlerRegistry.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalRequest.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalService.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalStatus.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\DefaultAgentApprovalExecutor.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\DefaultAgentApprovalHandlerRegistry.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\DefaultAgentApprovalService.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\CreateBasicXhtmlApprovalHandler.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubProjectApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\DefaultAgentExecutor.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\event\AgentEvent.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\event\AgentEventListener.java
@@ -105,8 +111,10 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\ll
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\llm\ollama\OllamaToolDefinition.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\llm\ollama\OllamaToolFunction.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\project\CurrentProjectProvider.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\project\CurrentProjectStore.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\project\DefaultCurrentProjectProvider.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\project\EpubProjectContext.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\project\InMemoryCurrentProjectStore.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\test\AgentToolRegistrarSmokeTest.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\test\DefaultAgentExecutorSmokeTest.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\test\DefaultAgentToolCallingSmokeTest.java
@@ -145,6 +153,7 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\to
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubProjectPlanTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubProjectStructureTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubProjectTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\SwitchCurrentEpubProjectTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\spine\ReadEpubSpineTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubStructureTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubTool.java

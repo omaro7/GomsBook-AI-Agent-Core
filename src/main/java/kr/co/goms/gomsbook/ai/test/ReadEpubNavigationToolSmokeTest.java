@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Map;
 
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.project.DefaultCurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.InMemoryCurrentProjectStore;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
 import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
@@ -19,9 +21,10 @@ public final class ReadEpubNavigationToolSmokeTest {
 
         Path projectRoot = Path.of("C:/1004.GomsBook/03.Project/lunchwork_seoul");
 
-        CurrentProjectProvider projectProvider = new DefaultCurrentProjectProvider(() -> projectRoot);
+        CurrentProjectStore currentProjectStore = new InMemoryCurrentProjectStore(projectRoot);
+        CurrentProjectProvider currentProjectProvider = new DefaultCurrentProjectProvider(currentProjectStore);
 
-        ReadEpubNavigationTool tool = new ReadEpubNavigationTool(projectProvider);
+        ReadEpubNavigationTool tool = new ReadEpubNavigationTool(currentProjectProvider);
 
         ToolRequest request = ToolRequest.builder()
                 .toolName(ReadEpubNavigationTool.NAME)

@@ -8,7 +8,9 @@ import kr.co.goms.gomsbook.ai.epub.project.plan.DefaultCreateEpubProjectPlanServ
 import kr.co.goms.gomsbook.ai.epub.service.EpubCheckRunner;
 import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.project.DefaultCurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.InMemoryCurrentProjectStore;
 import kr.co.goms.gomsbook.ai.tool.ToolRegistry;
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
 import kr.co.goms.gomsbook.ai.accessibility.validation.DefaultAccessibilityValidator;
@@ -33,7 +35,9 @@ public final class AgentToolRegistrarSmokeTest {
 	    Path publishDirectory = Path.of("C:/1004.GomsBook/02.Publish/lunchwork_seoul");
 	    Path epubCheckDirectory = Path.of("D:/14.EPub/lib/epubcheck-5.3.0");
 
-	    CurrentProjectProvider currentProjectProvider = new DefaultCurrentProjectProvider(() -> projectRoot);
+        CurrentProjectStore currentProjectStore = new InMemoryCurrentProjectStore(projectRoot);
+        CurrentProjectProvider currentProjectProvider = new DefaultCurrentProjectProvider(currentProjectStore);
+
 	    PublishDirectoryProvider publishDirectoryProvider = () -> publishDirectory;
 	    
 	    EpubCheckRunner epubCheckRunner = new EpubCheckRunner(epubCheckDirectory, "5.3.0");
@@ -54,7 +58,8 @@ public final class AgentToolRegistrarSmokeTest {
 	    Path epubProjectsRoot = Path.of("C:\\1004.GomsBook\\03.Project");
 	    
 	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
-	    		approvalService, eventPublisher, createEpubProjectPlanService, epubProjectsRoot);
+	    		approvalService, eventPublisher, 
+	    		currentProjectStore, createEpubProjectPlanService, epubProjectsRoot);
 
 	    
 	    ToolRegistry registry = new ToolRegistry();

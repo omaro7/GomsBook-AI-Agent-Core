@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApproval;
+import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalAction;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
 import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlan;
 import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlanService;
@@ -44,9 +45,6 @@ public final class CreateEpubProjectPlanTool
 
     public static final String TOOL_NAME =
             "create_epub_project_plan";
-
-    private static final String APPROVAL_ACTION =
-            "create_epub_project";
 
     private static final String DESCRIPTION =
             "Creates a proposal for a new EPUB project. "
@@ -310,7 +308,7 @@ public final class CreateEpubProjectPlanTool
                     approvalService.create(
                             runId,
                             plan.getPlanId(),
-                            APPROVAL_ACTION,
+                            AgentApprovalAction.of(CreateEpubProjectTool.TOOL_NAME),
                             approvalTitle,
                             approvalMessage,
                             plan.getFolderName(),

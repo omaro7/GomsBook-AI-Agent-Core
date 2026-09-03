@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApproval;
+import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalAction;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
 import kr.co.goms.gomsbook.ai.agent.event.AgentEvent;
 import kr.co.goms.gomsbook.ai.agent.event.AgentEventPublisher;
@@ -18,20 +19,13 @@ import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
 import kr.co.goms.gomsbook.ai.tool.ToolStatus;
 
-public final class CreateBasicXhtmlTool
-        implements AgentTool {
+public final class CreateBasicXhtmlTool implements AgentTool {
 
-    public static final String TOOL_NAME =
-            "create_basic_xhtml";
+    public static final String TOOL_NAME = "create_basic_xhtml";
 
-    public static final String ACTION_CREATE_BASIC_XHTML =
-            "CREATE_BASIC_XHTML";
+    private static final String FILE_NAME_ARGUMENT = "fileName";
 
-    private static final String FILE_NAME_ARGUMENT =
-            "fileName";
-
-    private static final String TITLE_ARGUMENT =
-            "title";
+    private static final String TITLE_ARGUMENT = "title";
 
     private final CurrentProjectProvider projectProvider;
     private final AgentApprovalService approvalService;
@@ -206,7 +200,7 @@ public final class CreateBasicXhtmlTool
                     approvalService.create(
                             runId,
                             projectId,
-                            ACTION_CREATE_BASIC_XHTML,
+                            AgentApprovalAction.of(TOOL_NAME),
                             "XHTML 파일 생성",
                             normalizedFileName
                                     + " 파일을 생성하시겠습니까?",

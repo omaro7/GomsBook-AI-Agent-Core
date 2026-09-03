@@ -5,7 +5,9 @@ import java.util.Map;
 
 import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.project.DefaultCurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.InMemoryCurrentProjectStore;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
 import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
@@ -18,10 +20,10 @@ public final class ValidateEpubStructureToolSmokeTest {
         System.out.println("[GomsBook AI Core] ValidateEpubStructureTool smoke test start");
 
         Path projectRoot = Path.of("C:/1004.GomsBook/03.Project/lunchwork_seoul");
-
         Path publishDirectory = Path.of("C:/1004.GomsBook/02.Publish/lunchwork_seoul");
 
-        CurrentProjectProvider currentProjectProvider = new DefaultCurrentProjectProvider(() -> projectRoot);
+        CurrentProjectStore currentProjectStore = new InMemoryCurrentProjectStore(projectRoot);
+        CurrentProjectProvider currentProjectProvider = new DefaultCurrentProjectProvider(currentProjectStore);
 
         PublishDirectoryProvider publishDirectoryProvider = () -> publishDirectory;
 

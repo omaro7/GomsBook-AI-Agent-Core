@@ -10,6 +10,8 @@ import kr.co.goms.gomsbook.ai.tool.ToolContext;
 import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
 import kr.co.goms.gomsbook.ai.tool.image.InspectEpubImagesTool;
+import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
+import kr.co.goms.gomsbook.ai.project.InMemoryCurrentProjectStore;
 
 public final class InspectEpubImagesToolSmokeTest {
 
@@ -19,8 +21,9 @@ public final class InspectEpubImagesToolSmokeTest {
 
         Path projectRoot = Path.of("C:/1004.GomsBook/03.Project/lunchwork_seoul");
 
-        CurrentProjectProvider currentProjectProvider = new DefaultCurrentProjectProvider(() -> projectRoot);
-
+        CurrentProjectStore currentProjectStore = new InMemoryCurrentProjectStore(projectRoot);
+        CurrentProjectProvider currentProjectProvider = new DefaultCurrentProjectProvider(currentProjectStore);
+        
         InspectEpubImagesTool tool = new InspectEpubImagesTool(currentProjectProvider);
 
         ToolRequest request = ToolRequest.builder()

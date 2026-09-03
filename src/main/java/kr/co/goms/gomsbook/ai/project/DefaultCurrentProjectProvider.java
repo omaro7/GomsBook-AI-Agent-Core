@@ -2,142 +2,77 @@
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
  */
+
 package kr.co.goms.gomsbook.ai.project;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 /**
  * Default implementation of {@link CurrentProjectProvider}.
  *
  * <p>
- * The provider receives the root directory of the currently
- * opened GomsBookEditor project and resolves the EPUB project
+ * The provider reads the current EPUB project root from
+ * {@link CurrentProjectStore} and resolves the EPUB project
  * structure required by Agent tools and RAG services.
  * </p>
  */
-public final class DefaultCurrentProjectProvider
-        implements CurrentProjectProvider {
+public final class DefaultCurrentProjectProvider implements CurrentProjectProvider {
 
-    private static final String DEFAULT_OEBPS_DIRECTORY =
-            "OEBPS";
+    private static final String DEFAULT_OEBPS_DIRECTORY = "OEBPS";
+    private static final String DEFAULT_TEXT_DIRECTORY = "Text";
+    private static final String DEFAULT_NAVIGATION_FILE = "nav.xhtml";
+    private static final String DEFAULT_PACKAGE_FILE = "content.opf";
 
-    private static final String DEFAULT_TEXT_DIRECTORY =
-            "Text";
-
-    private static final String DEFAULT_NAVIGATION_FILE =
-            "nav.xhtml";
-
-    private static final String DEFAULT_PACKAGE_FILE =
-            "content.opf";
+    private final CurrentProjectStore currentProjectStore;
 
 
-    private final Supplier<Path> projectRootSupplier;
+    public DefaultCurrentProjectProvider(CurrentProjectStore currentProjectStore) {
 
-
-    /**
-     * Creates a provider using a supplier that returns
-     * the currently opened project root.
-     *
-     * @param projectRootSupplier
-     *        supplier for current project root
-     */
-    public DefaultCurrentProjectProvider(
-            Supplier<Path> projectRootSupplier) {
-
-        this.projectRootSupplier =
-                Objects.requireNonNull(
-                        projectRootSupplier,
-                        "projectRootSupplier"
-                );
+        this.currentProjectStore = Objects.requireNonNull(currentProjectStore, "currentProjectStore");
     }
 
 
     @Override
     public EpubProjectContext getCurrentProject() {
 
-        Path projectRoot =
-                projectRootSupplier.get();
+        Path projectRoot = currentProjectStore.getCurrentProjectRoot();
 
         if (projectRoot == null) {
 
-            throw new IllegalStateException(
-                    "No current EPUB project is available."
-            );
+            throw new IllegalStateException("No current EPUB project is available.");
         }
 
-        projectRoot =
-                projectRoot
-                        .toAbsolutePath()
-                        .normalize();
+        projectRoot = projectRoot.toAbsolutePath().normalize();
 
         if (!Files.isDirectory(projectRoot)) {
 
-            throw new IllegalStateException(
-                    "Current project root does not exist: "
-                            + projectRoot
-            );
+            throw new IllegalStateException("Current project root does not exist: " + projectRoot);
         }
 
-
-        String projectName =
-                resolveProjectName(
-                        projectRoot
-                );
-
-
-        Path packageDocument =
-                resolvePackageDocument(
-                        projectRoot
-                );
-
-
-        Path contentRoot =
-                packageDocument
-                        .getParent();
-
+        String projectName = resolveProjectName(projectRoot);
+        Path packageDocument = resolvePackageDocument(projectRoot);
+        Path contentRoot = packageDocument.getParent();
 
         if (contentRoot == null) {
 
-            throw new IllegalStateException(
-                    "Unable to resolve EPUB content root: "
-                            + packageDocument
-            );
+            throw new IllegalStateException("Unable to resolve EPUB content root: " + packageDocument);
         }
 
+        Path textDirectory = resolveTextDirectory(contentRoot);
+        Path navigationFile = resolveNavigationFile(contentRoot);
 
-        Path textDirectory =
-                resolveTextDirectory(
-                        contentRoot
-                );
-
-
-        Path navigationFile =
-                resolveNavigationFile(
-                        contentRoot
-                );
-
-
-        return new EpubProjectContext(
-                projectName,
-                projectRoot,
-                textDirectory,
-                navigationFile,
-                packageDocument
-        );
+        return new EpubProjectContext(projectName, projectRoot, textDirectory, navigationFile, packageDocument);
     }
 
 
     /**
      * Resolves the project name from the project root.
      */
-    private String resolveProjectName(
-            Path projectRoot) {
+    private String resolveProjectName(Path projectRoot) {
 
-        Path fileName =
-                projectRoot.getFileName();
+        Path fileName = projectRoot.getFileName();
 
         if (fileName == null) {
 
@@ -152,52 +87,29 @@ public final class DefaultCurrentProjectProvider
      * Resolves the OPF package document.
      *
      * <p>
-     * First checks the conventional
-     * OEBPS/content.opf location.
-     * If it is not available, searches the project
-     * recursively for an OPF document.
+     * First checks the conventional OEBPS/content.opf location.
+     * If it is not available, searches the project recursively
+     * for an OPF document.
      * </p>
      */
-    private Path resolvePackageDocument(
-            Path projectRoot) {
+    private Path resolvePackageDocument(Path projectRoot) {
 
-        Path defaultPackage =
-                projectRoot
-                        .resolve(
-                                DEFAULT_OEBPS_DIRECTORY
-                        )
-                        .resolve(
-                                DEFAULT_PACKAGE_FILE
-                        );
+        Path defaultPackage = projectRoot.resolve(DEFAULT_OEBPS_DIRECTORY).resolve(DEFAULT_PACKAGE_FILE);
 
         if (Files.isRegularFile(defaultPackage)) {
 
             return defaultPackage;
         }
 
-
-        try (var stream =
-                Files.walk(
-                        projectRoot
-                )) {
+        try (var stream = Files.walk(projectRoot)) {
 
             return stream
-                    .filter(
-                            Files::isRegularFile
-                    )
-                    .filter(
-                            this::isOpfFile
-                    )
+                    .filter(Files::isRegularFile)
+                    .filter(this::isOpfFile)
                     .sorted()
                     .findFirst()
-                    .orElseThrow(
-                            () ->
-                                    new IllegalStateException(
-                                            "EPUB package document "
-                                            + "(*.opf) was not found: "
-                                            + projectRoot
-                                    )
-                    );
+                    .orElseThrow(() -> new IllegalStateException(
+                            "EPUB package document (*.opf) was not found: " + projectRoot));
 
         } catch (IllegalStateException e) {
 
@@ -205,10 +117,7 @@ public final class DefaultCurrentProjectProvider
 
         } catch (Exception e) {
 
-            throw new IllegalStateException(
-                    "Failed to locate EPUB package document.",
-                    e
-            );
+            throw new IllegalStateException("Failed to locate EPUB package document.", e);
         }
     }
 
@@ -216,41 +125,22 @@ public final class DefaultCurrentProjectProvider
     /**
      * Resolves the EPUB TEXT directory.
      */
-    private Path resolveTextDirectory(
-            Path contentRoot) {
+    private Path resolveTextDirectory(Path contentRoot) {
 
-        Path defaultText =
-                contentRoot.resolve(
-                        DEFAULT_TEXT_DIRECTORY
-                );
+        Path defaultText = contentRoot.resolve(DEFAULT_TEXT_DIRECTORY);
 
         if (Files.isDirectory(defaultText)) {
 
             return defaultText;
         }
 
-
-        /*
-         * Some EPUB projects use lowercase directory names.
-         */
-        Path lowercaseText =
-                contentRoot.resolve(
-                        "text"
-                );
+        Path lowercaseText = contentRoot.resolve("text");
 
         if (Files.isDirectory(lowercaseText)) {
 
             return lowercaseText;
         }
 
-
-        /*
-         * Do not fail immediately.
-         *
-         * Returning the conventional location allows
-         * EpubProjectContext.hasTextDirectory() and
-         * Agent tools to report the missing directory.
-         */
         return defaultText;
     }
 
@@ -258,37 +148,23 @@ public final class DefaultCurrentProjectProvider
     /**
      * Resolves nav.xhtml.
      */
-    private Path resolveNavigationFile(
-            Path contentRoot) {
+    private Path resolveNavigationFile(Path contentRoot) {
 
-        Path defaultNavigation =
-                contentRoot.resolve(
-                        DEFAULT_NAVIGATION_FILE
-                );
+        Path defaultNavigation = contentRoot.resolve(DEFAULT_NAVIGATION_FILE);
 
         if (Files.isRegularFile(defaultNavigation)) {
 
             return defaultNavigation;
         }
 
-
-        try (var stream =
-                Files.walk(
-                        contentRoot
-                )) {
+        try (var stream = Files.walk(contentRoot)) {
 
             return stream
-                    .filter(
-                            Files::isRegularFile
-                    )
-                    .filter(
-                            this::isNavigationFile
-                    )
+                    .filter(Files::isRegularFile)
+                    .filter(this::isNavigationFile)
                     .sorted()
                     .findFirst()
-                    .orElse(
-                            defaultNavigation
-                    );
+                    .orElse(defaultNavigation);
 
         } catch (Exception e) {
 
@@ -297,31 +173,18 @@ public final class DefaultCurrentProjectProvider
     }
 
 
-    private boolean isOpfFile(
-            Path path) {
+    private boolean isOpfFile(Path path) {
 
-        String fileName =
-                path.getFileName()
-                        .toString()
-                        .toLowerCase();
+        String fileName = path.getFileName().toString().toLowerCase();
 
-        return fileName.endsWith(
-                ".opf"
-        );
+        return fileName.endsWith(".opf");
     }
 
 
-    private boolean isNavigationFile(
-            Path path) {
+    private boolean isNavigationFile(Path path) {
 
-        String fileName =
-                path.getFileName()
-                        .toString()
-                        .toLowerCase();
+        String fileName = path.getFileName().toString().toLowerCase();
 
-        return DEFAULT_NAVIGATION_FILE
-                .equals(
-                        fileName
-                );
+        return DEFAULT_NAVIGATION_FILE.equals(fileName);
     }
 }

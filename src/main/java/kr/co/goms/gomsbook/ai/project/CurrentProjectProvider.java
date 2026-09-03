@@ -5,6 +5,7 @@
 package kr.co.goms.gomsbook.ai.project;
 
 /**
+ * 현재 프로젝트 조회 인터페이스 입니다.
  * Provides access to the EPUB project
  * currently opened in GomsBookEditor.
  *

@@ -29,42 +29,17 @@ public final class EpubProjectContext {
     private final Path packageDocument;
 
 
-    public EpubProjectContext(
-            String projectName,
-            Path projectRoot,
-            Path textDirectory,
-            Path navigationFile,
-            Path packageDocument) {
+    public EpubProjectContext( String projectName, Path projectRoot, Path textDirectory, Path navigationFile, Path packageDocument) {
 
-        this.projectName =
-                requireText(
-                        projectName,
-                        "projectName"
-                );
+        this.projectName = requireText(projectName, "projectName");
 
-        this.projectRoot =
-                Objects.requireNonNull(
-                        projectRoot,
-                        "projectRoot"
-                );
+        this.projectRoot = Objects.requireNonNull(projectRoot, "projectRoot");
 
-        this.textDirectory =
-                Objects.requireNonNull(
-                        textDirectory,
-                        "textDirectory"
-                );
+        this.textDirectory = Objects.requireNonNull(textDirectory, "textDirectory");
 
-        this.navigationFile =
-                Objects.requireNonNull(
-                        navigationFile,
-                        "navigationFile"
-                );
+        this.navigationFile = Objects.requireNonNull(navigationFile, "navigationFile");
 
-        this.packageDocument =
-                Objects.requireNonNull(
-                        packageDocument,
-                        "packageDocument"
-                );
+        this.packageDocument = Objects.requireNonNull(packageDocument, "packageDocument");
     }
 
 
@@ -131,17 +106,11 @@ public final class EpubProjectContext {
     }
 
 
-    private static String requireText(
-            String value,
-            String name) {
+    private static String requireText( String value, String name) {
 
-        Objects.requireNonNull(
-                value,
-                name
-        );
+        Objects.requireNonNull(value, name);
 
-        String normalized =
-                value.trim();
+        String normalized = value.trim();
 
         if (normalized.isEmpty()) {
 
