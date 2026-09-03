@@ -497,6 +497,32 @@ public final class OllamaLlmClient implements LlmClient {
             content = "";
         }
 
+        /*
+         * 일부 Ollama/Gemma 모델은 native tool_calls 대신
+         * content에 call:<tool>{json} 형식으로 Tool Call을 반환합니다.
+         *
+         * native tool_calls가 존재하면 반드시 기존 응답을 우선하고,
+         * native Tool Call이 하나도 없을 때만 fallback parser를 사용합니다.
+         */
+        if (toolCalls.isEmpty()) {
+            List<LlmToolCall> fallbackToolCalls =
+                    parseFallbackToolCalls(
+                            content
+                    );
+
+            if (!fallbackToolCalls.isEmpty()) {
+                toolCalls.addAll(
+                        fallbackToolCalls
+                );
+
+                /*
+                 * fallback 문자열을 일반 Assistant 답변으로
+                 * 화면에 표시하지 않도록 비웁니다.
+                 */
+                content = "";
+            }
+        }
+
         return new LlmResponse(
                 response.getModel(),
                 content,
@@ -507,6 +533,204 @@ public final class OllamaLlmClient implements LlmClient {
                 toolCalls
         );
     }
+
+    /**
+     * content에 포함된 call:<tool>{json} 형식의 Tool Call을 변환합니다.
+     *
+     * <p>일반 Assistant 답변을 Tool Call로 오인하지 않도록
+     * 전체 content가 하나 이상의 call: 표현식으로만 구성된 경우에만
+     * fallback Tool Call로 인정합니다.</p>
+     */
+    private List<LlmToolCall> parseFallbackToolCalls(
+            String content) {
+
+        if (content == null || content.isBlank()) return List.of();
+
+        String text = content.trim();
+
+        if (!text.startsWith("call:")) return List.of();
+
+        List<LlmToolCall> toolCalls = new ArrayList<>();
+        int position = 0;
+
+        while (position < text.length()) {
+            position = skipWhitespace(text, position);
+
+            if (position >= text.length()) break;
+
+            if (!text.startsWith("call:", position)) return List.of();
+
+            int toolNameStart = position + "call:".length();
+            int argumentsStart = findArgumentsStart(text, toolNameStart);
+
+            if (argumentsStart < 0) return List.of();
+
+            String toolName = text.substring(toolNameStart, argumentsStart).trim();
+
+            if (!isValidFallbackToolName(toolName)) return List.of();
+
+            int argumentsEnd = findJsonObjectEnd(text, argumentsStart);
+
+            if (argumentsEnd < 0) return List.of();
+
+            String argumentsJson = text.substring(argumentsStart, argumentsEnd + 1);
+            Map<String, Object> arguments = parseFallbackArguments(argumentsJson);
+
+            LlmToolCallFunction function =
+                    new LlmToolCallFunction(
+                            toolName,
+                            arguments
+                    );
+
+            toolCalls.add(
+                    new LlmToolCall(
+                            "ollama-tool-call-" + toolCalls.size(),
+                            LlmToolCall.TYPE_FUNCTION,
+                            function
+                    )
+            );
+
+            position = argumentsEnd + 1;
+        }
+
+        return toolCalls;
+    }
+
+    /**
+     * fallback Tool Call의 JSON arguments를 Map으로 변환합니다.
+     */
+    private Map<String, Object> parseFallbackArguments(
+            String argumentsJson) {
+
+        try {
+            Map<?, ?> parsed =
+                    jsonMapper.fromJson(
+                            argumentsJson,
+                            Map.class
+                    );
+
+            if (parsed == null) return Map.of();
+
+            return convertMap(parsed);
+
+        } catch (RuntimeException exception) {
+            throw new OllamaLlmException(
+                    "Ollama fallback Tool arguments JSON 변환에 실패했습니다. arguments="
+                            + abbreviate(argumentsJson, 500),
+                    exception
+            );
+        }
+    }
+
+    /**
+     * Tool 이름 뒤의 JSON object 시작 위치를 찾습니다.
+     */
+    private int findArgumentsStart(
+            String text,
+            int startIndex) {
+
+        for (int index = startIndex; index < text.length(); index++) {
+            char ch = text.charAt(index);
+
+            if (ch == '{') return index;
+
+            if (Character.isWhitespace(ch)) continue;
+
+            if (!isFallbackToolNameCharacter(ch)) return -1;
+        }
+
+        return -1;
+    }
+
+    /**
+     * 문자열 및 escape를 고려하여 JSON object의 마지막 '}' 위치를 찾습니다.
+     */
+    private int findJsonObjectEnd(
+            String text,
+            int objectStart) {
+
+        if (objectStart < 0 || objectStart >= text.length() || text.charAt(objectStart) != '{') return -1;
+
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+
+        for (int index = objectStart; index < text.length(); index++) {
+            char ch = text.charAt(index);
+
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                    continue;
+                }
+
+                if (ch == '\\') {
+                    escaped = true;
+                    continue;
+                }
+
+                if (ch == '"') inString = false;
+
+                continue;
+            }
+
+            if (ch == '"') {
+                inString = true;
+                continue;
+            }
+
+            if (ch == '{') {
+                depth++;
+                continue;
+            }
+
+            if (ch == '}') {
+                depth--;
+
+                if (depth == 0) return index;
+
+                if (depth < 0) return -1;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * fallback Tool 이름의 허용 문자를 검증합니다.
+     */
+    private boolean isValidFallbackToolName(
+            String toolName) {
+
+        if (toolName == null || toolName.isBlank()) return false;
+
+        for (int index = 0; index < toolName.length(); index++) {
+            if (!isFallbackToolNameCharacter(toolName.charAt(index))) return false;
+        }
+
+        return true;
+    }
+
+    private boolean isFallbackToolNameCharacter(
+            char ch) {
+
+        return Character.isLetterOrDigit(ch)
+                || ch == '_'
+                || ch == '-'
+                || ch == '.';
+    }
+
+    private int skipWhitespace(
+            String text,
+            int startIndex) {
+
+        int index = startIndex;
+
+        while (index < text.length() && Character.isWhitespace(text.charAt(index))) index++;
+
+        return index;
+    }
+
 
     /**
      * Ollama Tool Call을 공통 Tool Call로 변환합니다.

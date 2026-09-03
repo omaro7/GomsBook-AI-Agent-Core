@@ -30,6 +30,7 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\ag
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\DefaultAgentApprovalExecutor.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\DefaultAgentApprovalHandlerRegistry.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\DefaultAgentApprovalService.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\ApplyEpubTemplateApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\CreateBasicXhtmlApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubProjectApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\DefaultAgentExecutor.java
@@ -149,6 +150,7 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\to
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\metadata\ReadEpubMetadataTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\navigation\ReadEpubNavigationTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\pkg\ReadEpubPackageTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\ApplyEpubTemplateTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubBaseFilesTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubProjectPlanTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubProjectStructureTool.java

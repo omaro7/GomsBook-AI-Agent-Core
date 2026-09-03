@@ -29,7 +29,7 @@ public class AgentApproval {
         this.title = requireText(title, "title");
         this.message = message;
         this.fileName = requireText(fileName, "fileName");
-        this.content = requireText(content, "content");
+        this.content = content;
         this.createdAt = Instant.now();
         this.status = AgentApprovalStatus.PENDING;
     }

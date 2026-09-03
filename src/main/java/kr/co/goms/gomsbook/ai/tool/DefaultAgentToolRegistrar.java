@@ -27,6 +27,7 @@ import kr.co.goms.gomsbook.ai.tool.epub.manifest.ReadEpubManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.metadata.ReadEpubMetadataTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.ReadEpubNavigationTool;
 import kr.co.goms.gomsbook.ai.tool.epub.pkg.ReadEpubPackageTool;
+import kr.co.goms.gomsbook.ai.tool.epub.project.ApplyEpubTemplateTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubBaseFilesTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectPlanTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectStructureTool;
@@ -111,7 +112,10 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new CreateEpubProjectStructureTool(createEpubProjectPlanService, epubProjectsRoot));		// EPUB project directory structure creation.
         registerIfAbsent(registry, new CreateEpubBaseFilesTool(createEpubProjectPlanService,epubProjectsRoot));				// EPUB project base files creation.
 
-        registerIfAbsent(registry, new SwitchCurrentEpubProjectTool(currentProjectStore, createEpubProjectPlanService, epubProjectsRoot));
+        registerIfAbsent(registry, new SwitchCurrentEpubProjectTool(currentProjectStore, epubProjectsRoot));				// EPUB project switch
+        
+        registerIfAbsent(registry, new ApplyEpubTemplateTool(currentProjectProvider, approvalService));						// EPUB Template apply
+        
     }
 
     private void registerIfAbsent(ToolRegistry registry, AgentTool tool) {

@@ -11,8 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlan;
-import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlanService;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.tool.AgentTool;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
@@ -21,32 +19,36 @@ import kr.co.goms.gomsbook.ai.tool.ToolResult;
 import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
 
 /**
- * 생성된 EPUB 프로젝트를 현재 프로젝트로 전환하는 Tool.
+ * 기존 EPUB 프로젝트를 현재 프로젝트로 전환하는 Tool.
  *
  * <p>
- * CreateEpubProjectPlan의 folderName을 기준으로 실제 프로젝트
- * 경로를 결정하고 CurrentProjectStore의 현재 프로젝트를 변경한다.
+ * projectName 또는 projectPath를 기준으로 실제 EPUB 프로젝트 경로를
+ * 확인하고 CurrentProjectStore의 현재 프로젝트를 변경한다.
  * </p>
  */
 public final class SwitchCurrentEpubProjectTool implements AgentTool {
 
     public static final String TOOL_NAME = "switch_current_epub_project";
 
-    private static final String DESCRIPTION = "Switches the current GomsBook EPUB project to a newly created EPUB project.";
+    private static final String DESCRIPTION =
+            "Switches the current GomsBook EPUB project by project name or project path. "
+                    + "Use this tool when the user asks to open, select, change, or switch the current EPUB project.";
 
-    private static final String ARG_PLAN_ID = "planId";
+    private static final String ARG_PROJECT_NAME = "projectName";
+    private static final String ARG_PROJECT_PATH = "projectPath";
+
     private static final String OEBPS_DIRECTORY = "OEBPS";
     private static final String PACKAGE_FILE = "content.opf";
 
     private final CurrentProjectStore currentProjectStore;
-    private final CreateEpubProjectPlanService planService;
     private final Path projectsRoot;
 
 
-    public SwitchCurrentEpubProjectTool(CurrentProjectStore currentProjectStore, CreateEpubProjectPlanService planService, Path projectsRoot) {
+    public SwitchCurrentEpubProjectTool(
+            CurrentProjectStore currentProjectStore,
+            Path projectsRoot) {
 
         this.currentProjectStore = Objects.requireNonNull(currentProjectStore, "currentProjectStore must not be null");
-        this.planService = Objects.requireNonNull(planService, "planService must not be null");
         this.projectsRoot = Objects.requireNonNull(projectsRoot, "projectsRoot must not be null").toAbsolutePath().normalize();
     }
 
@@ -71,41 +73,50 @@ public final class SwitchCurrentEpubProjectTool implements AgentTool {
         return Map.of(
                 "type", "object",
                 "properties", Map.of(
-                        ARG_PLAN_ID, Map.of(
+                        ARG_PROJECT_NAME, Map.of(
                                 "type", "string",
-                                "description", "EPUB project creation plan ID."
+                                "description", "EPUB project folder name under the GomsBook projects root."
+                        ),
+                        ARG_PROJECT_PATH, Map.of(
+                                "type", "string",
+                                "description", "Absolute or projects-root-relative path of the EPUB project."
                         )
                 ),
-                "required", List.of(ARG_PLAN_ID),
                 "additionalProperties", false
         );
     }
 
 
     @Override
-    public ToolValidationResult validate(ToolRequest request, ToolContext context) {
+    public ToolValidationResult validate(
+            ToolRequest request,
+            ToolContext context) {
 
-        if (request == null) {
+        if (request == null) return ToolValidationResult.invalid("Tool request must not be null.");
 
-            return ToolValidationResult.invalid("Tool request must not be null.");
-        }
-
-        if (!TOOL_NAME.equals(request.getToolName())) {
-
-            return ToolValidationResult.invalid("Invalid tool name: " + request.getToolName());
-        }
+        if (!TOOL_NAME.equals(request.getToolName())) return ToolValidationResult.invalid("Invalid tool name: " + request.getToolName());
 
         try {
 
-            String planId = request.requireStringArgument(ARG_PLAN_ID);
-            CreateEpubProjectPlan plan = planService.get(planId);
+            String projectName = readOptionalString(request, ARG_PROJECT_NAME);
+            String projectPath = readOptionalString(request, ARG_PROJECT_PATH);
 
-            if (!plan.isCreated()) {
+            if (isBlank(projectName) && isBlank(projectPath)) {
 
-                return ToolValidationResult.invalid("EPUB project must be CREATED before switching. planId=" + planId + ", status=" + plan.getStatus());
+                return ToolValidationResult.invalid("Either projectName or projectPath must be provided.");
             }
 
-            Path projectRoot = resolveProjectRoot(plan);
+            if (!isBlank(projectName) && !isBlank(projectPath)) {
+
+                return ToolValidationResult.invalid("Specify only one of projectName or projectPath.");
+            }
+
+            Path projectRoot = resolveProjectRoot(projectName, projectPath);
+
+            if (!projectRoot.startsWith(projectsRoot)) {
+
+                return ToolValidationResult.invalid("EPUB project path must be under projects root: " + projectsRoot);
+            }
 
             if (!Files.isDirectory(projectRoot)) {
 
@@ -123,19 +134,23 @@ public final class SwitchCurrentEpubProjectTool implements AgentTool {
 
         } catch (Exception e) {
 
-            return ToolValidationResult.invalid(e.getMessage());
+            return ToolValidationResult.invalid(safeMessage(e));
         }
     }
 
 
     @Override
-    public ToolResult execute(ToolRequest request, ToolContext context) {
+    public ToolResult execute(
+            ToolRequest request,
+            ToolContext context) {
 
         ToolValidationResult validation = validate(request, context);
 
         if (validation.isInvalid()) {
 
-            String message = validation.hasMessage() ? validation.getMessage() : "Current EPUB project switch validation failed.";
+            String message = validation.hasMessage()
+                    ? validation.getMessage()
+                    : "Current EPUB project switch validation failed.";
 
             return ToolResult.failure(TOOL_NAME, message)
                     .requestId(request != null ? request.getRequestId() : null)
@@ -146,9 +161,10 @@ public final class SwitchCurrentEpubProjectTool implements AgentTool {
 
         try {
 
-            String planId = request.requireStringArgument(ARG_PLAN_ID);
-            CreateEpubProjectPlan plan = planService.get(planId);
-            Path projectRoot = resolveProjectRoot(plan);
+            String projectName = readOptionalString(request, ARG_PROJECT_NAME);
+            String projectPath = readOptionalString(request, ARG_PROJECT_PATH);
+
+            Path projectRoot = resolveProjectRoot(projectName, projectPath);
             Path previousProjectRoot = currentProjectStore.getCurrentProjectRoot();
 
             currentProjectStore.setCurrentProjectRoot(projectRoot);
@@ -157,16 +173,19 @@ public final class SwitchCurrentEpubProjectTool implements AgentTool {
                     .requestId(request.getRequestId())
                     .toolCallId(request.getToolCallId())
                     .message("Current EPUB project switched successfully.")
-                    .data("planId", planId)
-                    .data("projectName", plan.getProjectName())
-                    .data("folderName", plan.getFolderName())
+                    .data("projectName", resolveProjectName(projectRoot))
                     .data("projectRoot", projectRoot.toString())
+                    .data("packageDocument", resolvePackageDocument(projectRoot).toString())
                     .data("previousProjectRoot", previousProjectRoot != null ? previousProjectRoot.toString() : null)
                     .build();
 
         } catch (Exception e) {
 
-            return ToolResult.failure(TOOL_NAME, "Failed to switch current EPUB project: " + e.getMessage(), e)
+            return ToolResult.failure(
+                    TOOL_NAME,
+                    "Failed to switch current EPUB project: " + safeMessage(e),
+                    e
+            )
                     .requestId(request != null ? request.getRequestId() : null)
                     .toolCallId(request != null ? request.getToolCallId() : null)
                     .build();
@@ -174,9 +193,20 @@ public final class SwitchCurrentEpubProjectTool implements AgentTool {
     }
 
 
-    private Path resolveProjectRoot(CreateEpubProjectPlan plan) {
+    private Path resolveProjectRoot(
+            String projectName,
+            String projectPath) {
 
-        Path projectRoot = projectsRoot.resolve(plan.getFolderName()).toAbsolutePath().normalize();
+        if (!isBlank(projectPath)) return resolveProjectPath(projectPath);
+
+        return resolveProjectName(projectName);
+    }
+
+
+    private Path resolveProjectName(
+            String projectName) {
+
+        Path projectRoot = projectsRoot.resolve(projectName.trim()).toAbsolutePath().normalize();
 
         if (!projectRoot.startsWith(projectsRoot)) {
 
@@ -187,8 +217,72 @@ public final class SwitchCurrentEpubProjectTool implements AgentTool {
     }
 
 
-    private Path resolvePackageDocument(Path projectRoot) {
+    private Path resolveProjectPath(
+            String projectPath) {
+
+        Path path = Path.of(projectPath.trim());
+
+        Path projectRoot = path.isAbsolute()
+                ? path.toAbsolutePath().normalize()
+                : projectsRoot.resolve(path).toAbsolutePath().normalize();
+
+        if (!projectRoot.startsWith(projectsRoot)) {
+
+            throw new IllegalStateException("EPUB project path escapes projects root: " + projectRoot);
+        }
+
+        return projectRoot;
+    }
+
+
+    private Path resolvePackageDocument(
+            Path projectRoot) {
 
         return projectRoot.resolve(OEBPS_DIRECTORY).resolve(PACKAGE_FILE).normalize();
+    }
+
+
+    private String resolveProjectName(
+            Path projectRoot) {
+
+        Path fileName = projectRoot.getFileName();
+
+        return fileName != null ? fileName.toString() : projectRoot.toString();
+    }
+
+
+    private String readOptionalString(
+            ToolRequest request,
+            String argumentName) {
+
+        if (request == null || request.getArguments() == null) return null;
+
+        Object value = request.getArguments().get(argumentName);
+
+        if (value == null) return null;
+
+        String text = String.valueOf(value).trim();
+
+        return text.isEmpty() ? null : text;
+    }
+
+
+    private boolean isBlank(
+            String value) {
+
+        return value == null || value.isBlank();
+    }
+
+
+    private String safeMessage(
+            Throwable throwable) {
+
+        if (throwable == null) return "Unknown error.";
+
+        String message = throwable.getMessage();
+
+        return message == null || message.isBlank()
+                ? throwable.getClass().getSimpleName()
+                : message;
     }
 }

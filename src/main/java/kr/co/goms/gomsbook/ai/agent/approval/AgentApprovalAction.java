@@ -17,7 +17,7 @@ package kr.co.goms.gomsbook.ai.agent.approval;
  */
 public final class AgentApprovalAction {
 
-    private static final String PREFIX =
+    public static final String PREFIX =
             "approve_";
 
 
