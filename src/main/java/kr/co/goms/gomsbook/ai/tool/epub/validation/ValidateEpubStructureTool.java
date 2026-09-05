@@ -28,20 +28,12 @@ import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
 
 /**
  * 현재 EPUB 프로젝트의 최신 출판 EPUB 파일 구조를 검증합니다.
- *
- * <p>Package Document, manifest, spine, navigation 및 archive resource
- * 참조 정합성을 검사합니다.</p>
- *
- * <p>검증 실행이 정상 완료되면 ToolStatus.SUCCESS를 반환하며,
- * 실제 EPUB 구조 정상 여부는 valid 값으로 반환합니다.</p>
  */
 public final class ValidateEpubStructureTool implements AgentTool {
 
 
     public static final String NAME = "validate_epub_structure";
-
     public static final String TOOL_NAME = NAME;
-
     public static final String DESCRIPTION = "Validates the structure of the latest published EPUB file for the current project and returns validation issues without treating an invalid EPUB as a tool execution failure.";
 
 
@@ -56,74 +48,32 @@ public final class ValidateEpubStructureTool implements AgentTool {
 
     public ValidateEpubStructureTool(
             CurrentProjectProvider projectProvider,
-            PublishDirectoryProvider publishDirectoryProvider) {
-
-        this(
-                projectProvider,
-                publishDirectoryProvider,
-                new LatestPublishedEpubResolver(),
-                new EpubStructureValidator());
-    }
-
-
-    public ValidateEpubStructureTool(
-            CurrentProjectProvider projectProvider,
             PublishDirectoryProvider publishDirectoryProvider,
             LatestPublishedEpubResolver publishedEpubResolver,
             EpubStructureValidator structureValidator) {
 
-        if (projectProvider == null) {
-
-            throw new IllegalArgumentException(
-                    "projectProvider must not be null.");
-        }
-
-        if (publishDirectoryProvider == null) {
-
-            throw new IllegalArgumentException(
-                    "publishDirectoryProvider must not be null.");
-        }
-
-        if (publishedEpubResolver == null) {
-
-            throw new IllegalArgumentException(
-                    "publishedEpubResolver must not be null.");
-        }
-
-        if (structureValidator == null) {
-
-            throw new IllegalArgumentException(
-                    "structureValidator must not be null.");
-        }
+        if (projectProvider == null) throw new IllegalArgumentException("projectProvider must not be null.");
+        if (publishDirectoryProvider == null) throw new IllegalArgumentException("publishDirectoryProvider must not be null.");
+        if (publishedEpubResolver == null) throw new IllegalArgumentException("publishedEpubResolver must not be null.");
+        if (structureValidator == null) throw new IllegalArgumentException("structureValidator must not be null.");
 
         this.projectProvider = projectProvider;
-
         this.publishDirectoryProvider = publishDirectoryProvider;
-
         this.publishedEpubResolver = publishedEpubResolver;
-
         this.structureValidator = structureValidator;
     }
 
 
     @Override
-    public String getName() {
-
-        return TOOL_NAME;
-    }
+    public String getName() { return TOOL_NAME; }
 
 
     @Override
-    public String getDescription() {
-
-        return DESCRIPTION;
-    }
+    public String getDescription() { return DESCRIPTION; }
 
 
     @Override
-    public ToolValidationResult validate(
-            ToolRequest request,
-            ToolContext context) {
+    public ToolValidationResult validate(ToolRequest request, ToolContext context) {
 
         ToolValidationResult.Builder result = ToolValidationResult.builder();
 
@@ -154,9 +104,7 @@ public final class ValidateEpubStructureTool implements AgentTool {
 
 
     @Override
-    public ToolResult execute(
-            ToolRequest request,
-            ToolContext context) {
+    public ToolResult execute(ToolRequest request, ToolContext context) {
 
         ToolValidationResult validation = validate(request, context);
 
@@ -173,7 +121,6 @@ public final class ValidateEpubStructureTool implements AgentTool {
         try {
 
             Path publishDirectory = publishDirectoryProvider.getPublishDirectory();
-
             Path epubFile = publishedEpubResolver.resolve(publishDirectory);
 
             EpubStructureValidationResult result = structureValidator.validate(epubFile);
@@ -190,29 +137,7 @@ public final class ValidateEpubStructureTool implements AgentTool {
     }
 
 
-    private String resolveProjectName(EpubProjectContext project) {
-
-        if (project == null) {
-
-            throw new IllegalStateException(
-                    "Current EPUB project is not available.");
-        }
-
-        String projectName = project.getProjectName();
-
-        if (projectName == null || projectName.isBlank()) {
-
-            throw new IllegalStateException(
-                    "Current EPUB project name is not available.");
-        }
-
-        return projectName.trim();
-    }
-
-
-    private ToolResult convertResult(
-            Path epubFile,
-            EpubStructureValidationResult result) {
+    private ToolResult convertResult(Path epubFile, EpubStructureValidationResult result) {
 
         ToolResult.Builder builder = ToolResult.builder()
                 .toolName(TOOL_NAME)
@@ -227,13 +152,9 @@ public final class ValidateEpubStructureTool implements AgentTool {
                 .data("warningCount", result.getWarningCount())
                 .data("issues", result.getIssues());
 
-        if (result.getPackagePath() != null) {
-
-            builder.data("packagePath", result.getPackagePath());
-        }
+        if (result.getPackagePath() != null) builder.data("packagePath", result.getPackagePath());
 
         result.getNavId().ifPresent(value -> builder.data("navId", value));
-
         result.getNavHref().ifPresent(value -> builder.data("navHref", value));
 
         appendIssues(result, builder);
@@ -242,19 +163,13 @@ public final class ValidateEpubStructureTool implements AgentTool {
     }
 
 
-    private void appendIssues(
-            EpubStructureValidationResult result,
-            ToolResult.Builder builder) {
+    private void appendIssues(EpubStructureValidationResult result, ToolResult.Builder builder) {
 
-        for (EpubStructureValidationIssue issue : result.getIssues()) {
-
-            builder.issue(toToolIssue(issue));
-        }
+        for (EpubStructureValidationIssue issue : result.getIssues()) builder.issue(toToolIssue(issue));
     }
 
 
-    private ToolIssue toToolIssue(
-            EpubStructureValidationIssue issue) {
+    private ToolIssue toToolIssue(EpubStructureValidationIssue issue) {
 
         ToolIssueSeverity severity = issue.isError() ? ToolIssueSeverity.ERROR : ToolIssueSeverity.WARNING;
 
@@ -272,24 +187,17 @@ public final class ValidateEpubStructureTool implements AgentTool {
         Map<String, Object> schema = new LinkedHashMap<>();
 
         schema.put("type", "object");
-
         schema.put("properties", Map.of());
-
         schema.put("required", List.of());
-
         schema.put("additionalProperties", false);
 
         return Map.copyOf(schema);
     }
 
 
-    private ToolResult failure(
-            String errorCode,
-            String errorMessage,
-            Throwable cause) {
+    private ToolResult failure(String errorCode, String errorMessage, Throwable cause) {
 
         String code = errorCode == null || errorCode.isBlank() ? "EPUB_STRUCTURE_VALIDATION_FAILED" : errorCode.trim();
-
         String message = errorMessage == null || errorMessage.isBlank() ? "EPUB structure validation failed." : errorMessage.trim();
 
         ToolResult.Builder builder = ToolResult.builder()
@@ -303,7 +211,6 @@ public final class ValidateEpubStructureTool implements AgentTool {
         if (cause != null) {
 
             builder.cause(cause);
-
             builder.data("exceptionType", cause.getClass().getName());
         }
 
@@ -311,9 +218,7 @@ public final class ValidateEpubStructureTool implements AgentTool {
     }
 
 
-    private ToolIssue errorIssue(
-            String code,
-            String message) {
+    private ToolIssue errorIssue(String code, String message) {
 
         return ToolIssue.builder()
                 .severity(ToolIssueSeverity.ERROR)
@@ -323,32 +228,21 @@ public final class ValidateEpubStructureTool implements AgentTool {
     }
 
 
-    private String normalizePath(
-            Path path) {
+    private String normalizePath(Path path) {
 
-        if (path == null) {
-
-            return "";
-        }
+        if (path == null) return "";
 
         return path.toAbsolutePath().normalize().toString();
     }
 
 
-    private String safeMessage(
-            Throwable throwable) {
+    private String safeMessage(Throwable throwable) {
 
-        if (throwable == null) {
-
-            return "Unknown EPUB structure validation error.";
-        }
+        if (throwable == null) return "Unknown EPUB structure validation error.";
 
         String message = throwable.getMessage();
 
-        if (message == null || message.isBlank()) {
-
-            return throwable.getClass().getSimpleName();
-        }
+        if (message == null || message.isBlank()) return throwable.getClass().getSimpleName();
 
         return message.trim();
     }

@@ -10,8 +10,8 @@ import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApproval;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalHandler;
-import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlan;
-import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlanService;
+import kr.co.goms.gomsbook.ai.epub.plan.project.CreateEpubProjectPlan;
+import kr.co.goms.gomsbook.ai.epub.plan.project.CreateEpubProjectPlanService;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
 import kr.co.goms.gomsbook.ai.tool.ToolExecutor;
 import kr.co.goms.gomsbook.ai.tool.ToolRequest;

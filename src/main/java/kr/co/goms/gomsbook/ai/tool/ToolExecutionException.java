@@ -133,18 +133,15 @@ public class ToolExecutionException extends RuntimeException {
         );
     }
 
-    public static ToolExecutionException executionFailed(
-            String toolName,
-            Throwable cause) {
+    public static ToolExecutionException executionFailed(String toolName, Throwable cause) {
 
-        String normalizedToolName =
-                normalizeToolName(toolName);
+        String normalizedToolName = normalizeToolName(toolName);
+        String causeMessage = cause != null && cause.getMessage() != null && !cause.getMessage().isBlank() ? cause.getMessage().trim() : "Unknown error.";
 
         return new ToolExecutionException(
                 ErrorCodes.EXECUTION_FAILED,
                 normalizedToolName,
-                "Tool execution failed: "
-                        + normalizedToolName,
+                "Tool execution failed: " + normalizedToolName + " | " + causeMessage,
                 cause
         );
     }

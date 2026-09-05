@@ -6,6 +6,9 @@ package kr.co.goms.gomsbook.ai.tool;
 
 import java.util.Objects;
 
+import kr.co.goms.gomsbook.ai.logging.ExecutionLogger;
+import kr.co.goms.gomsbook.ai.logging.ExecutionLogContext;
+
 /**
  * {@link ToolExecutor}의 기본 구현체입니다.
  *
@@ -20,25 +23,22 @@ import java.util.Objects;
  *     <li>실행 결과 검증 및 반환</li>
  * </ol>
  */
-public final class DefaultToolExecutor
-        implements ToolExecutor {
+public final class DefaultToolExecutor implements ToolExecutor {
 
     private final ToolRegistry toolRegistry;
-
+    private final ExecutionLogger executionLogger;
+    
     /**
      * Tool 실행기를 생성합니다.
      *
-     * @param toolRegistry Tool Registry
+     * @param toolRegistry 	  Tool Registry
+     * @param executionLogger Logger 
      */
-    public DefaultToolExecutor(
-            ToolRegistry toolRegistry) {
-
-        this.toolRegistry = Objects.requireNonNull(
-                toolRegistry,
-                "toolRegistry must not be null"
-        );
+    public DefaultToolExecutor( ToolRegistry toolRegistry, ExecutionLogger executionLogger) {
+        this.toolRegistry = Objects.requireNonNull( toolRegistry, "toolRegistry must not be null");
+        this.executionLogger = Objects.requireNonNull( executionLogger, "executionLogger must not be null");
     }
-
+    
     /**
      * Tool 요청을 실행합니다.
      *
@@ -47,61 +47,99 @@ public final class DefaultToolExecutor
      * @return Tool 실행 결과
      * @throws ToolExecutionException Tool 조회, 검증 또는 실행에 실패한 경우
      */
-    @Override
-    public ToolResult execute(
-            ToolRequest request,
-            ToolContext context) {
+	@Override
+	public ToolResult execute(
+	        ToolRequest request,
+	        ToolContext context) {
 
-        validateRequest(request);
+	    validateRequest(request);
 
-        ToolContext resolvedContext =
-                context == null
-                        ? ToolContext.builder().build()
-                        : context;
+	    ToolContext resolvedContext =
+	            context == null
+	                    ? ToolContext.builder().build()
+	                    : context;
 
-        String toolName = request.getToolName();
+	    String toolName = request.getToolName();
+	    AgentTool tool = resolveTool(toolName);
 
-        AgentTool tool = resolveTool(toolName);
+	    ExecutionLogContext logContext =
+	            executionLogger.start(
+	                    resolvedContext.getRunId(),
+	                    request.getRequestId(),
+	                    resolvedContext.getProjectId(),
+	                    toolName
+	            );
 
-        try {
-            ToolValidationResult validationResult =
-                    validateToolRequest(
-                            tool,
-                            request,
-                            resolvedContext
-                    );
+	    try {
 
-            if (!isValidationSuccessful(validationResult)) {
-                return createValidationFailureResult(
-                        request,
-                        validationResult
-                );
-            }
+	        ToolValidationResult validationResult =
+	                validateToolRequest(
+	                        tool,
+	                        request,
+	                        resolvedContext
+	                );
 
-            ToolResult result =
-                    executeTool(
-                            tool,
-                            request,
-                            resolvedContext
-                    );
+	        if (!isValidationSuccessful(validationResult)) {
 
-            return validateResult(
-                    request,
-                    result
-            );
+	            ToolResult result =
+	                    createValidationFailureResult(
+	                            request,
+	                            validationResult
+	                    );
 
-        } catch (ToolExecutionException exception) {
-            throw exception;
+	            executionLogger.failure(
+	                    logContext,
+	                    new IllegalStateException(result.getMessage())
+	            );
 
-        } catch (RuntimeException exception) {
-            throw ToolExecutionException.executionFailed(
-                    toolName,
-                    exception
-            );
-        }
-    }
+	            return result;
+	        }
 
-    /**
+	        ToolResult result =
+	                executeTool(
+	                        tool,
+	                        request,
+	                        resolvedContext
+	                );
+
+	        result =
+	                validateResult(
+	                        request,
+	                        result
+	                );
+
+	        if (result.getStatus() == ToolStatus.SUCCESS) {
+	            executionLogger.success(logContext);
+	        } else {
+	            executionLogger.failure(logContext, new IllegalStateException(result.getMessage()));
+	        }
+
+	        return result;
+
+	    } catch (ToolExecutionException exception) {
+
+	        executionLogger.failure(
+	                logContext,
+	                exception
+	        );
+
+	        throw exception;
+
+	    } catch (RuntimeException exception) {
+
+	        executionLogger.failure(
+	                logContext,
+	                exception
+	        );
+
+	        throw ToolExecutionException.executionFailed(
+	                toolName,
+	                exception
+	        );
+	    }
+	}
+	
+	/**
      * 지정한 Tool을 실행할 수 있는지 확인합니다.
      *
      * @param toolName Tool 이름

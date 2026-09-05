@@ -52,6 +52,9 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
     private final List<AgentToolResultListener> toolResultListeners = new CopyOnWriteArrayList<>();
 
+    private static final String RUN_ID_ATTRIBUTE = "runId";
+    private static final String PROJECT_ID_ATTRIBUTE = "projectId";
+    
     public DefaultAgentExecutor(
             LlmClient llmClient,
             ToolExecutor toolExecutor,
@@ -627,34 +630,22 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             AgentRequest request,
             AgentContext agentContext) {
 
-        ToolContext.Builder builder =
-                ToolContext.builder();
+        ToolContext.Builder builder = ToolContext.builder();
 
+        if (request.hasRequestId()) builder.requestId(request.getRequestId());
 
-        if (request.hasRequestId()) {
-
-            builder.requestId(
-                    request.getRequestId()
-            );
+        if (request.getAttributes() != null && !request.getAttributes().isEmpty()) {
+            builder.attributes(request.getAttributes());
         }
 
+        String runId = getStringAttribute(request, RUN_ID_ATTRIBUTE);
+        String projectId = getStringAttribute(request, PROJECT_ID_ATTRIBUTE);
 
-        /*
-         * AgentRequest에 포함된 확장 속성을
-         * ToolContext로 전달합니다.
-         */
-        if (request.getAttributes() != null
-                && !request.getAttributes().isEmpty()) {
-
-            builder.attributes(
-                    request.getAttributes()
-            );
-        }
-
+        if (runId != null) builder.runId(runId);
+        if (projectId != null) builder.projectId(projectId);
 
         return builder.build();
     }
-
 
     /**
      * LLM Tool Call 응답을 Assistant 메시지로 변환합니다.
@@ -905,6 +896,17 @@ public final class DefaultAgentExecutor implements AgentExecutor {
         } catch (Exception exception) {
             System.err.println("[GomsBook AI] Tool result listener failed: " + exception.getMessage());
         }
+    }
+    
+    private String getStringAttribute(AgentRequest request, String name) {
+
+        if (request == null || request.getAttributes() == null) return null;
+
+        Object value = request.getAttributes().get(name);
+
+        if (!(value instanceof String text) || text.isBlank()) return null;
+
+        return text.trim();
     }
     
 }

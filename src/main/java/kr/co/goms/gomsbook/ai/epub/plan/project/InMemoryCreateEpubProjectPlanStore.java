@@ -3,7 +3,7 @@
  * All rights reserved.
  */
 
-package kr.co.goms.gomsbook.ai.epub.project.plan;
+package kr.co.goms.gomsbook.ai.epub.plan.project;
 
 import java.util.Map;
 import java.util.Optional;

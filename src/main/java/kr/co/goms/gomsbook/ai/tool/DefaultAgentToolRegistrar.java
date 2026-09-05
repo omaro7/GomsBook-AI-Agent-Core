@@ -9,12 +9,20 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
-import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlanService;
+import kr.co.goms.gomsbook.ai.epub.plan.project.CreateEpubProjectPlanService;
+import kr.co.goms.gomsbook.ai.epub.service.EpubStructureValidator;
+import kr.co.goms.gomsbook.ai.epub.service.LatestPublishedEpubResolver;
 import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.tool.accessibility.ValidateAccessibilityTool;
+import kr.co.goms.gomsbook.ai.tool.epub.author.CreateEpubAuthorTool;
+import kr.co.goms.gomsbook.ai.tool.epub.author.ReadEpubAuthorTool;
+import kr.co.goms.gomsbook.ai.tool.epub.author.UpdateEpubAuthorTool;
+import kr.co.goms.gomsbook.ai.tool.epub.copyright.CreateEpubCopyrightTool;
+import kr.co.goms.gomsbook.ai.tool.epub.copyright.ReadEpubCopyrightTool;
+import kr.co.goms.gomsbook.ai.tool.epub.copyright.UpdateEpubCopyrightTool;
 import kr.co.goms.gomsbook.ai.tool.epub.generation.chapter.CreateBasicXhtmlTool;
 import kr.co.goms.gomsbook.ai.tool.epub.inspect.InspectCurrentProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.inspect.InspectEpubTool;
@@ -56,11 +64,15 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     private final CreateEpubProjectPlanService createEpubProjectPlanService;
     private final Path epubProjectsRoot;
     
+    private final LatestPublishedEpubResolver latestPublishedEpubResolver;
+    private final EpubStructureValidator epubStructureValidator;
+    
     public DefaultAgentToolRegistrar(CurrentProjectProvider currentProjectProvider, PublishDirectoryProvider publishDirectoryProvider, EpubCheckValidator epubCheckValidator, 
     		AccessibilityValidator accessibilityValidator,
             AgentApprovalService approvalService,
             AgentEventPublisher eventPublisher,
-            CurrentProjectStore currentProjectStore, CreateEpubProjectPlanService createEpubProjectPlanService, Path epubProjectsRoot) {
+            CurrentProjectStore currentProjectStore, CreateEpubProjectPlanService createEpubProjectPlanService, Path epubProjectsRoot,
+            LatestPublishedEpubResolver latestPublishedEpubResolver, EpubStructureValidator epubStructureValidator) {
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
         this.epubCheckValidator = Objects.requireNonNull(epubCheckValidator, "epubCheckValidator must not be null");
@@ -70,6 +82,9 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         this.currentProjectStore = Objects.requireNonNull(currentProjectStore, "currentProjectStore must not be null");
         this.createEpubProjectPlanService = Objects.requireNonNull(createEpubProjectPlanService, "createEpubProjectPlanService must not be null");
         this.epubProjectsRoot = Objects.requireNonNull(epubProjectsRoot, "epubProjectsRoot must not be null").toAbsolutePath().normalize();
+        this.latestPublishedEpubResolver = Objects.requireNonNull(latestPublishedEpubResolver, "latestPublishedEpubResolver must not be null");
+        this.epubStructureValidator = Objects.requireNonNull(epubStructureValidator, "epubStructureValidator must not be null");
+        
      }
 
 
@@ -87,7 +102,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new InspectEpubTool());
         registerIfAbsent(registry, new InspectCurrentProjectTool(currentProjectProvider));
         registerIfAbsent(registry, new ReadEpubNavigationTool(currentProjectProvider));
-        registerIfAbsent(registry, new ValidateEpubStructureTool(currentProjectProvider, publishDirectoryProvider));
+        registerIfAbsent(registry, new ValidateEpubStructureTool(currentProjectProvider, publishDirectoryProvider, latestPublishedEpubResolver, epubStructureValidator));
         registerIfAbsent(registry, new InspectEpubImagesTool(currentProjectProvider));
 
         registerIfAbsent(registry, new ValidateEpubTool(null, null, epubCheckValidator, null, publishDirectoryProvider));
@@ -107,7 +122,6 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         
         registerIfAbsent(registry, new CreateEpubProjectPlanTool(createEpubProjectPlanService,approvalService));
 
-        
         registerIfAbsent(registry, new CreateEpubProjectTool(createEpubProjectPlanService, epubProjectsRoot));				// EPUB project root creation.
         registerIfAbsent(registry, new CreateEpubProjectStructureTool(createEpubProjectPlanService, epubProjectsRoot));		// EPUB project directory structure creation.
         registerIfAbsent(registry, new CreateEpubBaseFilesTool(createEpubProjectPlanService,epubProjectsRoot));				// EPUB project base files creation.
@@ -115,6 +129,14 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new SwitchCurrentEpubProjectTool(currentProjectStore, epubProjectsRoot));				// EPUB project switch
         
         registerIfAbsent(registry, new ApplyEpubTemplateTool(currentProjectProvider, approvalService));						// EPUB Template apply
+        
+        registerIfAbsent(registry, new ReadEpubCopyrightTool(currentProjectProvider));										// EPUB Copyright 내용 읽어오기
+        registerIfAbsent(registry, new UpdateEpubCopyrightTool(currentProjectProvider, approvalService));					// EPUB Copyright 수정
+        registerIfAbsent(registry, new CreateEpubCopyrightTool(currentProjectProvider, approvalService));					// EPUB Copyright 신규생성
+
+        registerIfAbsent(registry, new ReadEpubAuthorTool(currentProjectProvider));											// EPUB Author 내용 읽어오기
+        registerIfAbsent(registry, new CreateEpubAuthorTool(currentProjectProvider, approvalService));						// EPUB Author 신규생성
+        registerIfAbsent(registry, new UpdateEpubAuthorTool(currentProjectProvider, approvalService));						// EPUB Author 수정
         
     }
 

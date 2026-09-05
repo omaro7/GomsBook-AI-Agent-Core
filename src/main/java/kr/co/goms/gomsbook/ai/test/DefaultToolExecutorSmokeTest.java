@@ -3,6 +3,7 @@ package kr.co.goms.gomsbook.ai.test;
 import java.util.List;
 import java.util.Map;
 
+import kr.co.goms.gomsbook.ai.logging.ExecutionLogger;
 import kr.co.goms.gomsbook.ai.tool.AgentTool;
 import kr.co.goms.gomsbook.ai.tool.DefaultToolExecutor;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
@@ -10,6 +11,7 @@ import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
 import kr.co.goms.gomsbook.ai.tool.ToolRegistry;
 import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
+import kr.co.goms.gomsbook.ai.logging.NoOpExecutionLogger;
 
 public final class DefaultToolExecutorSmokeTest {
 
@@ -21,12 +23,12 @@ public final class DefaultToolExecutorSmokeTest {
         System.out.println("[GomsBook AI Core] DefaultToolExecutor smoke test start");
 
         ToolRegistry toolRegistry = new ToolRegistry();
-
         AgentTool echoTool = createEchoTool();
-
         toolRegistry.register(echoTool);
+        
+        ExecutionLogger executionLogger = new NoOpExecutionLogger();
 
-        DefaultToolExecutor toolExecutor = new DefaultToolExecutor(toolRegistry);
+        DefaultToolExecutor toolExecutor = new DefaultToolExecutor(toolRegistry, executionLogger);
 
         ToolRequest request = ToolRequest.builder().requestId("core-tool-executor-smoke-001").toolCallId("tool-call-001").toolName(TOOL_NAME).argument("message", MESSAGE).build();
 

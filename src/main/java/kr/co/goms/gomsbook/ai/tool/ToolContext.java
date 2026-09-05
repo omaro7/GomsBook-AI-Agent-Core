@@ -65,25 +65,18 @@ public final class ToolContext {
 
     private final String requestId;
     private final String sessionId;
+    private final String runId;
+    private final String projectId;
     private final Map<String, Object> attributes;
 
     private ToolContext(
             Builder builder) {
 
-        this.requestId =
-                normalizeOptional(
-                        builder.requestId
-                );
-
-        this.sessionId =
-                normalizeOptional(
-                        builder.sessionId
-                );
-
-        this.attributes =
-                immutableAttributes(
-                        builder.attributes
-                );
+    	this.requestId = normalizeOptional(builder.requestId);
+    	this.sessionId = normalizeOptional(builder.sessionId);
+    	this.runId = normalizeOptional(builder.runId);
+    	this.projectId = normalizeOptional(builder.projectId);
+    	this.attributes = immutableAttributes(builder.attributes);
     }
 
     /**
@@ -655,6 +648,22 @@ public final class ToolContext {
             );
         }
     }
+    
+    public String getRunId() {
+        return runId;
+    }
+
+    public String getProjectId() {
+        return projectId;
+    }
+    
+    public boolean hasRunId() {
+        return runId != null;
+    }
+
+    public boolean hasProjectId() {
+        return projectId != null;
+    }
 
     @Override
     public String toString() {
@@ -662,14 +671,11 @@ public final class ToolContext {
         return "ToolContext{"
                 + "requestId='" + requestId + '\''
                 + ", sessionId='" + sessionId + '\''
-                + ", projectRoot='"
-                + getProjectRoot()
-                + '\''
-                + ", currentFile='"
-                + getProjectRelativeCurrentFile()
-                + '\''
-                + ", attributeNames="
-                + attributes.keySet()
+                + ", runId='" + runId + '\''
+                + ", projectId='" + projectId + '\''
+                + ", projectRoot='" + getProjectRoot() + '\''
+                + ", currentFile='" + getProjectRelativeCurrentFile() + '\''
+                + ", attributeNames=" + attributes.keySet()
                 + '}';
     }
 
@@ -678,8 +684,10 @@ public final class ToolContext {
      */
     public static final class Builder {
 
-        private String requestId;
-        private String sessionId;
+    	private String requestId;
+    	private String sessionId;
+    	private String runId;
+    	private String projectId;
 
         private final Map<String, Object> attributes =
                 new LinkedHashMap<>();
@@ -690,17 +698,15 @@ public final class ToolContext {
         private Builder(
                 ToolContext source) {
 
-            this.requestId =
-                    source.requestId;
-
-            this.sessionId =
-                    source.sessionId;
+            this.requestId = source.requestId;
+            this.sessionId = source.sessionId;
+            this.runId = source.runId;
+            this.projectId = source.projectId;
 
             this.attributes.putAll(
                     source.attributes
             );
         }
-
         /**
          * Agent 요청 식별자를 설정합니다.
          */
@@ -724,6 +730,22 @@ public final class ToolContext {
 
             return this;
         }
+        
+        public Builder runId(
+                String runId) {
+
+            this.runId = runId;
+
+            return this;
+        }
+
+        public Builder projectId(
+                String projectId) {
+
+            this.projectId = projectId;
+
+            return this;
+        }        
 
         /**
          * 프로젝트 루트를 설정합니다.

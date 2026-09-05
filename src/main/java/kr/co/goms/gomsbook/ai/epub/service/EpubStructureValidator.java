@@ -5,7 +5,6 @@
 package kr.co.goms.gomsbook.ai.epub.service;
 
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,6 +17,7 @@ import org.w3c.dom.NodeList;
 
 import kr.co.goms.gomsbook.ai.epub.model.EpubStructureValidationIssue;
 import kr.co.goms.gomsbook.ai.epub.model.EpubStructureValidationResult;
+import kr.co.goms.gomsbook.ai.epub.policy.spine.EpubSpineOrderPolicy;
 
 
 public class EpubStructureValidator {
@@ -27,50 +27,43 @@ public class EpubStructureValidator {
 
     private final EpubArchivePackageReader packageReader;
 
-
-    public EpubStructureValidator() {
-
-        this(new EpubArchiveReader());
-    }
+    private final EpubSpineOrderPolicy spineOrderPolicy;
 
 
-    public EpubStructureValidator(
-            EpubArchiveReader archiveReader) {
-
-        this(archiveReader, new EpubArchivePackageReader(archiveReader));
+    public EpubStructureValidator(EpubSpineOrderPolicy spineOrderPolicy) {
+        this(new EpubArchiveReader(), spineOrderPolicy);
     }
 
 
     public EpubStructureValidator(
             EpubArchiveReader archiveReader,
-            EpubArchivePackageReader packageReader) {
+            EpubSpineOrderPolicy spineOrderPolicy) {
 
-        if (archiveReader == null) {
-
-            throw new IllegalArgumentException(
-                    "archiveReader must not be null.");
-        }
-
-        if (packageReader == null) {
-
-            throw new IllegalArgumentException(
-                    "packageReader must not be null.");
-        }
-
-        this.archiveReader = archiveReader;
-
-        this.packageReader = packageReader;
+        this(
+                archiveReader,
+                new EpubArchivePackageReader(archiveReader),
+                spineOrderPolicy);
     }
 
 
-    public EpubStructureValidationResult validate(
-            Path epubFile) {
+    public EpubStructureValidator(
+            EpubArchiveReader archiveReader,
+            EpubArchivePackageReader packageReader,
+            EpubSpineOrderPolicy spineOrderPolicy) {
 
-        if (epubFile == null) {
+        if (archiveReader == null) throw new IllegalArgumentException("archiveReader must not be null.");
+        if (packageReader == null) throw new IllegalArgumentException("packageReader must not be null.");
+        if (spineOrderPolicy == null) throw new IllegalArgumentException("spineOrderPolicy must not be null.");
 
-            throw new IllegalArgumentException(
-                    "epubFile must not be null.");
-        }
+        this.archiveReader = archiveReader;
+        this.packageReader = packageReader;
+        this.spineOrderPolicy = spineOrderPolicy;
+    }
+
+
+    public EpubStructureValidationResult validate(Path epubFile) {
+
+        if (epubFile == null) throw new IllegalArgumentException("epubFile must not be null.");
 
         EpubStructureValidationResult result = new EpubStructureValidationResult();
 
@@ -135,7 +128,6 @@ public class EpubStructureValidator {
         }
 
         Element manifestElement = findDirectChild(packageElement, "manifest");
-
         Element spineElement = findDirectChild(packageElement, "spine");
 
         if (manifestElement == null) {
@@ -194,7 +186,6 @@ public class EpubStructureValidator {
         NodeList children = manifestElement.getChildNodes();
 
         Set<String> ids = new HashSet<>();
-
         Set<String> hrefs = new HashSet<>();
 
         int itemCount = 0;
@@ -203,24 +194,14 @@ public class EpubStructureValidator {
 
             Element itemElement = asElement(children.item(index));
 
-            if (itemElement == null) {
-
-                continue;
-            }
-
-            if (!isElement(itemElement, "item")) {
-
-                continue;
-            }
+            if (itemElement == null) continue;
+            if (!isElement(itemElement, "item")) continue;
 
             itemCount++;
 
             String id = trimToNull(itemElement.getAttribute("id"));
-
             String href = trimToNull(itemElement.getAttribute("href"));
-
             String mediaType = trimToNull(itemElement.getAttribute("media-type"));
-
             String properties = trimToNull(itemElement.getAttribute("properties"));
 
             if (id == null) {
@@ -263,8 +244,7 @@ public class EpubStructureValidator {
 
                 String archivePath = resolveArchivePath(packagePath, href);
 
-                if (!isRemoteHref(href)
-                        && !archiveReader.exists(epubFile, archivePath)) {
+                if (!isRemoteHref(href) && !archiveReader.exists(epubFile, archivePath)) {
 
                     addError(
                             result,
@@ -288,11 +268,8 @@ public class EpubStructureValidator {
                 ManifestEntry entry = new ManifestEntry();
 
                 entry.id = id;
-
                 entry.href = href;
-
                 entry.mediaType = mediaType;
-
                 entry.properties = properties;
 
                 manifestEntries.putIfAbsent(id, entry);
@@ -313,20 +290,15 @@ public class EpubStructureValidator {
         Set<String> idrefs = new HashSet<>();
 
         int spineItemCount = 0;
+        int previousOrder = Integer.MIN_VALUE;
+        String previousHref = null;
 
         for (int index = 0; index < children.getLength(); index++) {
 
             Element itemrefElement = asElement(children.item(index));
 
-            if (itemrefElement == null) {
-
-                continue;
-            }
-
-            if (!isElement(itemrefElement, "itemref")) {
-
-                continue;
-            }
+            if (itemrefElement == null) continue;
+            if (!isElement(itemrefElement, "itemref")) continue;
 
             spineItemCount++;
 
@@ -365,6 +337,15 @@ public class EpubStructureValidator {
                 continue;
             }
 
+            validateSpineOrder(
+                    manifestEntry,
+                    previousOrder,
+                    previousHref,
+                    result);
+
+            previousOrder = spineOrderPolicy.getOrder(manifestEntry.href);
+            previousHref = manifestEntry.href;
+
             if (!isDirectSpineMediaType(manifestEntry.mediaType)) {
 
                 addError(
@@ -397,6 +378,30 @@ public class EpubStructureValidator {
     }
 
 
+    private void validateSpineOrder(
+            ManifestEntry manifestEntry,
+            int previousOrder,
+            String previousHref,
+            EpubStructureValidationResult result) {
+
+        if (manifestEntry == null || manifestEntry.href == null) return;
+
+        int currentOrder = spineOrderPolicy.getOrder(manifestEntry.href);
+
+        if (currentOrder >= previousOrder) return;
+
+        addError(
+                result,
+                "SPINE_ORDER_INVALID",
+                "EPUB spine reading order is invalid: "
+                        + manifestEntry.href
+                        + " must not appear after "
+                        + previousHref
+                        + ".",
+                manifestEntry.href);
+    }
+
+
     private void inspectNavigation(
             Map<String, ManifestEntry> manifestEntries,
             EpubStructureValidationResult result) {
@@ -407,17 +412,11 @@ public class EpubStructureValidator {
 
         for (ManifestEntry entry : manifestEntries.values()) {
 
-            if (!hasProperty(entry.properties, "nav")) {
-
-                continue;
-            }
+            if (!hasProperty(entry.properties, "nav")) continue;
 
             navigationCount++;
 
-            if (navigationEntry == null) {
-
-                navigationEntry = entry;
-            }
+            if (navigationEntry == null) navigationEntry = entry;
         }
 
         if (navigationCount == 0) {
@@ -440,13 +439,9 @@ public class EpubStructureValidator {
                     null);
         }
 
-        if (navigationEntry == null) {
-
-            return;
-        }
+        if (navigationEntry == null) return;
 
         result.setNavId(navigationEntry.id);
-
         result.setNavHref(navigationEntry.href);
 
         if (!"application/xhtml+xml".equalsIgnoreCase(navigationEntry.mediaType)) {
@@ -460,63 +455,38 @@ public class EpubStructureValidator {
     }
 
 
-    private boolean isDirectSpineMediaType(
-            String mediaType) {
+    private boolean isDirectSpineMediaType(String mediaType) {
 
-        if (mediaType == null) {
-
-            return false;
-        }
-
-        if ("application/xhtml+xml".equalsIgnoreCase(mediaType)) {
-
-            return true;
-        }
+        if (mediaType == null) return false;
+        if ("application/xhtml+xml".equalsIgnoreCase(mediaType)) return true;
 
         return "image/svg+xml".equalsIgnoreCase(mediaType);
     }
 
 
-    private boolean hasProperty(
-            String properties,
-            String expected) {
+    private boolean hasProperty(String properties, String expected) {
 
-        if (properties == null || expected == null) {
-
-            return false;
-        }
+        if (properties == null || expected == null) return false;
 
         String[] values = properties.trim().split("\\s+");
 
         for (String value : values) {
-
-            if (expected.equalsIgnoreCase(value)) {
-
-                return true;
-            }
+            if (expected.equalsIgnoreCase(value)) return true;
         }
 
         return false;
     }
 
 
-    private String resolveArchivePath(
-            String packagePath,
-            String href) {
+    private String resolveArchivePath(String packagePath, String href) {
 
-        if (href == null) {
-
-            return null;
-        }
+        if (href == null) return null;
 
         String normalizedHref = normalizeHref(href);
 
         int slashIndex = packagePath.lastIndexOf('/');
 
-        if (slashIndex < 0) {
-
-            return normalizedHref;
-        }
+        if (slashIndex < 0) return normalizedHref;
 
         String packageDirectory = packagePath.substring(0, slashIndex + 1);
 
@@ -526,38 +496,27 @@ public class EpubStructureValidator {
     }
 
 
-    private String normalizeHref(
-            String href) {
+    private String normalizeHref(String href) {
 
         String normalized = href.trim().replace('\\', '/');
 
-        while (normalized.startsWith("./")) {
-
-            normalized = normalized.substring(2);
-        }
+        while (normalized.startsWith("./")) normalized = normalized.substring(2);
 
         return normalized;
     }
 
 
-    private boolean isRemoteHref(
-            String href) {
+    private boolean isRemoteHref(String href) {
 
-        if (href == null) {
-
-            return false;
-        }
+        if (href == null) return false;
 
         String normalized = href.trim().toLowerCase();
 
-        return normalized.startsWith("http://")
-                || normalized.startsWith("https://");
+        return normalized.startsWith("http://") || normalized.startsWith("https://");
     }
 
 
-    private Element findDirectChild(
-            Element parent,
-            String localName) {
+    private Element findDirectChild(Element parent, String localName) {
 
         NodeList children = parent.getChildNodes();
 
@@ -565,62 +524,36 @@ public class EpubStructureValidator {
 
             Element element = asElement(children.item(index));
 
-            if (element == null) {
-
-                continue;
-            }
-
-            if (isElement(element, localName)) {
-
-                return element;
-            }
+            if (element == null) continue;
+            if (isElement(element, localName)) return element;
         }
 
         return null;
     }
 
 
-    private boolean isElement(
-            Element element,
-            String localName) {
+    private boolean isElement(Element element, String localName) {
 
-        if (element == null || localName == null) {
-
-            return false;
-        }
+        if (element == null || localName == null) return false;
 
         String elementLocalName = element.getLocalName();
 
-        if (elementLocalName != null) {
-
-            return localName.equalsIgnoreCase(elementLocalName);
-        }
+        if (elementLocalName != null) return localName.equalsIgnoreCase(elementLocalName);
 
         String tagName = element.getTagName();
 
         int colonIndex = tagName.indexOf(':');
 
-        if (colonIndex >= 0) {
-
-            tagName = tagName.substring(colonIndex + 1);
-        }
+        if (colonIndex >= 0) tagName = tagName.substring(colonIndex + 1);
 
         return localName.equalsIgnoreCase(tagName);
     }
 
 
-    private Element asElement(
-            Node node) {
+    private Element asElement(Node node) {
 
-        if (node == null) {
-
-            return null;
-        }
-
-        if (node.getNodeType() != Node.ELEMENT_NODE) {
-
-            return null;
-        }
+        if (node == null) return null;
+        if (node.getNodeType() != Node.ELEMENT_NODE) return null;
 
         return (Element) node;
     }
@@ -656,13 +589,9 @@ public class EpubStructureValidator {
     }
 
 
-    private String trimToNull(
-            String value) {
+    private String trimToNull(String value) {
 
-        if (value == null) {
-
-            return null;
-        }
+        if (value == null) return null;
 
         String trimmed = value.trim();
 
@@ -670,20 +599,13 @@ public class EpubStructureValidator {
     }
 
 
-    private String safeMessage(
-            Throwable throwable) {
+    private String safeMessage(Throwable throwable) {
 
-        if (throwable == null) {
-
-            return "Unknown EPUB structure validation error.";
-        }
+        if (throwable == null) return "Unknown EPUB structure validation error.";
 
         String message = throwable.getMessage();
 
-        if (message == null || message.isBlank()) {
-
-            return throwable.getClass().getSimpleName();
-        }
+        if (message == null || message.isBlank()) return throwable.getClass().getSimpleName();
 
         return message.trim();
     }
@@ -691,13 +613,9 @@ public class EpubStructureValidator {
 
     private static final class ManifestEntry {
 
-
         private String id;
-
         private String href;
-
         private String mediaType;
-
         private String properties;
     }
 }

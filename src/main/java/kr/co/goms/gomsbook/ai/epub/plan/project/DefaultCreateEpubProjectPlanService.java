@@ -3,7 +3,7 @@
  * All rights reserved.
  */
 
-package kr.co.goms.gomsbook.ai.epub.project.plan;
+package kr.co.goms.gomsbook.ai.epub.plan.project;
 
 /**
  * 신규 EPUB 프로젝트 생성 Plan Service 기본 구현체.

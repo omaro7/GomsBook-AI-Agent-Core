@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlan;
-import kr.co.goms.gomsbook.ai.epub.project.plan.CreateEpubProjectPlanService;
+import kr.co.goms.gomsbook.ai.epub.plan.project.CreateEpubProjectPlan;
+import kr.co.goms.gomsbook.ai.epub.plan.project.CreateEpubProjectPlanService;
 import kr.co.goms.gomsbook.ai.tool.AgentTool;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
 import kr.co.goms.gomsbook.ai.tool.ToolIssue;
