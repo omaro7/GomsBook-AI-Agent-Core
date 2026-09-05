@@ -6,6 +6,7 @@ package kr.co.goms.gomsbook.ai.epub.navigation.updater;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -27,6 +28,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import kr.co.goms.gomsbook.ai.epub.model.EpubNavigationItem;
+import kr.co.goms.gomsbook.ai.util.EpubXmlUtil;
 
 
 /**
@@ -45,7 +47,7 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         if (updateItem == null) throw new IllegalArgumentException("updateItem must not be null.");
 
-        Document document = readDocument(navigationPath);
+        Document document = EpubXmlUtil.readDocument(navigationPath);
         Element toc = requireTocNavigation(document);
         Element list = requireNavigationList(document, toc);
 
@@ -53,7 +55,7 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         removeDuplicateItems(list);
 
-        writeDocument(navigationPath, document);
+        EpubXmlUtil.writeDocument(navigationPath, document);
     }
 
 
@@ -64,13 +66,13 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         if (href == null || href.isBlank()) throw new IllegalArgumentException("href must not be empty.");
 
-        Document document = readDocument(navigationPath);
+        Document document = EpubXmlUtil.readDocument(navigationPath);
         Element toc = requireTocNavigation(document);
         Element list = requireNavigationList(document, toc);
 
         removeItemsByHref(list, href);
 
-        writeDocument(navigationPath, document);
+        EpubXmlUtil.writeDocument(navigationPath, document);
     }
 
 
@@ -81,7 +83,7 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         if (href == null || href.isBlank()) return false;
 
-        Document document = readDocument(navigationPath);
+        Document document = EpubXmlUtil.readDocument(navigationPath);
         Element toc = requireTocNavigation(document);
         Element list = requireNavigationList(document, toc);
 
@@ -96,7 +98,7 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         if (items == null || items.isEmpty()) return;
 
-        Document document = readDocument(navigationPath);
+        Document document = EpubXmlUtil.readDocument(navigationPath);
         Element toc = requireTocNavigation(document);
         Element list = requireNavigationList(document, toc);
 
@@ -106,7 +108,7 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         removeDuplicateItems(list);
 
-        writeDocument(navigationPath, document);
+        EpubXmlUtil.writeDocument(navigationPath, document);
     }
 
 
@@ -476,82 +478,6 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         return href.trim().replace('\\', '/');
     }
-
-
-    private Document readDocument(Path navigationPath) {
-
-        try {
-
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-            factory.setNamespaceAware(true);
-            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-            factory.setXIncludeAware(false);
-            factory.setExpandEntityReferences(false);
-
-            try {
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            try {
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            DocumentBuilder builder = factory.newDocumentBuilder();
-
-            try (InputStream inputStream = Files.newInputStream(navigationPath)) {
-                return builder.parse(inputStream);
-            }
-
-        } catch (Exception exception) {
-
-            throw new IllegalStateException("Failed to read EPUB navigation: " + navigationPath, exception);
-        }
-    }
-
-
-    private void writeDocument(Path navigationPath, Document document) {
-
-        try {
-
-            TransformerFactory factory = TransformerFactory.newInstance();
-
-            try {
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            try {
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            Transformer transformer = factory.newTransformer();
-
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-
-            try {
-                transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            try (OutputStream outputStream = Files.newOutputStream(navigationPath)) {
-                transformer.transform(new DOMSource(document), new StreamResult(outputStream));
-            }
-
-        } catch (Exception exception) {
-
-            throw new IllegalStateException("Failed to write EPUB navigation: " + navigationPath, exception);
-        }
-    }
-
 
     private void validateNavigationPath(Path navigationPath) {
 

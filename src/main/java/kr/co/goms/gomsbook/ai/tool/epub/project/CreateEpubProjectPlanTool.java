@@ -48,13 +48,15 @@ public final class CreateEpubProjectPlanTool
 
     private static final String DESCRIPTION =
             "Creates a proposal for a new EPUB project. "
-                    + "Use this tool immediately when the user asks to create "
-                    + "a new EPUB project. "
+                    + "Use this tool only when the user asks to create a new EPUB project for the first time. "
+                    + "Do not use this tool to create or modify individual content or resources "
+                    + "within the current EPUB project, including the table of contents, chapters, "
+                    + "author information, copyright information, quizzes, images, fonts, or other publication resources. "
+                    + "Use this tool immediately when the user asks to create a new EPUB project. "
                     + "Only determine the project name and project folder name. "
-                    + "Do not ask for a table of contents, chapters, book content, "
-                    + "images, fonts, author information, copyright information, "
-                    + "quiz information, or other publication resources before "
-                    + "using this tool. "
+                    + "Do not ask for a table of contents, chapters, book content, images, fonts, "
+                    + "author information, copyright information, quiz information, "
+                    + "or other publication resources before using this tool. "
                     + "The generated project plan requires user approval before "
                     + "any directory or file is created.";
 

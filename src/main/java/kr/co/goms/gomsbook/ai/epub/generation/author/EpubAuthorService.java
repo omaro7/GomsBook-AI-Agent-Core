@@ -57,6 +57,38 @@ public class EpubAuthorService {
         return xhtmlPath;
     }
 
+    public void delete(
+            String fileName,
+            Path packagePath,
+            Path navigationPath,
+            Path textDirectory) {
+
+        if (fileName == null || fileName.isBlank()) throw new IllegalArgumentException("fileName must not be empty.");
+        if (packagePath == null) throw new IllegalArgumentException("packagePath must not be null.");
+        if (textDirectory == null) throw new IllegalArgumentException("textDirectory must not be null.");
+
+        String normalizedFileName = fileName.trim();
+        Path normalizedTextDirectory = textDirectory.toAbsolutePath().normalize();
+        Path xhtmlPath = normalizedTextDirectory.resolve(normalizedFileName).normalize();
+
+        if (!xhtmlPath.startsWith(normalizedTextDirectory)) throw new IllegalArgumentException("Author XHTML must be inside the EPUB Text directory.");
+
+        String href = createHref(normalizedFileName);
+
+        removeNavigationIfExists(navigationPath, href);
+        removePackage(packagePath);
+        deleteXhtml(xhtmlPath);
+    }
+
+    private void removeNavigationIfExists(Path navigationPath, String href) {
+
+        if (navigationPath == null) return;
+        if (!Files.exists(navigationPath)) return;
+        if (!Files.isRegularFile(navigationPath)) return;
+
+        navigationUpdater.removeItem(navigationPath, href);
+    }
+
     private void updatePackage(
             Path packagePath,
             EpubAuthorPage page) {
@@ -105,7 +137,45 @@ public class EpubAuthorService {
                 createHref(page));
     }
 
+    private void removePackage(Path packagePath) {
+
+        packageUpdater.removeSpineItem(
+                packagePath,
+                AUTHOR_XHTML_ID);
+
+        packageUpdater.removeManifestItem(
+                packagePath,
+                AUTHOR_XHTML_ID);
+    }
+
+    private void removeNavigation(
+            Path navigationPath,
+            String href) {
+
+        navigationUpdater.removeItem(
+                navigationPath,
+                href);
+    }
+
+    private void deleteXhtml(Path xhtmlPath) {
+
+        try {
+
+            Files.deleteIfExists(xhtmlPath);
+
+        } catch (Exception exception) {
+
+            throw new IllegalStateException(
+                    "Failed to delete author XHTML: " + xhtmlPath,
+                    exception);
+        }
+    }
+
     private String createHref(EpubAuthorPage page) {
-        return "Text/" + page.getFileName();
+        return createHref(page.getFileName());
+    }
+
+    private String createHref(String fileName) {
+        return "Text/" + fileName;
     }
 }

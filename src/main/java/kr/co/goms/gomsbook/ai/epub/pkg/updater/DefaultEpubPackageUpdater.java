@@ -6,6 +6,7 @@ package kr.co.goms.gomsbook.ai.epub.pkg.updater;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -29,6 +30,7 @@ import org.w3c.dom.NodeList;
 import kr.co.goms.gomsbook.ai.epub.model.EpubManifestItem;
 import kr.co.goms.gomsbook.ai.epub.model.EpubSpineItem;
 import kr.co.goms.gomsbook.ai.epub.policy.spine.EpubSpineOrderPolicy;
+import kr.co.goms.gomsbook.ai.util.EpubXmlUtil;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -57,7 +59,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         if (resource == null) throw new IllegalArgumentException("resource must not be null.");
 
-        Document document = readDocument(packagePath);
+        Document document = EpubXmlUtil.readDocument(packagePath);
         Element manifest = requireElement(document, "manifest");
         Element spine = requireElement(document, "spine");
 
@@ -73,7 +75,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         
         validateAllSpineReferences(manifest, spine);
 
-        writeDocument(packagePath, document);
+        EpubXmlUtil.writeDocument(packagePath, document);
     }
 
 
@@ -84,7 +86,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         if (resourceId == null || resourceId.isBlank()) throw new IllegalArgumentException("resourceId must not be empty.");
 
-        Document document = readDocument(packagePath);
+        Document document = EpubXmlUtil.readDocument(packagePath);
         Element manifest = requireElement(document, "manifest");
         Element spine = requireElement(document, "spine");
 
@@ -100,7 +102,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         validateAllSpineReferences(manifest, spine);
 
-        writeDocument(packagePath, document);
+        EpubXmlUtil.writeDocument(packagePath, document);
     }
 
 
@@ -111,7 +113,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         if (item == null) throw new IllegalArgumentException("item must not be null.");
 
-        Document document = readDocument(packagePath);
+        Document document = EpubXmlUtil.readDocument(packagePath);
         Element manifest = requireElement(document, "manifest");
         Element spine = requireElement(document, "spine");
 
@@ -122,7 +124,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         removeDuplicateSpineItems(spine);
         sortSpineItems(manifest, spine);
 
-        writeDocument(packagePath, document);
+        EpubXmlUtil.writeDocument(packagePath, document);
     }
 
 
@@ -133,12 +135,12 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         if (idref == null || idref.isBlank()) throw new IllegalArgumentException("idref must not be empty.");
 
-        Document document = readDocument(packagePath);
+        Document document = EpubXmlUtil.readDocument(packagePath);
         Element spine = requireElement(document, "spine");
 
         removeSpineItemsByIdref(spine, idref.trim());
 
-        writeDocument(packagePath, document);
+        EpubXmlUtil.writeDocument(packagePath, document);
     }
 
 
@@ -149,7 +151,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         if (resourceId == null || resourceId.isBlank()) return false;
 
-        Document document = readDocument(packagePath);
+        Document document = EpubXmlUtil.readDocument(packagePath);
         Element manifest = requireElement(document, "manifest");
 
         return findManifestItemById(manifest, resourceId.trim()) != null;
@@ -163,7 +165,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         if (idref == null || idref.isBlank()) return false;
 
-        Document document = readDocument(packagePath);
+        Document document = EpubXmlUtil.readDocument(packagePath);
         Element spine = requireElement(document, "spine");
 
         return findSpineItemByIdref(spine, idref.trim()) != null;
@@ -182,7 +184,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         if ((resources == null || resources.isEmpty()) && (spineItems == null || spineItems.isEmpty())) return;
 
-        Document document = readDocument(packagePath);
+        Document document = EpubXmlUtil.readDocument(packagePath);
 
         Element manifest = requireElement(document, "manifest");
         Element spine = requireElement(document, "spine");
@@ -207,7 +209,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         validateAllSpineReferences(manifest, spine);
 
-        writeDocument(packagePath, document);
+        EpubXmlUtil.writeDocument(packagePath, document);
     }
 
 
@@ -682,81 +684,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         return (Element) nodes.item(0);
     }
-
-
-    private Document readDocument(Path packagePath) {
-
-        try {
-
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-            factory.setNamespaceAware(true);
-            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-            factory.setXIncludeAware(false);
-            factory.setExpandEntityReferences(false);
-
-            try {
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            try {
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            DocumentBuilder builder = factory.newDocumentBuilder();
-
-            try (InputStream inputStream = Files.newInputStream(packagePath)) {
-                return builder.parse(inputStream);
-            }
-
-        } catch (Exception exception) {
-
-            throw new IllegalStateException("Failed to read EPUB package: " + packagePath, exception);
-        }
-    }
-
-
-    private void writeDocument(Path packagePath, Document document) {
-
-        try {
-
-            TransformerFactory factory = TransformerFactory.newInstance();
-
-            try {
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            try {
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            Transformer transformer = factory.newTransformer();
-
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-
-            try {
-                transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-            } catch (IllegalArgumentException exception) {
-            }
-
-            try (OutputStream outputStream = Files.newOutputStream(packagePath)) {
-                transformer.transform(new DOMSource(document), new StreamResult(outputStream));
-            }
-
-        } catch (Exception exception) {
-
-            throw new IllegalStateException("Failed to write EPUB package: " + packagePath, exception);
-        }
-    }
-
 
     private void validatePackagePath(Path packagePath) {
 

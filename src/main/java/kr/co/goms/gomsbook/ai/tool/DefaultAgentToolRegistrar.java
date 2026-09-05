@@ -18,6 +18,7 @@ import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.tool.accessibility.ValidateAccessibilityTool;
 import kr.co.goms.gomsbook.ai.tool.epub.author.CreateEpubAuthorTool;
+import kr.co.goms.gomsbook.ai.tool.epub.author.DeleteEpubAuthorTool;
 import kr.co.goms.gomsbook.ai.tool.epub.author.ReadEpubAuthorTool;
 import kr.co.goms.gomsbook.ai.tool.epub.author.UpdateEpubAuthorTool;
 import kr.co.goms.gomsbook.ai.tool.epub.copyright.CreateEpubCopyrightTool;
@@ -137,6 +138,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new ReadEpubAuthorTool(currentProjectProvider));											// EPUB Author 내용 읽어오기
         registerIfAbsent(registry, new CreateEpubAuthorTool(currentProjectProvider, approvalService));						// EPUB Author 신규생성
         registerIfAbsent(registry, new UpdateEpubAuthorTool(currentProjectProvider, approvalService));						// EPUB Author 수정
+        registerIfAbsent(registry, new DeleteEpubAuthorTool(currentProjectProvider, approvalService));						// EPUB Author 삭제
         
     }
 

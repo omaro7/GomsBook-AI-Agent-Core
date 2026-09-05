@@ -20,6 +20,7 @@ kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalRequest.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaLlmException.class
 kr\co\goms\gomsbook\ai\epub\service\PublishDirectoryProvider.class
 kr\co\goms\gomsbook\ai\tool\epub\navigation\ReadEpubNavigationTool.class
+kr\co\goms\gomsbook\ai\conversation\repository\AiConversationMessageRepository.class
 kr\co\goms\gomsbook\ai\epub\service\EpubArchivePackageReader.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubCheckValidator$Level.class
 kr\co\goms\gomsbook\ai\test\ValidateAccessibilityToolSmokeTest.class
@@ -33,6 +34,7 @@ kr\co\goms\gomsbook\ai\epub\model\EpubNavigation$Builder.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationRequest$Builder.class
 kr\co\goms\gomsbook\ai\epub\model\EpubPackage.class
 kr\co\goms\gomsbook\ai\json\GsonJsonMapper.class
+kr\co\goms\gomsbook\ai\conversation\model\ConversationHistoryMessage.class
 kr\co\goms\gomsbook\ai\test\DefaultAgentToolCallingSmokeTest$1.class
 kr\co\goms\gomsbook\ai\tool\epub\manifest\CompareEpubStyleManifestTool.class
 kr\co\goms\gomsbook\ai\agent\event\AgentEventType.class
@@ -50,6 +52,8 @@ kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubProjectApprovalHandler.c
 kr\co\goms\gomsbook\ai\epub\generation\copyright\EpubCopyrightXhtmlGenerator.class
 kr\co\goms\gomsbook\ai\epub\model\EpubLayoutType.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaLlmClient.class
+kr\co\goms\gomsbook\ai\conversation\repository\jdbc\JdbcAiConversationRepository.class
+kr\co\goms\gomsbook\ai\tool\epub\author\DeleteEpubAuthorTool.class
 kr\co\goms\gomsbook\ai\llm\LlmRole.class
 kr\co\goms\gomsbook\ai\tool\ToolRequest.class
 kr\co\goms\gomsbook\ai\epub\model\EpubManifest$Builder.class
@@ -77,6 +81,7 @@ kr\co\goms\gomsbook\ai\agent\AgentException.class
 kr\co\goms\gomsbook\ai\epub\model\EpubStructureValidationIssue.class
 kr\co\goms\gomsbook\ai\epub\service\EpubCheckRunner.class
 kr\co\goms\gomsbook\ai\epub\model\EpubMetadata$Builder.class
+kr\co\goms\gomsbook\ai\conversation\repository\jdbc\JdbcAiConversationMessageRepository.class
 kr\co\goms\gomsbook\ai\epub\model\EpubCheckResult.class
 kr\co\goms\gomsbook\ai\epub\validation\CompositeEpubValidator$Builder.class
 kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalService.class
@@ -104,6 +109,7 @@ kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubBaseFilesTool.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaChatResponse.class
 kr\co\goms\gomsbook\ai\tool\ToolDefinitionMappingException.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityRuleContext.class
+kr\co\goms\gomsbook\ai\conversation\model\AiConversationMessageRole.class
 kr\co\goms\gomsbook\ai\epub\plan\project\CreateEpubProjectPlanStore.class
 kr\co\goms\gomsbook\ai\test\InspectEpubToolSmokeTest.class
 kr\co\goms\gomsbook\ai\agent\approval\DefaultAgentApprovalExecutor.class
@@ -113,6 +119,7 @@ kr\co\goms\gomsbook\ai\tool\epub\generation\chapter\CreateBasicXhtmlTool.class
 kr\co\goms\gomsbook\ai\tool\ToolStatus.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityRule.class
 kr\co\goms\gomsbook\ai\epub\generation\author\EpubAuthorXhtmlGenerator.class
+kr\co\goms\gomsbook\ai\conversation\model\AiConversationMessage.class
 kr\co\goms\gomsbook\ai\tool\DefaultToolExecutor.class
 kr\co\goms\gomsbook\ai\agent\approval\payload\EpubAuthorApprovalPayload.class
 kr\co\goms\gomsbook\ai\tool\ToolDefinitionMapper.class
@@ -130,6 +137,7 @@ kr\co\goms\gomsbook\ai\tool\DefaultToolDefinitionMapper.class
 kr\co\goms\gomsbook\ai\epub\model\EpubPackage$Builder.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaChatMessage.class
 kr\co\goms\gomsbook\ai\epub\model\EpubResourceType.class
+kr\co\goms\gomsbook\ai\util\EpubXmlUtil.class
 kr\co\goms\gomsbook\ai\epub\service\EpubArchiveReader.class
 kr\co\goms\gomsbook\ai\tool\ToolIssueSeverity.class
 kr\co\goms\gomsbook\ai\tool\AgentTool.class
@@ -149,6 +157,7 @@ kr\co\goms\gomsbook\ai\epub\author\EpubAuthorContent.class
 kr\co\goms\gomsbook\ai\epub\model\EpubOrientation.class
 kr\co\goms\gomsbook\ai\epub\copyright\EpubCopyrightLocator.class
 kr\co\goms\gomsbook\ai\tool\epub\inspect\InspectCurrentProjectTool.class
+kr\co\goms\gomsbook\ai\conversation\repository\AiConversationRepository.class
 kr\co\goms\gomsbook\ai\epub\model\EpubPublicationType.class
 kr\co\goms\gomsbook\ai\epub\model\EpubMetadataItem$Kind.class
 kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubProjectPlanTool.class
@@ -177,6 +186,7 @@ kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityLocation$Builder.cl
 kr\co\goms\gomsbook\ai\json\GsonJsonMapper$1.class
 kr\co\goms\gomsbook\ai\project\DefaultCurrentProjectProvider.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubValidationIssue$Severity.class
+kr\co\goms\gomsbook\ai\conversation\model\AiConversation.class
 kr\co\goms\gomsbook\ai\epub\model\EpubSpread.class
 kr\co\goms\gomsbook\ai\epub\plan\project\DefaultCreateEpubProjectPlanService.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityLocation.class
@@ -189,6 +199,7 @@ kr\co\goms\gomsbook\ai\test\DefaultAgentExecutorSmokeTest$1.class
 kr\co\goms\gomsbook\ai\tool\xhtml\ApplyXhtmlTool.class
 kr\co\goms\gomsbook\ai\tool\epub\manifest\CompareEpubStyleManifestTool$ManifestStyle.class
 kr\co\goms\gomsbook\ai\test\AgentToolRegistrarSmokeTest.class
+kr\co\goms\gomsbook\ai\conversation\service\ConversationService.class
 kr\co\goms\gomsbook\ai\project\InMemoryCurrentProjectStore.class
 kr\co\goms\gomsbook\ai\epub\model\EpubMetadataItem$TextDirection.class
 kr\co\goms\gomsbook\ai\logging\ExecutionLogger.class
@@ -243,6 +254,7 @@ kr\co\goms\gomsbook\ai\agent\approval\handler\ApplyEpubTemplateApprovalHandler.c
 kr\co\goms\gomsbook\ai\agent\event\AgentEventPublisher.class
 kr\co\goms\gomsbook\ai\tool\epub\pkg\ReadEpubPackageTool.class
 kr\co\goms\gomsbook\ai\epub\validation\CompositeEpubValidator$1.class
+kr\co\goms\gomsbook\ai\agent\approval\handler\DeleteEpubAuthorApprovalHandler.class
 kr\co\goms\gomsbook\ai\agent\AgentRequest.class
 kr\co\goms\gomsbook\ai\epub\plan\copyright\CreateEpubCopyrightPlan.class
 kr\co\goms\gomsbook\ai\epub\plan\project\InMemoryCreateEpubProjectPlanStore.class
