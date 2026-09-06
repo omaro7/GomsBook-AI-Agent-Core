@@ -29,6 +29,8 @@ import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 import kr.co.goms.gomsbook.ai.tool.DefaultAgentToolRegistrar;
 import kr.co.goms.gomsbook.ai.tool.AgentToolRegistrar;
 
+
+import com.google.gson.Gson;
 public final class AgentToolRegistrarSmokeTest {
 
 	public static void main(String[] args) {
@@ -62,12 +64,14 @@ public final class AgentToolRegistrarSmokeTest {
 	    EpubSpineOrderPolicy spineOrderPolicy = new DefaultEpubSpineOrderPolicy();
 	    LatestPublishedEpubResolver latestPublishedEpubResolver = new LatestPublishedEpubResolver();
 	    EpubStructureValidator epubStructureValidator = new EpubStructureValidator(spineOrderPolicy);
+	    Gson gson = new Gson();
 	    
 	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(
 	    		currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
 	    		approvalService, eventPublisher, 
 	    		currentProjectStore, createEpubProjectPlanService, epubProjectsRoot,
-	    		latestPublishedEpubResolver, epubStructureValidator
+	    		latestPublishedEpubResolver, epubStructureValidator,
+	    		gson
 	    );
 
 	    

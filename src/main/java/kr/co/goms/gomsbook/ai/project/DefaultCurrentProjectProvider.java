@@ -61,7 +61,7 @@ public final class DefaultCurrentProjectProvider implements CurrentProjectProvid
         }
 
         Path textDirectory = resolveTextDirectory(contentRoot);
-        Path navigationFile = resolveNavigationFile(contentRoot);
+        Path navigationFile = resolveNavigationFile(textDirectory);
 
         return new EpubProjectContext(projectName, projectRoot, textDirectory, navigationFile, packageDocument);
     }
@@ -148,16 +148,13 @@ public final class DefaultCurrentProjectProvider implements CurrentProjectProvid
     /**
      * Resolves nav.xhtml.
      */
-    private Path resolveNavigationFile(Path contentRoot) {
+    private Path resolveNavigationFile(Path textDirectory) {
 
-        Path defaultNavigation = contentRoot.resolve(DEFAULT_NAVIGATION_FILE);
+        Path defaultNavigation = textDirectory.resolve(DEFAULT_NAVIGATION_FILE);
 
-        if (Files.isRegularFile(defaultNavigation)) {
+        if (Files.isRegularFile(defaultNavigation)) return defaultNavigation;
 
-            return defaultNavigation;
-        }
-
-        try (var stream = Files.walk(contentRoot)) {
+        try (var stream = Files.walk(textDirectory)) {
 
             return stream
                     .filter(Files::isRegularFile)
@@ -166,7 +163,7 @@ public final class DefaultCurrentProjectProvider implements CurrentProjectProvid
                     .findFirst()
                     .orElse(defaultNavigation);
 
-        } catch (Exception e) {
+        } catch (Exception exception) {
 
             return defaultNavigation;
         }

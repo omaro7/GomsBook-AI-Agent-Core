@@ -245,22 +245,9 @@ public final class ReadEpubNavigationTool
      * └─ Text/
      *    └─ nav.xhtml
      */
-    private Path resolveNavFile(
-            EpubProjectContext project) {
-
-        Path textDirectory =
-                Objects.requireNonNull(
-                        project.getTextDirectory(),
-                        "TEXT directory must not be null"
-                );
-
-
-        return textDirectory
-                .resolve(
-                        "nav.xhtml"
-                )
-                .toAbsolutePath()
-                .normalize();
+    private Path resolveNavFile(EpubProjectContext project) {
+    	
+        return project.getNavigationFile();
     }
 
 

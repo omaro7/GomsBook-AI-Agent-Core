@@ -34,11 +34,15 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\ag
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\CreateBasicXhtmlApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubAuthorApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubCopyrightApprovalHandler.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubNavigationApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubProjectApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\DeleteEpubAuthorApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\UpdateEpubAuthorApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\UpdateEpubCopyrightApprovalHandler.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\handler\UpdateEpubNavigationApprovalHandler.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\payload\EpubAuthorApprovalPayload.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\payload\EpubNavigationApprovalPayload.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\approval\payload\UpdateEpubNavigationApprovalPayload.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\DefaultAgentExecutor.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\event\AgentEvent.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\event\AgentEventListener.java
@@ -68,6 +72,9 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\ep
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\generation\copyright\EpubCopyrightPage.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\generation\copyright\EpubCopyrightService.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\generation\copyright\EpubCopyrightXhtmlGenerator.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\generation\navigation\DefaultEpubNavigationXhtmlGenerator.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\generation\navigation\EpubNavigationService.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\generation\navigation\EpubNavigationXhtmlGenerator.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\generation\xhtml\BasicXhtmlGenerator.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\generation\xhtml\BasicXhtmlService.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\generation\xhtml\DefaultBasicXhtmlGenerator.java
@@ -202,7 +209,9 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\to
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\manifest\CompareEpubTextManifestTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\manifest\ReadEpubManifestTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\metadata\ReadEpubMetadataTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\navigation\CreateEpubNavigationTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\navigation\ReadEpubNavigationTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\navigation\UpdateEpubNavigationTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\pkg\ReadEpubPackageTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\ApplyEpubTemplateTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubBaseFilesTool.java

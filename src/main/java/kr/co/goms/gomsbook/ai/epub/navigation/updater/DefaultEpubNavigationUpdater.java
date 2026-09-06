@@ -1,26 +1,17 @@
 /*
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
+ *
+ * Project: GomsBook AI
+ * AI-powered EPUB authoring, validation, accessibility, and publishing automation.
  */
 package kr.co.goms.gomsbook.ai.epub.navigation.updater;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -30,7 +21,6 @@ import org.w3c.dom.NodeList;
 import kr.co.goms.gomsbook.ai.epub.model.EpubNavigationItem;
 import kr.co.goms.gomsbook.ai.util.EpubXmlUtil;
 
-
 /**
  * EPUB nav.xhtml의 TOC 항목을 갱신하는 기본 구현체입니다.
  */
@@ -39,10 +29,8 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
     private static final String XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
     private static final String EPUB_NAMESPACE = "http://www.idpf.org/2007/ops";
 
-
     @Override
     public void addOrUpdateItem(Path navigationPath, EpubNavigationUpdateItem updateItem) {
-
         validateNavigationPath(navigationPath);
 
         if (updateItem == null) throw new IllegalArgumentException("updateItem must not be null.");
@@ -52,16 +40,13 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         Element list = requireNavigationList(document, toc);
 
         applyUpdate(document, list, updateItem);
-
         removeDuplicateItems(list);
 
         EpubXmlUtil.writeDocument(navigationPath, document);
     }
 
-
     @Override
     public void removeItem(Path navigationPath, String href) {
-
         validateNavigationPath(navigationPath);
 
         if (href == null || href.isBlank()) throw new IllegalArgumentException("href must not be empty.");
@@ -75,10 +60,8 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         EpubXmlUtil.writeDocument(navigationPath, document);
     }
 
-
     @Override
     public boolean containsItem(Path navigationPath, String href) {
-
         validateNavigationPath(navigationPath);
 
         if (href == null || href.isBlank()) return false;
@@ -90,10 +73,8 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         return findItemByHref(list, href) != null;
     }
 
-
     @Override
     public void update(Path navigationPath, List<EpubNavigationUpdateItem> items) {
-
         validateNavigationPath(navigationPath);
 
         if (items == null || items.isEmpty()) return;
@@ -111,16 +92,13 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         EpubXmlUtil.writeDocument(navigationPath, document);
     }
 
-
     /**
      * batch 내부 href 중복은 마지막 값을 사용합니다.
      */
     private List<EpubNavigationUpdateItem> normalizeItems(List<EpubNavigationUpdateItem> items) {
-
         Map<String, EpubNavigationUpdateItem> byHref = new LinkedHashMap<>();
 
         for (EpubNavigationUpdateItem item : items) {
-
             if (item == null) continue;
             if (item.getItem() == null) continue;
 
@@ -134,12 +112,14 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         return List.copyOf(byHref.values());
     }
 
-
     private void applyUpdate(Document document, Element list, EpubNavigationUpdateItem updateItem) {
+        if (updateItem == null) throw new IllegalArgumentException("updateItem must not be null.");
 
         EpubNavigationItem item = updateItem.getItem();
 
         if (item == null) throw new IllegalArgumentException("Navigation item must not be null.");
+
+        validateRelativePosition(updateItem);
 
         Element existingByHref = findItemByHref(list, item.getHref());
         Element existingById = item.getId().map(id -> findItemById(list, id)).orElse(null);
@@ -152,12 +132,34 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         updateNavigationItem(target, item);
 
-        if (target.getParentNode() != list) insertItem(list, target, updateItem);
+        /*
+         * 기존 항목도 position 규칙을 적용할 수 있도록
+         * 현재 위치에서 제거한 후 다시 삽입합니다.
+         */
+        if (target.getParentNode() == list) list.removeChild(target);
+
+        insertItem(list, target, updateItem);
     }
 
+    /**
+     * BEFORE / AFTER 위치 변경에서 자기 자신을 기준 항목으로
+     * 지정하는 잘못된 요청을 방지합니다.
+     */
+    private void validateRelativePosition(EpubNavigationUpdateItem updateItem) {
+        EpubNavigationInsertPosition position = updateItem.getPosition();
+
+        if (position != EpubNavigationInsertPosition.BEFORE && position != EpubNavigationInsertPosition.AFTER) return;
+
+        EpubNavigationItem item = updateItem.getItem();
+        String href = normalizeHref(item.getHref());
+        String referenceHref = normalizeHref(updateItem.getReferenceHref());
+
+        if (href.equals(referenceHref)) {
+            throw new IllegalStateException("Navigation item cannot be positioned relative to itself: " + item.getHref());
+        }
+    }
 
     private Element createNavigationItem(Document document, EpubNavigationItem item) {
-
         Element li = document.createElementNS(XHTML_NAMESPACE, "li");
         Element anchor = document.createElementNS(XHTML_NAMESPACE, "a");
 
@@ -168,9 +170,7 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         return li;
     }
 
-
     private void updateNavigationItem(Element listItem, EpubNavigationItem item) {
-
         String itemId = item.getId().orElse(null);
 
         if (itemId != null) listItem.setAttribute("id", itemId);
@@ -187,72 +187,67 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         anchor.setTextContent(item.getLabel());
     }
 
-
     private void insertItem(Element list, Element item, EpubNavigationUpdateItem updateItem) {
-
         EpubNavigationInsertPosition position = updateItem.getPosition();
 
         if (position == EpubNavigationInsertPosition.FIRST) {
-
             Node first = findFirstListItem(list);
 
-            if (first != null) {
-                list.insertBefore(item, first);
-            } else {
-                list.appendChild(item);
-            }
+            if (first != null) list.insertBefore(item, first);
+            else list.appendChild(item);
 
             return;
         }
 
         if (position == EpubNavigationInsertPosition.BEFORE) {
+            Element reference = requireReferenceItem(list, updateItem);
 
-            Element reference = findItemByHref(list, updateItem.getReferenceHref());
-
-            if (reference != null) {
-                list.insertBefore(item, reference);
-            } else {
-                list.appendChild(item);
-            }
+            list.insertBefore(item, reference);
 
             return;
         }
 
         if (position == EpubNavigationInsertPosition.AFTER) {
+            Element reference = requireReferenceItem(list, updateItem);
 
-            Element reference = findItemByHref(list, updateItem.getReferenceHref());
-
-            if (reference != null) {
-                insertAfter(list, item, reference);
-            } else {
-                list.appendChild(item);
-            }
+            insertAfter(list, item, reference);
 
             return;
         }
 
+        /*
+         * LAST 또는 기본 위치는 마지막에 삽입합니다.
+         */
         list.appendChild(item);
     }
 
+    private Element requireReferenceItem(Element list, EpubNavigationUpdateItem updateItem) {
+        String referenceHref = updateItem.getReferenceHref();
 
-    private void insertAfter(Element parent, Element newItem, Element reference) {
-
-        Node next = reference.getNextSibling();
-
-        if (next != null) {
-            parent.insertBefore(newItem, next);
-        } else {
-            parent.appendChild(newItem);
+        if (referenceHref == null || referenceHref.isBlank()) {
+            throw new IllegalStateException("Navigation reference href must not be empty for position: " + updateItem.getPosition());
         }
+
+        Element reference = findItemByHref(list, referenceHref);
+
+        if (reference == null) {
+            throw new IllegalStateException("Navigation reference item does not exist: " + referenceHref);
+        }
+
+        return reference;
     }
 
+    private void insertAfter(Element parent, Element newItem, Element reference) {
+        Node next = reference.getNextSibling();
+
+        if (next != null) parent.insertBefore(newItem, next);
+        else parent.appendChild(newItem);
+    }
 
     private Node findFirstListItem(Element list) {
-
         NodeList children = list.getChildNodes();
 
         for (int index = 0; index < children.getLength(); index++) {
-
             Node node = children.item(index);
 
             if (!(node instanceof Element)) continue;
@@ -265,17 +260,13 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         return null;
     }
 
-
     private Element findItemByHref(Element list, String href) {
-
         if (href == null || href.isBlank()) return null;
 
         String normalizedHref = normalizeHref(href);
-
         NodeList children = list.getChildNodes();
 
         for (int index = 0; index < children.getLength(); index++) {
-
             Node node = children.item(index);
 
             if (!(node instanceof Element)) continue;
@@ -294,15 +285,12 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         return null;
     }
 
-
     private Element findItemById(Element list, String id) {
-
         if (id == null || id.isBlank()) return null;
 
         NodeList children = list.getChildNodes();
 
         for (int index = 0; index < children.getLength(); index++) {
-
             Node node = children.item(index);
 
             if (!(node instanceof Element)) continue;
@@ -316,13 +304,10 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         return null;
     }
 
-
     private Element findDirectAnchor(Element listItem) {
-
         NodeList children = listItem.getChildNodes();
 
         for (int index = 0; index < children.getLength(); index++) {
-
             Node node = children.item(index);
 
             if (!(node instanceof Element)) continue;
@@ -335,15 +320,11 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         return null;
     }
 
-
     private void removeItemsByHref(Element list, String href) {
-
         String normalizedHref = normalizeHref(href);
-
         NodeList children = list.getChildNodes();
 
         for (int index = children.getLength() - 1; index >= 0; index--) {
-
             Node node = children.item(index);
 
             if (!(node instanceof Element)) continue;
@@ -360,15 +341,12 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         }
     }
 
-
     private void removeItemElement(Element list, Element item) {
-
         if (item == null) return;
         if (item.getParentNode() != list) return;
 
         list.removeChild(item);
     }
-
 
     /**
      * href / id 중복을 제거합니다.
@@ -376,14 +354,11 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
      * 뒤쪽 항목을 우선 유지합니다.
      */
     private void removeDuplicateItems(Element list) {
-
         Map<String, Boolean> hrefs = new LinkedHashMap<>();
         Map<String, Boolean> ids = new LinkedHashMap<>();
-
         NodeList children = list.getChildNodes();
 
         for (int index = children.getLength() - 1; index >= 0; index--) {
-
             Node node = children.item(index);
 
             if (!(node instanceof Element)) continue;
@@ -403,9 +378,7 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
             boolean idDuplicated = !id.isBlank() && ids.containsKey(id);
 
             if (hrefDuplicated || idDuplicated) {
-
                 list.removeChild(element);
-
                 continue;
             }
 
@@ -414,18 +387,14 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         }
     }
 
-
     /**
      * epub:type="toc"인 nav 요소를 찾습니다.
      */
     private Element requireTocNavigation(Document document) {
-
         NodeList nodes = document.getElementsByTagNameNS("*", "nav");
 
         for (int index = 0; index < nodes.getLength(); index++) {
-
             Element nav = (Element) nodes.item(index);
-
             String epubType = nav.getAttributeNS(EPUB_NAMESPACE, "type");
 
             if (epubType == null || epubType.isBlank()) epubType = nav.getAttribute("epub:type");
@@ -436,16 +405,13 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         throw new IllegalStateException("EPUB TOC navigation was not found.");
     }
 
-
     /**
      * TOC nav의 최상위 ol을 반환합니다.
      */
     private Element requireNavigationList(Document document, Element toc) {
-
         NodeList children = toc.getChildNodes();
 
         for (int index = 0; index < children.getLength(); index++) {
-
             Node node = children.item(index);
 
             if (!(node instanceof Element)) continue;
@@ -462,25 +428,20 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         return list;
     }
 
-
     private boolean isElement(Element element, String localName) {
-
         if (element == null) return false;
         if (localName.equals(element.getLocalName())) return true;
 
         return localName.equals(element.getNodeName());
     }
 
-
     private String normalizeHref(String href) {
-
         if (href == null) return "";
 
         return href.trim().replace('\\', '/');
     }
 
     private void validateNavigationPath(Path navigationPath) {
-
         if (navigationPath == null) throw new IllegalArgumentException("navigationPath must not be null.");
         if (!Files.exists(navigationPath)) throw new IllegalStateException("EPUB navigation does not exist: " + navigationPath);
         if (!Files.isRegularFile(navigationPath)) throw new IllegalStateException("EPUB navigation is not a file: " + navigationPath);
