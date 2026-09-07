@@ -11,6 +11,5 @@ package kr.co.goms.gomsbook.ai.agent.approval;
 @FunctionalInterface
 public interface AgentApprovalHandler {
 
-    void execute(
-            AgentApproval approval);
+    void execute(AgentApproval approval);
 }

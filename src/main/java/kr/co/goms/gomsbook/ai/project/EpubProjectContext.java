@@ -72,6 +72,17 @@ public final class EpubProjectContext {
         return packageDocument;
     }
 
+    /**
+     * Path targetStylesheet = project.getContentRoot()
+        .resolve("Styles")
+        .resolve("style1.css");
+     * @return
+     */
+    public Path getContentRoot() {
+
+        return packageDocument.getParent();
+    }
+    
 
     /**
      * Returns whether the TEXT directory exists.

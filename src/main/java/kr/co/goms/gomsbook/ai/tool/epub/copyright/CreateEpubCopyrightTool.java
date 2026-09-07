@@ -24,7 +24,7 @@ import kr.co.goms.gomsbook.ai.epub.generation.copyright.DefaultEpubCopyrightXhtm
 import kr.co.goms.gomsbook.ai.epub.generation.copyright.EpubCopyrightPage;
 import kr.co.goms.gomsbook.ai.epub.generation.copyright.EpubCopyrightXhtmlGenerator;
 import kr.co.goms.gomsbook.ai.epub.plan.copyright.CreateEpubCopyrightPlan;
-import kr.co.goms.gomsbook.ai.epub.resource.EpubStylesheetResolver;
+import kr.co.goms.gomsbook.ai.epub.resource.stylesheet.EpubStylesheetResolver;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
 import kr.co.goms.gomsbook.ai.tool.AgentTool;

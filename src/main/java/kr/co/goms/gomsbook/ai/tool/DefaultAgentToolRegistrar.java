@@ -37,6 +37,9 @@ import kr.co.goms.gomsbook.ai.tool.epub.metadata.ReadEpubMetadataTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.CreateEpubNavigationTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.ReadEpubNavigationTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.UpdateEpubNavigationTool;
+import kr.co.goms.gomsbook.ai.tool.epub.part.CreateEpubPartTool;
+import kr.co.goms.gomsbook.ai.tool.epub.part.ReadEpubPartTool;
+import kr.co.goms.gomsbook.ai.tool.epub.part.UpdateEpubPartTool;
 import kr.co.goms.gomsbook.ai.tool.epub.pkg.ReadEpubPackageTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.ApplyEpubTemplateTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubBaseFilesTool;
@@ -44,6 +47,7 @@ import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectPlanTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectStructureTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.SwitchCurrentEpubProjectTool;
+import kr.co.goms.gomsbook.ai.tool.epub.resource.ApplyEpubStylesheetTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubStructureTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubTool;
@@ -136,6 +140,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new SwitchCurrentEpubProjectTool(currentProjectStore, epubProjectsRoot));				// EPUB project switch
         
         registerIfAbsent(registry, new ApplyEpubTemplateTool(currentProjectProvider, approvalService));						// EPUB Template apply
+        registerIfAbsent(registry, new ApplyEpubStylesheetTool(currentProjectProvider, approvalService));					// EPUB Stylesheet apply
         
         registerIfAbsent(registry, new ReadEpubCopyrightTool(currentProjectProvider));										// EPUB Copyright 내용 읽어오기
         registerIfAbsent(registry, new UpdateEpubCopyrightTool(currentProjectProvider, approvalService));					// EPUB Copyright 수정
@@ -148,7 +153,11 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
 
         registerIfAbsent(registry, new ReadEpubNavigationTool(currentProjectProvider));										// EPUB Navigaton 읽기
         registerIfAbsent(registry, new CreateEpubNavigationTool(currentProjectProvider, approvalService));					// EPUB Navigaton 신규생성
-        registerIfAbsent(registry, new UpdateEpubNavigationTool(currentProjectProvider, approvalService, gson)); // EPUB Navigation 수정
+        registerIfAbsent(registry, new UpdateEpubNavigationTool(currentProjectProvider, approvalService, gson)); 			// EPUB Navigation 수정
+
+        registerIfAbsent(registry, new CreateEpubPartTool(currentProjectProvider, approvalService));						// EPUB Part 신규생성
+        registerIfAbsent(registry, new ReadEpubPartTool(currentProjectProvider));											// EPUB Part 읽기
+        registerIfAbsent(registry, new UpdateEpubPartTool(currentProjectProvider, approvalService));						// EPUB Part 수정
         
         
     }

@@ -2,7 +2,7 @@
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
  */
-package kr.co.goms.gomsbook.ai.epub.resource;
+package kr.co.goms.gomsbook.ai.epub.resource.stylesheet;
 
 import java.io.IOException;
 import java.nio.file.Files;

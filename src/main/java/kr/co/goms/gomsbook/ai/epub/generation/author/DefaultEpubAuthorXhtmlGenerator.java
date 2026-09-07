@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import kr.co.goms.gomsbook.ai.epub.resource.EpubStylesheetResolver;
+import kr.co.goms.gomsbook.ai.epub.resource.stylesheet.EpubStylesheetResolver;
 
 public class DefaultEpubAuthorXhtmlGenerator implements EpubAuthorXhtmlGenerator {
 
