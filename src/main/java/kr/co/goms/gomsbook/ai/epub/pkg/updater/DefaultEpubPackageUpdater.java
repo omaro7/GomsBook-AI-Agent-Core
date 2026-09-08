@@ -4,23 +4,15 @@
  */
 package kr.co.goms.gomsbook.ai.epub.pkg.updater;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -28,19 +20,18 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import kr.co.goms.gomsbook.ai.epub.model.EpubManifestItem;
+import kr.co.goms.gomsbook.ai.epub.model.EpubMetadataItem;
 import kr.co.goms.gomsbook.ai.epub.model.EpubSpineItem;
 import kr.co.goms.gomsbook.ai.epub.policy.spine.EpubSpineOrderPolicy;
 import kr.co.goms.gomsbook.ai.util.EpubXmlUtil;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-
 /**
- * EPUB package document(content.opf)의 manifest / spine을 갱신합니다.
+ * EPUB package document(content.opf)의 metadata / manifest / spine을 갱신합니다.
  */
 public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
     private static final String OPF_NAMESPACE = "http://www.idpf.org/2007/opf";
+    private static final String DC_NAMESPACE = "http://purl.org/dc/elements/1.1/";
 
     private final EpubSpineOrderPolicy spineOrderPolicy;
 
@@ -50,14 +41,42 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
         this.spineOrderPolicy = spineOrderPolicy;
     }
-    
+
+    @Override
+    public void addManifestItem(Path packagePath, EpubManifestItem resource) {
+
+        validatePackagePath(packagePath);
+        validateManifestItem(resource);
+
+        Document document = EpubXmlUtil.readDocument(packagePath);
+        Element manifest = requireElement(document, "manifest");
+
+        String resourceId = resource.getId();
+        String resourceHref = normalizeHref(resource.getHref());
+
+        if (findManifestItemById(manifest, resourceId) != null) throw new IllegalStateException("Manifest item id already exists: " + resourceId);
+        if (findManifestItemByHref(manifest, resourceHref) != null) throw new IllegalStateException("Manifest item href already exists: " + resourceHref);
+
+        Element item = document.createElementNS(OPF_NAMESPACE, "item");
+
+        item.setAttribute("id", resourceId);
+        item.setAttribute("href", resourceHref);
+        item.setAttribute("media-type", resource.getMediaType());
+
+        writeProperties(item, resource);
+        writeFallback(item, resource);
+        writeMediaOverlay(item, resource);
+
+        manifest.appendChild(item);
+
+        EpubXmlUtil.writeDocument(packagePath, document);
+    }
 
     @Override
     public void addOrUpdateManifestItem(Path packagePath, EpubManifestItem resource) {
 
         validatePackagePath(packagePath);
-
-        if (resource == null) throw new IllegalArgumentException("resource must not be null.");
+        validateManifestItem(resource);
 
         Document document = EpubXmlUtil.readDocument(packagePath);
         Element manifest = requireElement(document, "manifest");
@@ -72,12 +91,10 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         removeDuplicateSpineItems(spine);
 
         sortSpineItems(manifest, spine);
-        
         validateAllSpineReferences(manifest, spine);
 
         EpubXmlUtil.writeDocument(packagePath, document);
     }
-
 
     @Override
     public void removeManifestItem(Path packagePath, String resourceId) {
@@ -91,7 +108,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         Element spine = requireElement(document, "spine");
 
         String normalizedId = resourceId.trim();
-
         Element existing = findManifestItemById(manifest, normalizedId);
 
         if (existing == null) return;
@@ -105,6 +121,148 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         EpubXmlUtil.writeDocument(packagePath, document);
     }
 
+    @Override
+    public void removeByHrefIfExists(Path packagePath, String href) {
+
+        validatePackagePath(packagePath);
+
+        if (href == null || href.isBlank()) throw new IllegalArgumentException("href must not be empty.");
+
+        Document document = EpubXmlUtil.readDocument(packagePath);
+        Element manifest = requireElement(document, "manifest");
+        Element spine = requireElement(document, "spine");
+
+        String normalizedHref = normalizeHref(href);
+        Element manifestItem = findManifestItemByHref(manifest, normalizedHref);
+        String resourceId = null;
+        boolean changed = false;
+
+        if (manifestItem != null) {
+
+            resourceId = manifestItem.getAttribute("id");
+
+            manifest.removeChild(manifestItem);
+
+            changed = true;
+        }
+
+        if (resourceId == null || resourceId.isBlank()) resourceId = resolveResourceIdFromHref(normalizedHref);
+        if (resourceId != null && !resourceId.isBlank()) changed = removeSpineItemsByIdrefIfExists(spine, resourceId) || changed;
+        if (!changed) return;
+
+        validateAllSpineReferences(manifest, spine);
+
+        EpubXmlUtil.writeDocument(packagePath, document);
+    }
+
+    @Override
+    public void addMetadata(Path packagePath, EpubMetadataItem item) {
+
+        validatePackagePath(packagePath);
+        validateMetadataItem(item);
+
+        Document document = EpubXmlUtil.readDocument(packagePath);
+        Element metadata = requireElement(document, "metadata");
+
+        List<Element> matches = findMetadataItems(
+                metadata,
+                item.getElementName(),
+                item.getValue(),
+                item.getId().orElse(null),
+                item.getProperty().orElse(null),
+                item.getRefines().orElse(null),
+                item.getScheme().orElse(null));
+
+        if (!matches.isEmpty()) return;
+
+        Element element = createMetadataElement(document, item);
+
+        writeMetadataItem(element, item);
+
+        metadata.appendChild(element);
+
+        EpubXmlUtil.writeDocument(packagePath, document);
+    }
+
+    @Override
+    public boolean updateMetadata(
+            Path packagePath,
+            String name,
+            String targetValue,
+            String id,
+            String property,
+            String refines,
+            String scheme,
+            EpubMetadataItem replacement) {
+
+        validatePackagePath(packagePath);
+        validateMetadataItem(replacement);
+
+        String normalizedName = EpubXmlUtil.trimToNull(name);
+
+        if (normalizedName == null) throw new IllegalArgumentException("name must not be empty.");
+
+        Document document = EpubXmlUtil.readDocument(packagePath);
+        Element metadata = requireElement(document, "metadata");
+
+        List<Element> matches = findMetadataItems(
+                metadata,
+                normalizedName,
+                EpubXmlUtil.trimToNull(targetValue),
+                EpubXmlUtil.trimToNull(id),
+                EpubXmlUtil.trimToNull(property),
+                EpubXmlUtil.normalizeRefines(refines),
+                EpubXmlUtil.trimToNull(scheme));
+
+        if (matches.isEmpty()) return false;
+        if (matches.size() > 1) throw new IllegalStateException("Metadata selector is ambiguous. matched=" + matches.size() + ", name=" + normalizedName + ", property=" + property + ", targetValue=" + targetValue);
+
+        Element existing = matches.get(0);
+
+        replaceMetadataElement(document, metadata, existing, replacement);
+
+        EpubXmlUtil.writeDocument(packagePath, document);
+
+        return true;
+    }
+
+    @Override
+    public boolean removeMetadataIfExists(
+            Path packagePath,
+            String name,
+            String targetValue,
+            String id,
+            String property,
+            String refines,
+            String scheme) {
+
+        validatePackagePath(packagePath);
+
+        String normalizedName = EpubXmlUtil.trimToNull(name);
+
+        if (normalizedName == null) throw new IllegalArgumentException("name must not be empty.");
+
+        Document document = EpubXmlUtil.readDocument(packagePath);
+        Element metadata = requireElement(document, "metadata");
+
+        List<Element> matches = findMetadataItems(
+                metadata,
+                normalizedName,
+                EpubXmlUtil.trimToNull(targetValue),
+                EpubXmlUtil.trimToNull(id),
+                EpubXmlUtil.trimToNull(property),
+                EpubXmlUtil.normalizeRefines(refines),
+                EpubXmlUtil.trimToNull(scheme));
+
+        if (matches.isEmpty()) return false;
+        if (matches.size() > 1) throw new IllegalStateException("Metadata selector is ambiguous. matched=" + matches.size() + ", name=" + normalizedName + ", property=" + property + ", targetValue=" + targetValue);
+
+        metadata.removeChild(matches.get(0));
+
+        EpubXmlUtil.writeDocument(packagePath, document);
+
+        return true;
+    }
 
     @Override
     public void addOrUpdateSpineItem(Path packagePath, EpubSpineItem item) {
@@ -127,7 +285,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         EpubXmlUtil.writeDocument(packagePath, document);
     }
 
-
     @Override
     public void removeSpineItem(Path packagePath, String idref) {
 
@@ -143,6 +300,82 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         EpubXmlUtil.writeDocument(packagePath, document);
     }
 
+    @Override
+    public void addSpineItemref(Path packagePath, String idref, int targetIndex) {
+
+        validatePackagePath(packagePath);
+
+        String normalizedIdref = normalizeIdref(idref);
+
+        Document document = EpubXmlUtil.readDocument(packagePath);
+        Element manifest = requireElement(document, "manifest");
+        Element spine = requireElement(document, "spine");
+
+        validateSpineReference(manifest, normalizedIdref);
+
+        if (findSpineItemByIdref(spine, normalizedIdref) != null) throw new IllegalStateException("Spine itemref already exists: " + normalizedIdref);
+
+        List<Element> items = findSpineItemrefs(spine);
+
+        validateInsertIndex(targetIndex, items.size());
+
+        Element itemref = document.createElementNS(OPF_NAMESPACE, "itemref");
+
+        itemref.setAttribute("idref", normalizedIdref);
+
+        insertSpineItemref(spine, itemref, items, targetIndex);
+
+        EpubXmlUtil.writeDocument(packagePath, document);
+    }
+
+    @Override
+    public boolean removeSpineItemrefIfExists(Path packagePath, String idref) {
+
+        validatePackagePath(packagePath);
+
+        String normalizedIdref = normalizeIdref(idref);
+
+        Document document = EpubXmlUtil.readDocument(packagePath);
+        Element spine = requireElement(document, "spine");
+        Element itemref = findSpineItemByIdref(spine, normalizedIdref);
+
+        if (itemref == null) return false;
+
+        spine.removeChild(itemref);
+
+        EpubXmlUtil.writeDocument(packagePath, document);
+
+        return true;
+    }
+
+    @Override
+    public void moveSpineItemref(Path packagePath, String idref, int targetIndex) {
+
+        validatePackagePath(packagePath);
+
+        String normalizedIdref = normalizeIdref(idref);
+
+        Document document = EpubXmlUtil.readDocument(packagePath);
+        Element spine = requireElement(document, "spine");
+        List<Element> items = findSpineItemrefs(spine);
+        Element itemref = findSpineItemByIdref(spine, normalizedIdref);
+
+        if (itemref == null) throw new IllegalStateException("Spine itemref does not exist: " + normalizedIdref);
+
+        validateMoveIndex(targetIndex, items.size());
+
+        int currentIndex = items.indexOf(itemref);
+
+        if (currentIndex == targetIndex) return;
+
+        spine.removeChild(itemref);
+
+        List<Element> remainingItems = findSpineItemrefs(spine);
+
+        insertSpineItemref(spine, itemref, remainingItems, targetIndex);
+
+        EpubXmlUtil.writeDocument(packagePath, document);
+    }
 
     @Override
     public boolean containsManifestItem(Path packagePath, String resourceId) {
@@ -157,7 +390,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         return findManifestItemById(manifest, resourceId.trim()) != null;
     }
 
-
     @Override
     public boolean containsSpineItem(Path packagePath, String idref) {
 
@@ -171,12 +403,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         return findSpineItemByIdref(spine, idref.trim()) != null;
     }
 
-
-    /**
-     * manifest / spine을 한 번에 갱신합니다.
-     *
-     * content.opf를 1회 읽고 1회 저장합니다.
-     */
     @Override
     public void update(Path packagePath, List<EpubManifestItem> resources, List<EpubSpineItem> spineItems) {
 
@@ -185,7 +411,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         if ((resources == null || resources.isEmpty()) && (spineItems == null || spineItems.isEmpty())) return;
 
         Document document = EpubXmlUtil.readDocument(packagePath);
-
         Element manifest = requireElement(document, "manifest");
         Element spine = requireElement(document, "spine");
 
@@ -195,29 +420,19 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         Map<String, String> idMappings = new LinkedHashMap<>();
 
         updateManifestItems(document, manifest, normalizedResources, idMappings);
-
         updateSpineReferences(spine, idMappings);
-
         validateSpineReferences(manifest, normalizedSpineItems);
-
         updateSpineItems(document, spine, normalizedSpineItems);
 
         removeDuplicateManifestItems(manifest);
         removeDuplicateSpineItems(spine);
 
         sortSpineItems(manifest, spine);
-
         validateAllSpineReferences(manifest, spine);
 
         EpubXmlUtil.writeDocument(packagePath, document);
     }
 
-
-    /**
-     * Batch 내부 manifest 중복을 정리합니다.
-     *
-     * id / href 중복은 마지막 Resource를 사용합니다.
-     */
     private List<EpubManifestItem> normalizeResources(List<EpubManifestItem> resources) {
 
         if (resources == null || resources.isEmpty()) return List.of();
@@ -247,10 +462,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         return List.copyOf(byId.values());
     }
 
-
-    /**
-     * Batch 내부 spine idref 중복은 마지막 값을 사용합니다.
-     */
     private List<EpubSpineItem> normalizeSpineItems(List<EpubSpineItem> spineItems) {
 
         if (spineItems == null || spineItems.isEmpty()) return List.of();
@@ -267,18 +478,12 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         return List.copyOf(byIdref.values());
     }
 
-
-    private void updateManifestItems(
-            Document document,
-            Element manifest,
-            List<EpubManifestItem> resources,
-            Map<String, String> idMappings) {
+    private void updateManifestItems(Document document, Element manifest, List<EpubManifestItem> resources, Map<String, String> idMappings) {
 
         if (resources == null || resources.isEmpty()) return;
 
         for (EpubManifestItem resource : resources) updateManifestItem(document, manifest, resource, idMappings);
     }
-
 
     private void updateSpineItems(Document document, Element spine, List<EpubSpineItem> spineItems) {
 
@@ -287,17 +492,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         for (EpubSpineItem item : spineItems) updateSpineItem(document, spine, item);
     }
 
-
-    /**
-     * manifest Resource를 add-or-update 합니다.
-     *
-     * 동일 href에 다른 id가 있으면 old id -> new id 매핑을 기록합니다.
-     */
-    private void updateManifestItem(
-            Document document,
-            Element manifest,
-            EpubManifestItem resource,
-            Map<String, String> idMappings) {
+    private void updateManifestItem(Document document, Element manifest, EpubManifestItem resource, Map<String, String> idMappings) {
 
         Element byId = findManifestItemById(manifest, resource.getId());
         Element byHref = findManifestItemByHref(manifest, resource.getHref());
@@ -306,9 +501,7 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
             String oldId = byHref.getAttribute("id");
 
-            if (oldId != null && !oldId.isBlank() && !oldId.equals(resource.getId())) {
-                idMappings.put(oldId, resource.getId());
-            }
+            if (oldId != null && !oldId.isBlank() && !oldId.equals(resource.getId())) idMappings.put(oldId, resource.getId());
 
             manifest.removeChild(byHref);
         }
@@ -318,11 +511,12 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         if (existing == null) {
 
             existing = document.createElementNS(OPF_NAMESPACE, "item");
+
             manifest.appendChild(existing);
         }
 
         existing.setAttribute("id", resource.getId());
-        existing.setAttribute("href", resource.getHref());
+        existing.setAttribute("href", normalizeHref(resource.getHref()));
         existing.setAttribute("media-type", resource.getMediaType());
 
         writeProperties(existing, resource);
@@ -330,6 +524,110 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         writeMediaOverlay(existing, resource);
     }
 
+    private Element createMetadataElement(Document document, EpubMetadataItem item) {
+
+        if (item.isDublinCore()) return document.createElementNS(DC_NAMESPACE, item.getElementName());
+        if (item.isMetaProperty()) return document.createElementNS(OPF_NAMESPACE, "meta");
+
+        throw new IllegalArgumentException("Unsupported EPUB metadata item: " + item.getElementName());
+    }
+
+    private void replaceMetadataElement(
+            Document document,
+            Element metadata,
+            Element existing,
+            EpubMetadataItem replacement) {
+
+        Element replacementElement = createMetadataElement(document, replacement);
+
+        writeMetadataItem(replacementElement, replacement);
+
+        metadata.replaceChild(replacementElement, existing);
+    }
+
+    private List<Element> findMetadataItems(
+            Element metadata,
+            String name,
+            String targetValue,
+            String id,
+            String property,
+            String refines,
+            String scheme) {
+
+        String normalizedName = EpubXmlUtil.trimToNull(name);
+        String normalizedTargetValue = EpubXmlUtil.trimToNull(targetValue);
+        String normalizedId = EpubXmlUtil.trimToNull(id);
+        String normalizedProperty = EpubXmlUtil.trimToNull(property);
+        String normalizedRefines = EpubXmlUtil.normalizeRefines(refines);
+        String normalizedScheme = EpubXmlUtil.trimToNull(scheme);
+
+        List<Element> matches = new ArrayList<>();
+        NodeList children = metadata.getChildNodes();
+
+        for (int index = 0; index < children.getLength(); index++) {
+
+            Node node = children.item(index);
+
+            if (!(node instanceof Element)) continue;
+
+            Element element = (Element) node;
+
+            if (!matchesMetadataName(element, normalizedName)) continue;
+            if (normalizedTargetValue != null && !normalizedTargetValue.equals(EpubXmlUtil.trimToNull(element.getTextContent()))) continue;
+            if (normalizedId != null && !normalizedId.equals(EpubXmlUtil.trimToNull(element.getAttribute("id")))) continue;
+            if (normalizedProperty != null && !normalizedProperty.equals(EpubXmlUtil.trimToNull(element.getAttribute("property")))) continue;
+            if (normalizedRefines != null && !normalizedRefines.equals(EpubXmlUtil.normalizeRefines(element.getAttribute("refines")))) continue;
+            if (normalizedScheme != null && !normalizedScheme.equals(EpubXmlUtil.trimToNull(element.getAttribute("scheme")))) continue;
+
+            matches.add(element);
+        }
+
+        return matches;
+    }
+
+    private boolean matchesMetadataName(Element element, String name) {
+
+        if (element == null || name == null) return false;
+
+        if ("meta".equals(name)) return isElement(element, "meta");
+        if (!name.startsWith("dc:")) return false;
+
+        String localName = name.substring(3);
+
+        if (!localName.equals(element.getLocalName()) && !name.equals(element.getNodeName())) return false;
+
+        String namespace = element.getNamespaceURI();
+
+        return namespace == null || namespace.isBlank() || DC_NAMESPACE.equals(namespace);
+    }
+
+    private void writeMetadataItem(Element element, EpubMetadataItem item) {
+
+        element.setTextContent(item.getValue());
+
+        for (Map.Entry<String, String> attribute : item.toXmlAttributes().entrySet()) {
+
+            String name = attribute.getKey();
+            String value = attribute.getValue();
+
+            if ("xml:lang".equals(name)) {
+
+                element.setAttributeNS(XMLConstants.XML_NS_URI, "xml:lang", value);
+
+                continue;
+            }
+
+            element.setAttribute(name, value);
+        }
+    }
+
+    private void validateMetadataItem(EpubMetadataItem item) {
+
+        if (item == null) throw new IllegalArgumentException("item must not be null.");
+        if (item.getElementName() == null || item.getElementName().isBlank()) throw new IllegalArgumentException("metadata elementName must not be empty.");
+        if (item.getValue() == null || item.getValue().isBlank()) throw new IllegalArgumentException("metadata value must not be empty.");
+        if (!item.isDublinCore() && !item.isMetaProperty()) throw new IllegalArgumentException("Unsupported metadata item: " + item.getElementName());
+    }
 
     private void updateSpineItem(Document document, Element spine, EpubSpineItem item) {
 
@@ -338,37 +636,22 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         if (existing == null) {
 
             existing = document.createElementNS(OPF_NAMESPACE, "itemref");
+
             spine.appendChild(existing);
         }
 
         existing.setAttribute("idref", item.getIdref());
 
-        if (item.getId().isPresent()) {
-            existing.setAttribute("id", item.getId().get());
-        } else {
-            existing.removeAttribute("id");
-        }
+        if (item.getId().isPresent()) existing.setAttribute("id", item.getId().get());
+        else existing.removeAttribute("id");
 
-        if (item.shouldWriteLinearAttribute()) {
-            existing.setAttribute("linear", "no");
-        } else {
-            existing.removeAttribute("linear");
-        }
+        if (item.shouldWriteLinearAttribute()) existing.setAttribute("linear", "no");
+        else existing.removeAttribute("linear");
 
-        if (item.shouldWriteProperties()) {
-            existing.setAttribute("properties", item.getPropertiesValue());
-        } else {
-            existing.removeAttribute("properties");
-        }
+        if (item.shouldWriteProperties()) existing.setAttribute("properties", item.getPropertiesValue());
+        else existing.removeAttribute("properties");
     }
 
-
-    /**
-     * manifest id가 변경되었을 경우 기존 spine idref도 변경합니다.
-     *
-     * 예:
-     * quiz-old -> quiz
-     */
     private void updateSpineReferences(Element spine, Map<String, String> idMappings) {
 
         if (idMappings == null || idMappings.isEmpty()) return;
@@ -392,22 +675,11 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         }
     }
 
-
-    /**
-     * 연속 ID 변경도 처리합니다.
-     *
-     * old -> new
-     * new -> final
-     *
-     * 결과:
-     * old -> final
-     */
     private String resolveMappedId(String id, Map<String, String> idMappings) {
 
         if (id == null || idMappings == null || idMappings.isEmpty()) return id;
 
         String current = id;
-
         int guard = 0;
 
         while (idMappings.containsKey(current) && guard < 100) {
@@ -423,12 +695,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         return current;
     }
 
-
-    /**
-     * manifest의 ID/HREF 중복을 제거합니다.
-     *
-     * 뒤쪽 항목을 우선 유지합니다.
-     */
     private void removeDuplicateManifestItems(Element manifest) {
 
         Map<String, Boolean> ids = new LinkedHashMap<>();
@@ -461,12 +727,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         }
     }
 
-
-    /**
-     * spine의 idref 중복을 제거합니다.
-     *
-     * 뒤쪽 항목을 우선 유지합니다.
-     */
     private void removeDuplicateSpineItems(Element spine) {
 
         Map<String, Boolean> idrefs = new LinkedHashMap<>();
@@ -496,10 +756,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         }
     }
 
-
-    /**
-     * 특정 manifest 항목 삭제 시 해당 spine itemref도 제거합니다.
-     */
     private void removeSpineItemsByIdref(Element spine, String idref) {
 
         NodeList children = spine.getChildNodes();
@@ -513,11 +769,33 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
             Element element = (Element) node;
 
             if (!isElement(element, "itemref")) continue;
-
             if (idref.equals(element.getAttribute("idref"))) spine.removeChild(element);
         }
     }
 
+    private boolean removeSpineItemsByIdrefIfExists(Element spine, String idref) {
+
+        boolean removed = false;
+        NodeList children = spine.getChildNodes();
+
+        for (int index = children.getLength() - 1; index >= 0; index--) {
+
+            Node node = children.item(index);
+
+            if (!(node instanceof Element)) continue;
+
+            Element element = (Element) node;
+
+            if (!isElement(element, "itemref")) continue;
+            if (!idref.equals(element.getAttribute("idref"))) continue;
+
+            spine.removeChild(element);
+
+            removed = true;
+        }
+
+        return removed;
+    }
 
     private void validateSpineReferences(Element manifest, List<EpubSpineItem> spineItems) {
 
@@ -526,20 +804,14 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         for (EpubSpineItem item : spineItems) validateSpineReference(manifest, item.getIdref());
     }
 
-
     private void validateSpineReference(Element manifest, String idref) {
 
         if (idref == null || idref.isBlank()) throw new IllegalStateException("Spine idref must not be empty.");
-
         if (findManifestItemById(manifest, idref) != null) return;
 
         throw new IllegalStateException("Spine idref does not exist in manifest: " + idref);
     }
 
-
-    /**
-     * 최종 OPF 전체 spine -> manifest 정합성을 검증합니다.
-     */
     private void validateAllSpineReferences(Element manifest, Element spine) {
 
         NodeList children = spine.getChildNodes();
@@ -560,6 +832,13 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         }
     }
 
+    private void validateManifestItem(EpubManifestItem resource) {
+
+        if (resource == null) throw new IllegalArgumentException("resource must not be null.");
+        if (resource.getId() == null || resource.getId().isBlank()) throw new IllegalArgumentException("resource id must not be empty.");
+        if (resource.getHref() == null || resource.getHref().isBlank()) throw new IllegalArgumentException("resource href must not be empty.");
+        if (resource.getMediaType() == null || resource.getMediaType().isBlank()) throw new IllegalArgumentException("resource mediaType must not be empty.");
+    }
 
     private Element findManifestItemById(Element manifest, String resourceId) {
 
@@ -580,11 +859,9 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         return null;
     }
 
-
     private Element findManifestItemByHref(Element manifest, String href) {
 
         String normalizedHref = normalizeHref(href);
-
         NodeList children = manifest.getChildNodes();
 
         for (int index = 0; index < children.getLength(); index++) {
@@ -605,7 +882,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         return null;
     }
 
-
     private Element findSpineItemByIdref(Element spine, String idref) {
 
         NodeList children = spine.getChildNodes();
@@ -625,6 +901,37 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         return null;
     }
 
+    private List<Element> findSpineItemrefs(Element spine) {
+
+        List<Element> items = new ArrayList<>();
+        NodeList children = spine.getChildNodes();
+
+        for (int index = 0; index < children.getLength(); index++) {
+
+            Node node = children.item(index);
+
+            if (!(node instanceof Element element)) continue;
+            if (!isElement(element, "itemref")) continue;
+
+            items.add(element);
+        }
+
+        return items;
+    }
+
+    private void insertSpineItemref(Element spine, Element itemref, List<Element> items, int targetIndex) {
+
+        if (targetIndex >= items.size()) {
+
+            spine.appendChild(itemref);
+
+            return;
+        }
+
+        Element referenceItem = items.get(targetIndex);
+
+        spine.insertBefore(itemref, referenceItem);
+    }
 
     private void writeProperties(Element element, EpubManifestItem resource) {
 
@@ -638,65 +945,18 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         element.setAttribute("properties", String.join(" ", resource.getProperties()));
     }
 
-
     private void writeFallback(Element element, EpubManifestItem resource) {
 
-        if (resource.getFallbackId().isPresent()) {
-            element.setAttribute("fallback", resource.getFallbackId().get());
-        } else {
-            element.removeAttribute("fallback");
-        }
+        if (resource.getFallbackId().isPresent()) element.setAttribute("fallback", resource.getFallbackId().get());
+        else element.removeAttribute("fallback");
     }
-
 
     private void writeMediaOverlay(Element element, EpubManifestItem resource) {
 
-        if (resource.getMediaOverlayId().isPresent()) {
-            element.setAttribute("media-overlay", resource.getMediaOverlayId().get());
-        } else {
-            element.removeAttribute("media-overlay");
-        }
+        if (resource.getMediaOverlayId().isPresent()) element.setAttribute("media-overlay", resource.getMediaOverlayId().get());
+        else element.removeAttribute("media-overlay");
     }
 
-
-    private String normalizeHref(String href) {
-
-        if (href == null) return "";
-
-        return href.trim().replace('\\', '/');
-    }
-
-
-    private boolean isElement(Element element, String localName) {
-
-        if (element == null) return false;
-        if (localName.equals(element.getLocalName())) return true;
-
-        return localName.equals(element.getNodeName());
-    }
-
-
-    private Element requireElement(Document document, String localName) {
-
-        NodeList nodes = document.getElementsByTagNameNS("*", localName);
-
-        if (nodes.getLength() == 0) throw new IllegalStateException("EPUB package element was not found: " + localName);
-
-        return (Element) nodes.item(0);
-    }
-
-    private void validatePackagePath(Path packagePath) {
-
-        if (packagePath == null) throw new IllegalArgumentException("packagePath must not be null.");
-        if (!Files.exists(packagePath)) throw new IllegalStateException("EPUB package does not exist: " + packagePath);
-        if (!Files.isRegularFile(packagePath)) throw new IllegalStateException("EPUB package is not a file: " + packagePath);
-    }
-    
-    /**
-     * EPUB reading order 정책에 따라 spine itemref를 정렬합니다.
-     *
-     * 실제 정렬 우선순위는 EpubSpineOrderPolicy가 결정합니다.
-     */
     private void sortSpineItems(Element manifest, Element spine) {
 
         List<Element> items = new ArrayList<>();
@@ -720,7 +980,6 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         for (Element item : items) spine.appendChild(item);
     }
 
-
     private int getSpineOrder(Element manifest, Element spineItem) {
 
         String idref = spineItem.getAttribute("idref");
@@ -731,5 +990,68 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
         String href = manifestItem.getAttribute("href");
 
         return spineOrderPolicy.getOrder(href);
+    }
+
+    private String resolveResourceIdFromHref(String href) {
+
+        if (href == null || href.isBlank()) return null;
+
+        String normalizedHref = normalizeHref(href);
+        int slashIndex = normalizedHref.lastIndexOf('/');
+        String fileName = slashIndex >= 0 ? normalizedHref.substring(slashIndex + 1) : normalizedHref;
+        int extensionIndex = fileName.lastIndexOf('.');
+
+        if (extensionIndex > 0) fileName = fileName.substring(0, extensionIndex);
+
+        return fileName.isBlank() ? null : fileName;
+    }
+
+    private String normalizeHref(String href) {
+
+        if (href == null) return "";
+
+        return href.trim().replace('\\', '/');
+    }
+
+    private String normalizeIdref(String idref) {
+
+        if (idref == null || idref.isBlank()) throw new IllegalArgumentException("idref must not be empty.");
+
+        return idref.trim();
+    }
+
+    private boolean isElement(Element element, String localName) {
+
+        if (element == null) return false;
+        if (localName.equals(element.getLocalName())) return true;
+
+        return localName.equals(element.getNodeName());
+    }
+
+    private Element requireElement(Document document, String localName) {
+
+        NodeList nodes = document.getElementsByTagNameNS("*", localName);
+
+        if (nodes.getLength() == 0) throw new IllegalStateException("EPUB package element was not found: " + localName);
+
+        return (Element) nodes.item(0);
+    }
+
+    private void validatePackagePath(Path packagePath) {
+
+        if (packagePath == null) throw new IllegalArgumentException("packagePath must not be null.");
+        if (!Files.exists(packagePath)) throw new IllegalStateException("EPUB package does not exist: " + packagePath);
+        if (!Files.isRegularFile(packagePath)) throw new IllegalStateException("EPUB package is not a file: " + packagePath);
+    }
+
+    private void validateInsertIndex(int targetIndex, int itemCount) {
+
+        if (targetIndex < 0 || targetIndex > itemCount) throw new IllegalArgumentException("targetIndex must be between 0 and " + itemCount + ": " + targetIndex);
+    }
+
+    private void validateMoveIndex(int targetIndex, int itemCount) {
+
+        if (itemCount <= 0) throw new IllegalStateException("EPUB spine does not contain any itemref.");
+        if (targetIndex < 0 || targetIndex >= itemCount) throw new IllegalArgumentException("targetIndex must be between 0 and " + (itemCount - 1) + ": " + targetIndex);
     }
 }

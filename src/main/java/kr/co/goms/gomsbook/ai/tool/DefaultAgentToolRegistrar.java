@@ -21,6 +21,10 @@ import kr.co.goms.gomsbook.ai.tool.epub.author.CreateEpubAuthorTool;
 import kr.co.goms.gomsbook.ai.tool.epub.author.DeleteEpubAuthorTool;
 import kr.co.goms.gomsbook.ai.tool.epub.author.ReadEpubAuthorTool;
 import kr.co.goms.gomsbook.ai.tool.epub.author.UpdateEpubAuthorTool;
+import kr.co.goms.gomsbook.ai.tool.epub.chapter.CreateEpubChapterTool;
+import kr.co.goms.gomsbook.ai.tool.epub.chapter.DeleteEpubChapterTool;
+import kr.co.goms.gomsbook.ai.tool.epub.chapter.ReadEpubChapterTool;
+import kr.co.goms.gomsbook.ai.tool.epub.chapter.UpdateEpubChapterTool;
 import kr.co.goms.gomsbook.ai.tool.epub.copyright.CreateEpubCopyrightTool;
 import kr.co.goms.gomsbook.ai.tool.epub.copyright.ReadEpubCopyrightTool;
 import kr.co.goms.gomsbook.ai.tool.epub.copyright.UpdateEpubCopyrightTool;
@@ -32,14 +36,19 @@ import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubImageManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubJsManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubStyleManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubTextManifestTool;
+import kr.co.goms.gomsbook.ai.tool.epub.manifest.ReadEpubFileManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.manifest.ReadEpubManifestTool;
+import kr.co.goms.gomsbook.ai.tool.epub.manifest.UpdateEpubManifestTool;
+import kr.co.goms.gomsbook.ai.tool.epub.metadata.ReadEpubFileMetadataTool;
 import kr.co.goms.gomsbook.ai.tool.epub.metadata.ReadEpubMetadataTool;
+import kr.co.goms.gomsbook.ai.tool.epub.metadata.UpdateEpubMetadataTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.CreateEpubNavigationTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.ReadEpubNavigationTool;
 import kr.co.goms.gomsbook.ai.tool.epub.navigation.UpdateEpubNavigationTool;
 import kr.co.goms.gomsbook.ai.tool.epub.part.CreateEpubPartTool;
 import kr.co.goms.gomsbook.ai.tool.epub.part.ReadEpubPartTool;
 import kr.co.goms.gomsbook.ai.tool.epub.part.UpdateEpubPartTool;
+import kr.co.goms.gomsbook.ai.tool.epub.pkg.ReadEpubFilePackageTool;
 import kr.co.goms.gomsbook.ai.tool.epub.pkg.ReadEpubPackageTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.ApplyEpubTemplateTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubBaseFilesTool;
@@ -48,7 +57,9 @@ import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectStructureTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.SwitchCurrentEpubProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.resource.ApplyEpubStylesheetTool;
+import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubFileSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubSpineTool;
+import kr.co.goms.gomsbook.ai.tool.epub.spine.UpdateEpubSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubStructureTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubTool;
 import kr.co.goms.gomsbook.ai.tool.image.InspectEpubImagesTool;
@@ -120,10 +131,10 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new ValidateAccessibilityTool(accessibilityValidator));
         registerIfAbsent(registry, new CreateBasicXhtmlTool(currentProjectProvider, approvalService, eventPublisher));
         
-        registerIfAbsent(registry, new ReadEpubPackageTool(currentProjectProvider, publishDirectoryProvider));
-        registerIfAbsent(registry, new ReadEpubMetadataTool(currentProjectProvider,publishDirectoryProvider));	// 현재 프로젝트의 최신 EPUB metadata 정보를 보여주세요.
-        registerIfAbsent(registry, new ReadEpubManifestTool(currentProjectProvider,publishDirectoryProvider));
-        registerIfAbsent(registry, new ReadEpubSpineTool(currentProjectProvider,publishDirectoryProvider));
+        registerIfAbsent(registry, new ReadEpubFilePackageTool(currentProjectProvider, publishDirectoryProvider));			// EPUB File Package 정보
+        registerIfAbsent(registry, new ReadEpubFileMetadataTool(currentProjectProvider,publishDirectoryProvider));			// EPUB File Metadata 정보
+        registerIfAbsent(registry, new ReadEpubFileManifestTool(currentProjectProvider,publishDirectoryProvider));			// EPUB File Metadata 정보
+        registerIfAbsent(registry, new ReadEpubFileSpineTool(currentProjectProvider,publishDirectoryProvider));				// EPUB File Spine 정보
 
         registerIfAbsent(registry, new CompareEpubTextManifestTool(currentProjectProvider,publishDirectoryProvider));
         registerIfAbsent(registry, new CompareEpubImageManifestTool(currentProjectProvider,publishDirectoryProvider));
@@ -159,6 +170,19 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new ReadEpubPartTool(currentProjectProvider));											// EPUB Part 읽기
         registerIfAbsent(registry, new UpdateEpubPartTool(currentProjectProvider, approvalService));						// EPUB Part 수정
         
+        registerIfAbsent(registry, new CreateEpubChapterTool(currentProjectProvider, approvalService));						// EPUB Chapter 신규생성
+        registerIfAbsent(registry, new ReadEpubChapterTool(currentProjectProvider));										// EPUB Chapter 읽기
+        registerIfAbsent(registry, new UpdateEpubChapterTool(currentProjectProvider, approvalService));						// EPUB Chapter 수정
+        registerIfAbsent(registry, new DeleteEpubChapterTool(currentProjectProvider, approvalService));						// EPUB Chapter 삭제
+        
+        registerIfAbsent(registry, new ReadEpubPackageTool(currentProjectProvider));										// EPUB Content.opf Package 정보
+        registerIfAbsent(registry, new ReadEpubMetadataTool(currentProjectProvider));										// EPUB Content.opf Metadata 정보
+        registerIfAbsent(registry, new ReadEpubManifestTool(currentProjectProvider));										// EPUB Content.opf Metadata 정보
+        registerIfAbsent(registry, new ReadEpubSpineTool(currentProjectProvider));											// EPUB Content.opf Spine 정보
+        
+        registerIfAbsent(registry, new UpdateEpubSpineTool(currentProjectProvider, approvalService));						// EPUB Content.opf Spine 수정
+        registerIfAbsent(registry, new UpdateEpubManifestTool(currentProjectProvider, approvalService));					// EPUB Content.opf Manifest 수정
+        registerIfAbsent(registry, new UpdateEpubMetadataTool(currentProjectProvider, approvalService));					// EPUB Content.opf Metadata 수정
         
     }
 

@@ -96,28 +96,28 @@ public final class EpubXmlUtil {
         return writer.toString();
     }
 
-    private static DocumentBuilderFactory createDocumentBuilderFactory() throws Exception {
-
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-        factory.setNamespaceAware(true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        factory.setXIncludeAware(false);
-        factory.setExpandEntityReferences(false);
+    private static DocumentBuilderFactory createDocumentBuilderFactory() {
 
         try {
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+            factory.setNamespaceAware(true);
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            factory.setXIncludeAware(false);
+            factory.setExpandEntityReferences(false);
             factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-        } catch (IllegalArgumentException exception) {
-        }
-
-        try {
             factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-        } catch (IllegalArgumentException exception) {
-        }
 
-        return factory;
+            return factory;
+
+        } catch (Exception exception) {
+
+            throw new IllegalStateException("Failed to configure EPUB XML parser.", exception);
+        }
     }
 
     private static TransformerFactory createTransformerFactory() {
@@ -157,5 +157,23 @@ public final class EpubXmlUtil {
 
             child = next;
         }
+    }
+    
+    public static String normalizeRefines(String value) {
+
+        String refines = trimToNull(value);
+
+        if (refines == null) return null;
+
+        return refines.startsWith("#") ? refines : "#" + refines;
+    }
+    
+    public static String trimToNull(String value) {
+
+        if (value == null) return null;
+
+        String trimmed = value.trim();
+
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

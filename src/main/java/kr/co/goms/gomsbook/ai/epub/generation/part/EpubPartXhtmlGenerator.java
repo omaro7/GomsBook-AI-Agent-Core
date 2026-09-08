@@ -9,5 +9,6 @@ package kr.co.goms.gomsbook.ai.epub.generation.part;
 
 public interface EpubPartXhtmlGenerator {
 
-    String generate(int partNumber, String title, String stylesheetHref);
+	String generate(int partNumber, String title, String stylesheetHref);
+	String generate(int partNumber, String title, String content, String stylesheetHref);
 }

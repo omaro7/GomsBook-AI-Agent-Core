@@ -15,6 +15,9 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import kr.co.goms.gomsbook.ai.epub.service.EpubArchivePackageReader;
+import kr.co.goms.gomsbook.ai.epub.service.LatestPublishedEpubResolver;
+import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
 import kr.co.goms.gomsbook.ai.tool.AgentTool;
@@ -25,39 +28,68 @@ import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
 import kr.co.goms.gomsbook.ai.tool.ToolStatus;
 import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
-import kr.co.goms.gomsbook.ai.util.EpubXmlUtil;
 
 
 /**
- * 현재 EPUB 프로젝트의 content.opf에서 spine 정보를 읽습니다.
+ * 현재 프로젝트의 최신 출판 EPUB 파일에서 Package Document의 spine을 읽습니다.
  *
- * <p>출판된 .epub 파일을 읽지 않습니다.</p>
+ * <p>현재 작업 중인 프로젝트의 content.opf를 직접 읽지 않습니다.</p>
  *
- * <p>현재 프로젝트의 Package Document(content.opf)를 직접 읽고 spine 요소와 itemref 요소를 등록된 순서 그대로 반환합니다.</p>
+ * <p>최신 출판 EPUB 파일을 열고 Package Document(content.opf)의 spine 요소와 itemref 요소를 DOM에서 직접 읽어 등록된 순서 그대로 반환합니다.</p>
  *
- * <p>manifest 참조 존재 여부, idref 중복, resource 존재 여부, spine 구조 정합성 등은 이 Tool의 실패 원인이 아닙니다.</p>
+ * <p>manifest 참조 존재 여부, idref 중복, resource 존재 여부, spine 정합성 등은 이 Tool의 실패 원인이 아닙니다.</p>
  *
- * <p>최신 출판 EPUB 파일의 spine을 읽으려면 ReadEpubFileSpineTool을 사용합니다.</p>
+ * <p>현재 프로젝트의 content.opf spine을 읽으려면 ReadEpubSpineTool을 사용합니다.</p>
  *
  * <p>EPUB 구조 검증은 ValidateEpubStructureTool, EPUB 표준 검증은 EpubCheckTool의 책임입니다.</p>
  */
-public final class ReadEpubSpineTool implements AgentTool {
+public final class ReadEpubFileSpineTool implements AgentTool {
 
-    public static final String NAME = "read_epub_spine";
+    public static final String NAME = "read_epub_file_spine";
     public static final String TOOL_NAME = NAME;
-    public static final String DESCRIPTION = "Reads spine information ONLY from the current project's content.opf. "
-    		+ "This tool DOES NOT read a published .epub file. "
-    		+ "It reads the current working EPUB project's Package Document directly and returns the spine itemref entries in document order. "
-    		+ "Use read_epub_file_spine instead when reading the latest published EPUB file.";
+    public static final String DESCRIPTION = "Reads spine information ONLY from the latest published EPUB file for the current project. "
+    		+ "This tool DOES NOT read the current project's content.opf directly. "
+    		+ "It opens the latest published .epub archive, reads its Package Document, and returns the spine itemref entries in document order. "
+    		+ "Use read_epub_spine instead when reading the current project's content.opf.";
 
     private final CurrentProjectProvider projectProvider;
+    private final PublishDirectoryProvider publishDirectoryProvider;
+    private final LatestPublishedEpubResolver publishedEpubResolver;
+    private final EpubArchivePackageReader packageReader;
 
 
-    public ReadEpubSpineTool(CurrentProjectProvider projectProvider) {
+    public ReadEpubFileSpineTool(CurrentProjectProvider projectProvider, PublishDirectoryProvider publishDirectoryProvider) {
 
-        if (projectProvider == null) throw new IllegalArgumentException("projectProvider must not be null.");
+        this(projectProvider, publishDirectoryProvider, new LatestPublishedEpubResolver(), new EpubArchivePackageReader());
+    }
+
+
+    public ReadEpubFileSpineTool(CurrentProjectProvider projectProvider, PublishDirectoryProvider publishDirectoryProvider, LatestPublishedEpubResolver publishedEpubResolver, EpubArchivePackageReader packageReader) {
+
+        if (projectProvider == null) {
+
+            throw new IllegalArgumentException("projectProvider must not be null.");
+        }
+
+        if (publishDirectoryProvider == null) {
+
+            throw new IllegalArgumentException("publishDirectoryProvider must not be null.");
+        }
+
+        if (publishedEpubResolver == null) {
+
+            throw new IllegalArgumentException("publishedEpubResolver must not be null.");
+        }
+
+        if (packageReader == null) {
+
+            throw new IllegalArgumentException("packageReader must not be null.");
+        }
 
         this.projectProvider = projectProvider;
+        this.publishDirectoryProvider = publishDirectoryProvider;
+        this.publishedEpubResolver = publishedEpubResolver;
+        this.packageReader = packageReader;
     }
 
 
@@ -83,19 +115,14 @@ public final class ReadEpubSpineTool implements AgentTool {
 
         if (project == null) {
 
-            return result.valid(false).issue(errorIssue("EPUB_SPINE_PROJECT_MISSING", "Current EPUB project is not available.")).build();
+            return result.valid(false).issue(errorIssue("EPUB_FILE_SPINE_PROJECT_MISSING", "Current EPUB project is not available.")).build();
         }
 
-        Path packageDocument = project.getPackageDocument();
+        Path publishDirectory = publishDirectoryProvider.getPublishDirectory();
 
-        if (packageDocument == null) {
+        if (publishDirectory == null) {
 
-            return result.valid(false).issue(errorIssue("EPUB_SPINE_PACKAGE_DOCUMENT_MISSING", "Current EPUB package document is not available.")).build();
-        }
-
-        if (!project.hasPackageDocument()) {
-
-            return result.valid(false).issue(errorIssue("EPUB_SPINE_PACKAGE_DOCUMENT_NOT_FOUND", "Current EPUB package document does not exist: " + normalizePath(packageDocument))).build();
+            return result.valid(false).issue(errorIssue("EPUB_FILE_SPINE_PUBLISH_DIRECTORY_MISSING", "Publish directory is not configured.")).build();
         }
 
         return result.valid(true).build();
@@ -113,39 +140,40 @@ public final class ReadEpubSpineTool implements AgentTool {
                     .toolName(TOOL_NAME)
                     .status(ToolStatus.VALIDATION_FAILED)
                     .validationResult(validation)
-                    .message("EPUB spine read request is invalid.")
+                    .message("EPUB file spine read request is invalid.")
                     .build();
         }
 
         try {
 
-            EpubProjectContext project = projectProvider.getCurrentProject();
-            Path packageDocument = project.getPackageDocument();
-            Document document = EpubXmlUtil.readDocument(packageDocument);
+            Path publishDirectory = publishDirectoryProvider.getPublishDirectory();
+            Path epubFile = publishedEpubResolver.resolve(publishDirectory);
+            String packagePath = packageReader.findPackageDocumentPath(epubFile);
+            Document document = packageReader.readPackageDocument(epubFile, packagePath);
             Element packageElement = document.getDocumentElement();
 
             if (packageElement == null) {
 
-                return failure("EPUB_SPINE_PACKAGE_ELEMENT_MISSING", "EPUB package element was not found.", null);
+                return failure("EPUB_FILE_SPINE_PACKAGE_ELEMENT_MISSING", "EPUB package element was not found.", null);
             }
 
             Element spineElement = findDirectChild(packageElement, "spine");
 
             if (spineElement == null) {
 
-                return failure("EPUB_SPINE_ELEMENT_MISSING", "EPUB spine element was not found.", null);
+                return failure("EPUB_FILE_SPINE_ELEMENT_MISSING", "EPUB spine element was not found.", null);
             }
 
-            return convertResult(project, packageDocument, spineElement);
+            return convertResult(epubFile, packagePath, spineElement);
 
         } catch (RuntimeException exception) {
 
-            return failure("EPUB_SPINE_READ_FAILED", "Failed to read current EPUB project spine: " + safeMessage(exception), exception);
+            return failure("EPUB_FILE_SPINE_READ_FAILED", "Failed to read EPUB file spine: " + safeMessage(exception), exception);
         }
     }
 
 
-    private ToolResult convertResult(EpubProjectContext project, Path packageDocument, Element spineElement) {
+    private ToolResult convertResult(Path epubFile, String packagePath, Element spineElement) {
 
         List<Map<String, Object>> items = readSpineItems(spineElement);
         String toc = readAttribute(spineElement, "toc");
@@ -154,9 +182,9 @@ public final class ReadEpubSpineTool implements AgentTool {
         return ToolResult.builder()
                 .toolName(TOOL_NAME)
                 .status(ToolStatus.SUCCESS)
-                .message("Current EPUB project spine was read successfully.")
-                .data("projectName", project.getProjectName())
-                .data("packageDocument", normalizePath(packageDocument))
+                .message("EPUB file spine was read successfully.")
+                .data("epubFile", normalizePath(epubFile))
+                .data("packagePath", packagePath)
                 .data("toc", toc)
                 .data("pageProgressionDirection", pageProgressionDirection)
                 .data("spineItemCount", items.size())
@@ -174,8 +202,15 @@ public final class ReadEpubSpineTool implements AgentTool {
 
             Node node = children.item(index);
 
-            if (!(node instanceof Element element)) continue;
-            if (!"itemref".equalsIgnoreCase(getLocalName(element))) continue;
+            if (!(node instanceof Element element)) {
+
+                continue;
+            }
+
+            if (!"itemref".equalsIgnoreCase(getLocalName(element))) {
+
+                continue;
+            }
 
             Map<String, Object> item = new LinkedHashMap<>();
 
@@ -193,7 +228,10 @@ public final class ReadEpubSpineTool implements AgentTool {
 
     private Element findDirectChild(Element parent, String localName) {
 
-        if (parent == null || localName == null) return null;
+        if (parent == null || localName == null) {
+
+            return null;
+        }
 
         NodeList children = parent.getChildNodes();
 
@@ -201,8 +239,15 @@ public final class ReadEpubSpineTool implements AgentTool {
 
             Node node = children.item(index);
 
-            if (!(node instanceof Element element)) continue;
-            if (localName.equalsIgnoreCase(getLocalName(element))) return element;
+            if (!(node instanceof Element element)) {
+
+                continue;
+            }
+
+            if (localName.equalsIgnoreCase(getLocalName(element))) {
+
+                return element;
+            }
         }
 
         return null;
@@ -211,19 +256,31 @@ public final class ReadEpubSpineTool implements AgentTool {
 
     private String getLocalName(Element element) {
 
-        if (element == null) return "";
+        if (element == null) {
+
+            return "";
+        }
 
         String localName = element.getLocalName();
 
-        if (localName != null && !localName.isBlank()) return localName;
+        if (localName != null && !localName.isBlank()) {
+
+            return localName;
+        }
 
         String tagName = element.getTagName();
 
-        if (tagName == null || tagName.isBlank()) return "";
+        if (tagName == null || tagName.isBlank()) {
+
+            return "";
+        }
 
         int separatorIndex = tagName.indexOf(':');
 
-        if (separatorIndex >= 0 && separatorIndex + 1 < tagName.length()) return tagName.substring(separatorIndex + 1);
+        if (separatorIndex >= 0 && separatorIndex + 1 < tagName.length()) {
+
+            return tagName.substring(separatorIndex + 1);
+        }
 
         return tagName;
     }
@@ -231,7 +288,10 @@ public final class ReadEpubSpineTool implements AgentTool {
 
     private String readAttribute(Element element, String name) {
 
-        if (element == null || name == null) return "";
+        if (element == null || name == null) {
+
+            return "";
+        }
 
         return trimToEmpty(element.getAttribute(name));
     }
@@ -253,8 +313,8 @@ public final class ReadEpubSpineTool implements AgentTool {
 
     private ToolResult failure(String errorCode, String errorMessage, Throwable cause) {
 
-        String code = errorCode == null || errorCode.isBlank() ? "EPUB_SPINE_READ_FAILED" : errorCode.trim();
-        String message = errorMessage == null || errorMessage.isBlank() ? "Failed to read current EPUB project spine." : errorMessage.trim();
+        String code = errorCode == null || errorCode.isBlank() ? "EPUB_FILE_SPINE_READ_FAILED" : errorCode.trim();
+        String message = errorMessage == null || errorMessage.isBlank() ? "Failed to read EPUB file spine." : errorMessage.trim();
 
         ToolResult.Builder builder = ToolResult.builder()
                 .toolName(TOOL_NAME)
@@ -286,7 +346,10 @@ public final class ReadEpubSpineTool implements AgentTool {
 
     private String normalizePath(Path path) {
 
-        if (path == null) return "";
+        if (path == null) {
+
+            return "";
+        }
 
         return path.toAbsolutePath().normalize().toString();
     }
@@ -294,7 +357,10 @@ public final class ReadEpubSpineTool implements AgentTool {
 
     private String trimToEmpty(String value) {
 
-        if (value == null) return "";
+        if (value == null) {
+
+            return "";
+        }
 
         return value.trim();
     }
@@ -302,11 +368,17 @@ public final class ReadEpubSpineTool implements AgentTool {
 
     private String safeMessage(Throwable throwable) {
 
-        if (throwable == null) return "Unknown EPUB spine read error.";
+        if (throwable == null) {
+
+            return "Unknown EPUB file spine read error.";
+        }
 
         String message = throwable.getMessage();
 
-        if (message == null || message.isBlank()) return throwable.getClass().getSimpleName();
+        if (message == null || message.isBlank()) {
+
+            return throwable.getClass().getSimpleName();
+        }
 
         return message.trim();
     }

@@ -18,6 +18,7 @@ import kr.co.goms.gomsbook.ai.agent.approval.payload.EpubAuthorApprovalPayload;
 import kr.co.goms.gomsbook.ai.epub.generation.author.EpubAuthorService;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
+import kr.co.goms.gomsbook.ai.util.ToolUtil;
 
 public final class DeleteEpubAuthorApprovalHandler implements AgentApprovalHandler {
 
@@ -103,8 +104,8 @@ public final class DeleteEpubAuthorApprovalHandler implements AgentApprovalHandl
 
     private void validateApproval(AgentApproval approval) {
 
-        if (isBlank(approval.getFileName())) throw new IllegalStateException("Approval fileName is not available.");
-        if (isBlank(approval.getContent())) throw new IllegalStateException("Approval content is not available.");
+        if (ToolUtil.isBlank(approval.getFileName())) throw new IllegalStateException("Approval fileName is not available.");
+        if (ToolUtil.isBlank(approval.getContent())) throw new IllegalStateException("Approval content is not available.");
     }
 
     private String parseFileName(AgentApproval approval) {
@@ -128,14 +129,14 @@ public final class DeleteEpubAuthorApprovalHandler implements AgentApprovalHandl
 
         String fileName = defaultIfBlank(payload.getFileName(), approval.getFileName());
 
-        if (isBlank(fileName)) fileName = DEFAULT_FILE_NAME;
+        if (ToolUtil.isBlank(fileName)) fileName = DEFAULT_FILE_NAME;
 
         return fileName.trim();
     }
 
     private void validateFileName(String fileName) {
 
-        if (isBlank(fileName)) throw new IllegalStateException("Author XHTML fileName is not available.");
+        if (ToolUtil.isBlank(fileName)) throw new IllegalStateException("Author XHTML fileName is not available.");
 
         String normalizedFileName = fileName.trim();
 
@@ -164,7 +165,7 @@ public final class DeleteEpubAuthorApprovalHandler implements AgentApprovalHandl
 
     private String resolveProjectId(EpubProjectContext project) {
 
-        if (!isBlank(project.getProjectName())) return project.getProjectName().trim();
+        if (!ToolUtil.isBlank(project.getProjectName())) return project.getProjectName().trim();
 
         return project.getProjectRoot().toAbsolutePath().normalize().toString();
     }
@@ -187,7 +188,4 @@ public final class DeleteEpubAuthorApprovalHandler implements AgentApprovalHandl
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
 }

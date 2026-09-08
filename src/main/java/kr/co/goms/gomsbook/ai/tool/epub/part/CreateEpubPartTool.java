@@ -133,6 +133,7 @@ public final class CreateEpubPartTool implements AgentTool {
             validatePartNotExists(targetFile);
 
             String stylesheetHref = stylesheetResolver.resolveHref(targetFile);
+            
             String xhtml = xhtmlGenerator.generate(partNumber, title, stylesheetHref);
 
             String content = createApprovalContent(fileName, partNumber, title, stylesheetHref, xhtml);

@@ -5,44 +5,39 @@
  * Project: GomsBook AI
  * AI-powered EPUB authoring, validation, accessibility, and publishing automation.
  */
-package kr.co.goms.gomsbook.ai.epub.generation.part;
+package kr.co.goms.gomsbook.ai.epub.generation.chapter;
 
-public class DefaultEpubPartXhtmlGenerator implements EpubPartXhtmlGenerator {
+public class DefaultEpubChapterXhtmlGenerator implements EpubChapterXhtmlGenerator {
 
-	@Override
-	public String generate(int partNumber, String title, String stylesheetHref) {
-		return generateInternal(partNumber, title, null, stylesheetHref);
-	}
-	
     @Override
-    public String generate(int partNumber, String title, String content, String stylesheetHref) {
-        return generateInternal(partNumber, title, content, stylesheetHref);
-    }
-    
-    public String generateInternal(int partNumber, String title, String content, String stylesheetHref) {
+    public String generate(int partNumber, int chapterNumber, String title, String content, String stylesheetHref) {
 
-        validate(partNumber, title, content, stylesheetHref);
+        validate(partNumber, chapterNumber, title, content, stylesheetHref);
 
-        String partId = String.format("part%02d_title", partNumber);
-        String displayTitle = partNumber + "부 " + title.trim();
+        String chapterId = String.format("chapter%02d_%02d_title", partNumber, chapterNumber);
+        String displayTitle = chapterNumber + ". " + title.trim();
 
         StringBuilder builder = new StringBuilder();
 
         builder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         builder.append("<!DOCTYPE html>\n");
         builder.append("<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"ko\" xml:lang=\"ko\">\n");
+        builder.append("\n");
         builder.append("<head>\n");
         builder.append("    <meta charset=\"UTF-8\"/>\n");
         builder.append("    <title>").append(escapeText(displayTitle)).append("</title>\n");
         builder.append("    <link href=\"").append(escapeAttribute(stylesheetHref)).append("\" type=\"text/css\" rel=\"stylesheet\" />\n");
         builder.append("</head>\n");
-        builder.append("<body>\n");
-        builder.append("    <section epub:type=\"part\" role=\"doc-part\" aria-labelledby=\"").append(partId).append("\">\n");
-        builder.append("        <h1 id=\"").append(partId).append("\">").append(escapeText(displayTitle)).append("</h1>\n");
-        builder.append("        <div class=\"part-description\">\n");
+        builder.append("\n");
+        builder.append("<body epub:type=\"bodymatter\">\n");
+        builder.append("\n");
+        builder.append("    <section epub:type=\"chapter\" role=\"doc-chapter\" aria-labelledby=\"").append(chapterId).append("\">\n");
+        builder.append("        <h1 id=\"").append(chapterId).append("\">").append(escapeText(displayTitle)).append("</h1>\n");
+
         appendContent(builder, content);
-        builder.append("        </div>\n");
+
         builder.append("    </section>\n");
+        builder.append("\n");
         builder.append("</body>\n");
         builder.append("</html>\n");
 
@@ -51,15 +46,22 @@ public class DefaultEpubPartXhtmlGenerator implements EpubPartXhtmlGenerator {
 
     private void appendContent(StringBuilder builder, String content) {
 
-        String normalized = content.trim().replace("\r\n", "\n").replace("\r", "\n");
-        String[] lines = normalized.split("\n");
+        String normalizedContent = content.trim();
 
-        for (String line : lines) builder.append("            ").append(line.trim()).append("\n");
+        if (normalizedContent.isEmpty()) return;
+
+        String[] lines = normalizedContent.split("\\R", -1);
+
+        for (String line : lines) {
+            if (line.isEmpty()) builder.append("\n");
+            else builder.append("        ").append(line).append("\n");
+        }
     }
 
-    private void validate(int partNumber, String title, String content, String stylesheetHref) {
+    private void validate(int partNumber, int chapterNumber, String title, String content, String stylesheetHref) {
 
         if (partNumber <= 0) throw new IllegalArgumentException("partNumber must be greater than 0.");
+        if (chapterNumber <= 0) throw new IllegalArgumentException("chapterNumber must be greater than 0.");
         if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("title must not be empty.");
         if (content == null || content.trim().isEmpty()) throw new IllegalArgumentException("content must not be empty.");
         if (stylesheetHref == null || stylesheetHref.trim().isEmpty()) throw new IllegalArgumentException("stylesheetHref must not be empty.");
@@ -78,5 +80,4 @@ public class DefaultEpubPartXhtmlGenerator implements EpubPartXhtmlGenerator {
 
         return value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;");
     }
-
 }

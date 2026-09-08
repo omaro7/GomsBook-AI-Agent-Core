@@ -14,6 +14,7 @@ import java.util.Map;
 import com.google.gson.Gson;
 
 import kr.co.goms.gomsbook.ai.agent.approval.payload.EpubAuthorApprovalPayload;
+import kr.co.goms.gomsbook.ai.agent.AgentToolResultDisplayConstant;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApproval;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalAction;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
@@ -140,9 +141,9 @@ public final class CreateEpubAuthorTool implements AgentTool {
             data.put("message", approval.getMessage());
             data.put("fileName", approval.getFileName());
             data.put("content", approval.getContent());
-            data.put("previewTitle", "내용");
             data.put("preview", preview);
-            data.put("displayInstruction", "미리보기 섹션 제목은 반드시 '내용'으로 표시하고 콜론(:)을 붙이지 마세요.");
+            data.put("previewTitle", AgentToolResultDisplayConstant.PREVIEW_TITLE_CONTENT);            
+            data.put("displayInstruction", AgentToolResultDisplayConstant.PREVIEW_DISPLAY_INSTRUCTION);
 
             return ToolResult.builder()
                     .toolName(TOOL_NAME)

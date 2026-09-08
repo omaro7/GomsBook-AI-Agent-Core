@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
- *
- * Project: GomsBook AI
- * AI-powered EPUB authoring, validation, accessibility, and publishing automation.
  */
 package kr.co.goms.gomsbook.ai.tool.epub.pkg;
 
@@ -17,6 +14,9 @@ import javax.xml.XMLConstants;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import kr.co.goms.gomsbook.ai.epub.service.EpubArchivePackageReader;
+import kr.co.goms.gomsbook.ai.epub.service.LatestPublishedEpubResolver;
+import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
 import kr.co.goms.gomsbook.ai.tool.AgentTool;
@@ -27,39 +27,68 @@ import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
 import kr.co.goms.gomsbook.ai.tool.ToolStatus;
 import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
-import kr.co.goms.gomsbook.ai.util.EpubXmlUtil;
 
 
 /**
- * 현재 EPUB 프로젝트의 content.opf에서 Package Document 기본 정보를 읽습니다.
+ * 현재 프로젝트의 최신 출판 EPUB 파일에서 Package Document의 기본 정보를 읽습니다.
  *
- * <p>출판된 .epub 파일을 읽지 않습니다.</p>
+ * <p>현재 작업 중인 프로젝트의 content.opf를 직접 읽지 않습니다.</p>
  *
- * <p>현재 프로젝트의 Package Document(content.opf)를 직접 읽고 package 요소의 version, unique-identifier, prefix, xml:lang, dir 속성을 반환합니다.</p>
+ * <p>최신 출판 EPUB 파일을 열고 Package Document(content.opf)의 package 요소에서 version, unique-identifier, prefix, xml:lang, dir 속성을 읽습니다.</p>
  *
  * <p>metadata, manifest, spine 전체 내용과 resource 정합성은 이 Tool의 책임이 아닙니다.</p>
  *
- * <p>최신 출판 EPUB 파일의 package 정보를 읽으려면 ReadEpubFilePackageTool을 사용합니다.</p>
+ * <p>현재 프로젝트의 content.opf package 정보를 읽으려면 ReadEpubPackageTool을 사용합니다.</p>
  *
  * <p>EPUB 구조 검증은 ValidateEpubStructureTool, EPUB 표준 검증은 EpubCheckTool의 책임입니다.</p>
  */
-public final class ReadEpubPackageTool implements AgentTool {
+public final class ReadEpubFilePackageTool implements AgentTool {
 
-    public static final String NAME = "read_epub_package";
+    public static final String NAME = "read_epub_file_package";
     public static final String TOOL_NAME = NAME;
-    public static final String DESCRIPTION = "Reads package-level information ONLY from the current project's content.opf. "
-    		+ "This tool DOES NOT read a published .epub file. "
-    		+ "It reads the current working EPUB project's Package Document directly and returns package-level attributes such as version, unique-identifier, prefix, xml:lang, "
-    		+ "and dir. Use read_epub_file_package instead when reading the latest published EPUB file.";
+    public static final String DESCRIPTION = "Reads package-level information ONLY from the latest published EPUB file for the current project. "
+    		+ "This tool DOES NOT read the current project's content.opf directly. "
+    		+ "It opens the latest published .epub archive, reads its Package Document, and returns package-level attributes such as version, unique-identifier, prefix, xml:lang, "
+    		+ "and dir. Use read_epub_package instead when reading the current project's content.opf.";
 
     private final CurrentProjectProvider projectProvider;
+    private final PublishDirectoryProvider publishDirectoryProvider;
+    private final LatestPublishedEpubResolver publishedEpubResolver;
+    private final EpubArchivePackageReader packageReader;
 
 
-    public ReadEpubPackageTool(CurrentProjectProvider projectProvider) {
+    public ReadEpubFilePackageTool(CurrentProjectProvider projectProvider, PublishDirectoryProvider publishDirectoryProvider) {
 
-        if (projectProvider == null) throw new IllegalArgumentException("projectProvider must not be null.");
+        this(projectProvider, publishDirectoryProvider, new LatestPublishedEpubResolver(), new EpubArchivePackageReader());
+    }
+
+
+    public ReadEpubFilePackageTool(CurrentProjectProvider projectProvider, PublishDirectoryProvider publishDirectoryProvider, LatestPublishedEpubResolver publishedEpubResolver, EpubArchivePackageReader packageReader) {
+
+        if (projectProvider == null) {
+
+            throw new IllegalArgumentException("projectProvider must not be null.");
+        }
+
+        if (publishDirectoryProvider == null) {
+
+            throw new IllegalArgumentException("publishDirectoryProvider must not be null.");
+        }
+
+        if (publishedEpubResolver == null) {
+
+            throw new IllegalArgumentException("publishedEpubResolver must not be null.");
+        }
+
+        if (packageReader == null) {
+
+            throw new IllegalArgumentException("packageReader must not be null.");
+        }
 
         this.projectProvider = projectProvider;
+        this.publishDirectoryProvider = publishDirectoryProvider;
+        this.publishedEpubResolver = publishedEpubResolver;
+        this.packageReader = packageReader;
     }
 
 
@@ -85,19 +114,14 @@ public final class ReadEpubPackageTool implements AgentTool {
 
         if (project == null) {
 
-            return result.valid(false).issue(errorIssue("EPUB_PACKAGE_PROJECT_MISSING", "Current EPUB project is not available.")).build();
+            return result.valid(false).issue(errorIssue("EPUB_FILE_PACKAGE_PROJECT_MISSING", "Current EPUB project is not available.")).build();
         }
 
-        Path packageDocument = project.getPackageDocument();
+        Path publishDirectory = publishDirectoryProvider.getPublishDirectory();
 
-        if (packageDocument == null) {
+        if (publishDirectory == null) {
 
-            return result.valid(false).issue(errorIssue("EPUB_PACKAGE_DOCUMENT_MISSING", "Current EPUB package document is not available.")).build();
-        }
-
-        if (!project.hasPackageDocument()) {
-
-            return result.valid(false).issue(errorIssue("EPUB_PACKAGE_DOCUMENT_NOT_FOUND", "Current EPUB package document does not exist: " + normalizePath(packageDocument))).build();
+            return result.valid(false).issue(errorIssue("EPUB_FILE_PACKAGE_PUBLISH_DIRECTORY_MISSING", "Publish directory is not configured.")).build();
         }
 
         return result.valid(true).build();
@@ -115,32 +139,33 @@ public final class ReadEpubPackageTool implements AgentTool {
                     .toolName(TOOL_NAME)
                     .status(ToolStatus.VALIDATION_FAILED)
                     .validationResult(validation)
-                    .message("EPUB package read request is invalid.")
+                    .message("EPUB file package read request is invalid.")
                     .build();
         }
 
         try {
 
-            EpubProjectContext project = projectProvider.getCurrentProject();
-            Path packageDocument = project.getPackageDocument();
-            Document document = EpubXmlUtil.readDocument(packageDocument);
+            Path publishDirectory = publishDirectoryProvider.getPublishDirectory();
+            Path epubFile = publishedEpubResolver.resolve(publishDirectory);
+            String packagePath = packageReader.findPackageDocumentPath(epubFile);
+            Document document = packageReader.readPackageDocument(epubFile, packagePath);
             Element packageElement = document.getDocumentElement();
 
             if (packageElement == null) {
 
-                return failure("EPUB_PACKAGE_ELEMENT_MISSING", "EPUB package element was not found.", null);
+                return failure("EPUB_FILE_PACKAGE_ELEMENT_MISSING", "EPUB package element was not found.", null);
             }
 
-            return convertResult(project, packageDocument, packageElement);
+            return convertResult(epubFile, packagePath, packageElement);
 
         } catch (RuntimeException exception) {
 
-            return failure("EPUB_PACKAGE_READ_FAILED", "Failed to read current EPUB project package: " + safeMessage(exception), exception);
+            return failure("EPUB_FILE_PACKAGE_READ_FAILED", "Failed to read EPUB file package: " + safeMessage(exception), exception);
         }
     }
 
 
-    private ToolResult convertResult(EpubProjectContext project, Path packageDocument, Element packageElement) {
+    private ToolResult convertResult(Path epubFile, String packagePath, Element packageElement) {
 
         String version = trimToEmpty(packageElement.getAttribute("version"));
         String uniqueIdentifier = trimToEmpty(packageElement.getAttribute("unique-identifier"));
@@ -151,9 +176,9 @@ public final class ReadEpubPackageTool implements AgentTool {
         return ToolResult.builder()
                 .toolName(TOOL_NAME)
                 .status(ToolStatus.SUCCESS)
-                .message("Current EPUB project package information was read successfully.")
-                .data("projectName", project.getProjectName())
-                .data("packageDocument", normalizePath(packageDocument))
+                .message("EPUB file package information was read successfully.")
+                .data("epubFile", normalizePath(epubFile))
+                .data("packagePath", packagePath)
                 .data("version", version)
                 .data("uniqueIdentifier", uniqueIdentifier)
                 .data("prefix", prefix)
@@ -167,7 +192,10 @@ public final class ReadEpubPackageTool implements AgentTool {
 
         String language = trimToEmpty(packageElement.getAttributeNS(XMLConstants.XML_NS_URI, "lang"));
 
-        if (!language.isEmpty()) return language;
+        if (!language.isEmpty()) {
+
+            return language;
+        }
 
         return trimToEmpty(packageElement.getAttribute("xml:lang"));
     }
@@ -189,8 +217,8 @@ public final class ReadEpubPackageTool implements AgentTool {
 
     private ToolResult failure(String errorCode, String errorMessage, Throwable cause) {
 
-        String code = errorCode == null || errorCode.isBlank() ? "EPUB_PACKAGE_READ_FAILED" : errorCode.trim();
-        String message = errorMessage == null || errorMessage.isBlank() ? "Failed to read current EPUB project package." : errorMessage.trim();
+        String code = errorCode == null || errorCode.isBlank() ? "EPUB_FILE_PACKAGE_READ_FAILED" : errorCode.trim();
+        String message = errorMessage == null || errorMessage.isBlank() ? "Failed to read EPUB file package." : errorMessage.trim();
 
         ToolResult.Builder builder = ToolResult.builder()
                 .toolName(TOOL_NAME)
@@ -222,7 +250,10 @@ public final class ReadEpubPackageTool implements AgentTool {
 
     private String normalizePath(Path path) {
 
-        if (path == null) return "";
+        if (path == null) {
+
+            return "";
+        }
 
         return path.toAbsolutePath().normalize().toString();
     }
@@ -230,7 +261,10 @@ public final class ReadEpubPackageTool implements AgentTool {
 
     private String trimToEmpty(String value) {
 
-        if (value == null) return "";
+        if (value == null) {
+
+            return "";
+        }
 
         return value.trim();
     }
@@ -238,11 +272,17 @@ public final class ReadEpubPackageTool implements AgentTool {
 
     private String safeMessage(Throwable throwable) {
 
-        if (throwable == null) return "Unknown EPUB package read error.";
+        if (throwable == null) {
+
+            return "Unknown EPUB file package read error.";
+        }
 
         String message = throwable.getMessage();
 
-        if (message == null || message.isBlank()) return throwable.getClass().getSimpleName();
+        if (message == null || message.isBlank()) {
+
+            return throwable.getClass().getSimpleName();
+        }
 
         return message.trim();
     }

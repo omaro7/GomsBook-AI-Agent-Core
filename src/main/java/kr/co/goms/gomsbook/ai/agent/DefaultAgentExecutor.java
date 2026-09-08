@@ -390,8 +390,16 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
         } catch (RuntimeException exception) {
 
+            System.err.println(
+                    "[GomsBook AI] Agent RuntimeException"
+                            + " | type=" + exception.getClass().getName()
+                            + " | message=" + exception.getMessage()
+            );
+
+            exception.printStackTrace();
+
             throw new AgentException(
-                    "Agent execution failed.",
+                    "Agent execution failed: " + exception.getMessage(),
                     exception
             );
         }
@@ -891,10 +899,17 @@ public final class DefaultAgentExecutor implements AgentExecutor {
     }
 
     private void notifyToolResult(AgentToolResultListener listener, ToolResult result) {
-        try {
+    	try {
+
             listener.onToolResult(result);
+
+        } catch (RuntimeException exception) {
+
+            throw exception;
+
         } catch (Exception exception) {
-            System.err.println("[GomsBook AI] Tool result listener failed: " + exception.getMessage());
+
+            throw new AgentException("Tool result listener failed: " + exception.getMessage(), exception);
         }
     }
     

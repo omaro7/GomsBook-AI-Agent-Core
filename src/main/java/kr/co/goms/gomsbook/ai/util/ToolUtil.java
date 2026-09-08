@@ -135,7 +135,7 @@ public final class ToolUtil {
     public static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
-
+    
     public static String trimToNull(String value) {
 
         if (isBlank(value)) {
@@ -153,7 +153,7 @@ public final class ToolUtil {
                 ? defaultValue
                 : value.trim();
     }
-    
+   
     public static boolean containsHtmlElement(String xhtml) {
 
         return containsIgnoreCase(

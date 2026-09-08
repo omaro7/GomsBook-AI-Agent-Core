@@ -14,6 +14,8 @@ public interface EpubNavigationUpdater {
 
     void removeItem(Path navigationPath, String href);
 
+    void removeItemIfExists(Path navigationPath, String href);
+    
     boolean containsItem(Path navigationPath, String href);
 
     void update(Path navigationPath, List<EpubNavigationUpdateItem> items);
