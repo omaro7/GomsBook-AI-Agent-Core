@@ -17,7 +17,7 @@ import kr.co.goms.gomsbook.ai.agent.approval.AgentApproval;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalHandler;
 import kr.co.goms.gomsbook.ai.agent.approval.payload.UpdateEpubMetadataApprovalPayload;
 import kr.co.goms.gomsbook.ai.epub.model.EpubMetadataItem;
-import kr.co.goms.gomsbook.ai.epub.pkg.updater.EpubPackageUpdater;
+import kr.co.goms.gomsbook.ai.epub.updater.pkg.EpubPackageUpdater;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
 

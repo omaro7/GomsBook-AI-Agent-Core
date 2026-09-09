@@ -29,12 +29,13 @@ import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
 /**
  * 현재 EPUB 프로젝트의 최신 출판 EPUB 파일 구조를 검증합니다.
  */
-public final class ValidateEpubStructureTool implements AgentTool {
+public final class ValidateEpubFileStructureTool implements AgentTool {
 
 
-    public static final String NAME = "validate_epub_structure";
-    public static final String TOOL_NAME = NAME;
-    public static final String DESCRIPTION = "Validates the structure of the latest published EPUB file for the current project and returns validation issues without treating an invalid EPUB as a tool execution failure.";
+    public static final String TOOL_NAME = "validate_epub_file_structure";
+    public static final String DESCRIPTION = "Validates the structural integrity of an already generated .epub file, "
+    		+ "including package, manifest, spine, navigation, and referenced EPUB resources, and reports structural errors and warnings. "
+    		+ "Use this tool for post-generation structural validation of the EPUB file, not for validating the current EPUB project before the .epub file is created.";
 
 
     private final CurrentProjectProvider projectProvider;
@@ -46,7 +47,7 @@ public final class ValidateEpubStructureTool implements AgentTool {
     private final EpubStructureValidator structureValidator;
 
 
-    public ValidateEpubStructureTool(
+    public ValidateEpubFileStructureTool(
             CurrentProjectProvider projectProvider,
             PublishDirectoryProvider publishDirectoryProvider,
             LatestPublishedEpubResolver publishedEpubResolver,

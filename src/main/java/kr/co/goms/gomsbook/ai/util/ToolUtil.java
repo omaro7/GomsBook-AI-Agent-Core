@@ -10,14 +10,43 @@ import java.util.Locale;
 import java.util.Map;
 
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
+import kr.co.goms.gomsbook.ai.tool.ToolResult;
+import kr.co.goms.gomsbook.ai.tool.ToolStatus;
 import kr.co.goms.gomsbook.ai.tool.xhtml.ApplyXhtmlTool.ApplyXhtmlRequest;
 
 
 public final class ToolUtil {
 
-    private static final String DEFAULT_TEXT_DIRECTORY = "Text";
     private static final String XHTML_EXTENSION = ".xhtml";
-    private static final String BACKUP_EXTENSION = ".bak";
+    
+    public static ToolResult validationFailed(String requestId, String toolName, String message) {
+        return ToolResult.builder()
+                .requestId(requestId)
+                .toolName(toolName)
+                .status(ToolStatus.VALIDATION_FAILED)
+                .message(message)
+                .errorMessage(message)
+                .build();
+    }
+
+    public static ToolResult failed(String requestId, String toolName, String errorCode, String message, Throwable throwable) {
+        return ToolResult.builder()
+                .requestId(requestId)
+                .toolName(toolName)
+                .status(ToolStatus.FAILED)
+                .message(message)
+                .errorCode(errorCode)
+                .errorMessage(message)
+                .cause(throwable)
+                .build();
+    }
+    
+    public static String safeMessage(Throwable throwable) {
+        if (throwable == null) return "Unknown tool error.";
+        String message = throwable.getMessage();
+        return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message.trim();
+    }    
+    
     
 	/**
 	 * AS-IS : deepCopyValue(value)

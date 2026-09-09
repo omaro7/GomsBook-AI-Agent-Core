@@ -13,7 +13,7 @@ import kr.co.goms.gomsbook.ai.project.InMemoryCurrentProjectStore;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
 import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
-import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubStructureTool;
+import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubFileStructureTool;
 import kr.co.goms.gomsbook.ai.epub.policy.spine.EpubSpineOrderPolicy;
 import kr.co.goms.gomsbook.ai.epub.policy.spine.DefaultEpubSpineOrderPolicy;
 
@@ -35,14 +35,14 @@ public final class ValidateEpubStructureToolSmokeTest {
         LatestPublishedEpubResolver latestPublishedEpubResolver = new LatestPublishedEpubResolver();
         EpubStructureValidator epubStructureValidator = new EpubStructureValidator(spineOrderPolicy);
 
-        ValidateEpubStructureTool tool = new ValidateEpubStructureTool(
+        ValidateEpubFileStructureTool tool = new ValidateEpubFileStructureTool(
                 currentProjectProvider,
                 publishDirectoryProvider,
                 latestPublishedEpubResolver,
                 epubStructureValidator);
         
         ToolRequest request = ToolRequest.builder()
-                .toolName(ValidateEpubStructureTool.NAME)
+                .toolName(ValidateEpubFileStructureTool.TOOL_NAME)
                 .arguments(Map.of())
                 .build();
 

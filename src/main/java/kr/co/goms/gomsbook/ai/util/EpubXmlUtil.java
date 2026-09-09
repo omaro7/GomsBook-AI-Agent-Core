@@ -20,7 +20,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public final class EpubXmlUtil {
 
@@ -136,6 +138,91 @@ public final class EpubXmlUtil {
 
         return factory;
     }
+    
+    public static boolean hasHtmlDoctype(String source) {
+
+        if (source == null) {
+
+            return false;
+        }
+
+        return source.matches("(?is).*<!DOCTYPE\\s+html\\s*>.*");
+    }
+    
+    public static String removeDoctype(String source) {
+
+        if (source == null) {
+
+            return "";
+        }
+
+        return source.replaceFirst("(?is)<!DOCTYPE\\s+html\\s*>", "");
+    }
+
+    
+    public static Element findTargetElement(Document document, String elementName, String matchAttributeName, String matchAttributeValue) {
+
+        NodeList elements = document.getElementsByTagNameNS("*", elementName);
+
+        Element matchedElement = null;
+
+        int matchedCount = 0;
+
+        for (int index = 0; index < elements.getLength(); index++) {
+
+            Element element = (Element) elements.item(index);
+
+            String value = getAttribute(element, matchAttributeName);
+
+            if (!matchAttributeValue.equals(value)) continue;
+
+            matchedElement = element;
+
+            matchedCount++;
+        }
+
+        if (matchedCount == 0) throw new IllegalStateException("Target XHTML element was not found: <" + elementName + " " + matchAttributeName + "=\"" + matchAttributeValue + "\">");
+        if (matchedCount > 1) throw new IllegalStateException("Multiple XHTML elements matched: <" + elementName + " " + matchAttributeName + "=\"" + matchAttributeValue + "\">");
+
+        return matchedElement;
+    }
+
+    public static String getAttribute(Element element, String attributeName) {
+
+        int separatorIndex = attributeName.indexOf(':');
+
+        if (separatorIndex < 0) return element.getAttribute(attributeName);
+
+        String prefix = attributeName.substring(0, separatorIndex);
+
+        String localName = attributeName.substring(separatorIndex + 1);
+
+        String namespaceUri = element.lookupNamespaceURI(prefix);
+
+        if (namespaceUri == null || namespaceUri.isBlank()) return element.getAttribute(attributeName);
+
+        return element.getAttributeNS(namespaceUri, localName);
+    }
+
+    public static void setAttribute(Element element, String attributeName, String attributeValue) {
+
+        int separatorIndex = attributeName.indexOf(':');
+
+        if (separatorIndex < 0) {
+
+            element.setAttribute(attributeName, attributeValue);
+
+            return;
+        }
+
+        String prefix = attributeName.substring(0, separatorIndex);
+
+        String namespaceUri = element.lookupNamespaceURI(prefix);
+
+        if (namespaceUri == null || namespaceUri.isBlank()) throw new IllegalStateException("XML namespace prefix was not found: " + prefix);
+
+        element.setAttributeNS(namespaceUri, attributeName, attributeValue);
+    }    
     
     private static void removeWhitespaceNodes(Node node) {
 

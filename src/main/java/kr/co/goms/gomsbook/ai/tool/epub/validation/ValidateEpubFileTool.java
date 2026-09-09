@@ -36,11 +36,11 @@ import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
  * Epubcheck5.3.0
  * <p>EpubRuntime 전체에 의존하지 않고 검증기만 직접 주입받습니다.</p>
  */
-public final class ValidateEpubTool implements AgentTool {
+public final class ValidateEpubFileTool implements AgentTool {
 
-    public static final String NAME = "validate_epub";
-    public static final String TOOL_NAME = NAME;
-    public static final String DESCRIPTION = "Validates an EPUB file using internal validation, accessibility validation, EPUBCheck, or all configured validators.";
+    public static final String TOOL_NAME = "validate_epub_file";
+    public static final String DESCRIPTION = "Validates an already generated .epub file using internal EPUB validation, accessibility validation, EPUBCheck, or all configured validators. "
+    		+ "Use this tool for post-generation validation of the final EPUB file, not for validating the current EPUB project before the .epub file is created.";
 
     private static final String PROJECT_ROOT_ARGUMENT = "projectRoot";
     private static final String EPUB_GENERATION_REQUEST_ATTRIBUTE = "epubGenerationRequest";
@@ -56,11 +56,11 @@ public final class ValidateEpubTool implements AgentTool {
     private final LatestPublishedEpubResolver publishedEpubResolver;
     
 
-    public ValidateEpubTool(EpubValidator internalValidator, EpubAccessibilityValidator accessibilityValidator, EpubCheckValidator epubCheckValidator, CompositeEpubValidator compositeValidator, PublishDirectoryProvider publishDirectoryProvider) {
+    public ValidateEpubFileTool(EpubValidator internalValidator, EpubAccessibilityValidator accessibilityValidator, EpubCheckValidator epubCheckValidator, CompositeEpubValidator compositeValidator, PublishDirectoryProvider publishDirectoryProvider) {
         this(internalValidator, accessibilityValidator, epubCheckValidator, compositeValidator, publishDirectoryProvider, new LatestPublishedEpubResolver());
     }
 
-    public ValidateEpubTool(EpubValidator internalValidator, EpubAccessibilityValidator accessibilityValidator, EpubCheckValidator epubCheckValidator, CompositeEpubValidator compositeValidator, PublishDirectoryProvider publishDirectoryProvider, LatestPublishedEpubResolver publishedEpubResolver) {
+    public ValidateEpubFileTool(EpubValidator internalValidator, EpubAccessibilityValidator accessibilityValidator, EpubCheckValidator epubCheckValidator, CompositeEpubValidator compositeValidator, PublishDirectoryProvider publishDirectoryProvider, LatestPublishedEpubResolver publishedEpubResolver) {
         this.internalValidator = internalValidator;
         this.accessibilityValidator = accessibilityValidator;
         this.epubCheckValidator = epubCheckValidator;

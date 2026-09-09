@@ -7,13 +7,11 @@
  */
 package kr.co.goms.gomsbook.ai.tool.epub.navigation;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 import com.google.gson.Gson;
 
@@ -22,8 +20,8 @@ import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalAction;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
 import kr.co.goms.gomsbook.ai.agent.approval.payload.UpdateEpubNavigationApprovalPayload;
 import kr.co.goms.gomsbook.ai.epub.model.EpubNavigationItem;
-import kr.co.goms.gomsbook.ai.epub.navigation.updater.EpubNavigationInsertPosition;
-import kr.co.goms.gomsbook.ai.epub.navigation.updater.EpubNavigationUpdateItem;
+import kr.co.goms.gomsbook.ai.epub.updater.navigation.EpubNavigationInsertPosition;
+import kr.co.goms.gomsbook.ai.epub.updater.navigation.EpubNavigationUpdateItem;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
 import kr.co.goms.gomsbook.ai.tool.AgentTool;
@@ -37,20 +35,23 @@ public final class UpdateEpubNavigationTool implements AgentTool {
     public static final String TOOL_NAME = "update_epub_navigation";
 
     private static final String APPROVAL_TITLE = "EPUB 목차 수정";
-    private static final String PREVIEW_TITLE = "내용";
 
     private final CurrentProjectProvider currentProjectProvider;
     private final AgentApprovalService approvalService;
     private final Gson gson;
 
-    public UpdateEpubNavigationTool(
-            CurrentProjectProvider currentProjectProvider,
-            AgentApprovalService approvalService,
-            Gson gson) {
+    public UpdateEpubNavigationTool(CurrentProjectProvider currentProjectProvider, AgentApprovalService approvalService) {
+        this(currentProjectProvider, approvalService, new Gson());
+    }
 
-        this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null.");
-        this.approvalService = Objects.requireNonNull(approvalService, "approvalService must not be null.");
-        this.gson = Objects.requireNonNull(gson, "gson must not be null.");
+    public UpdateEpubNavigationTool(CurrentProjectProvider currentProjectProvider, AgentApprovalService approvalService, Gson gson) {
+        if (currentProjectProvider == null) throw new IllegalArgumentException("currentProjectProvider must not be null.");
+        if (approvalService == null) throw new IllegalArgumentException("approvalService must not be null.");
+        if (gson == null) throw new IllegalArgumentException("gson must not be null.");
+
+        this.currentProjectProvider = currentProjectProvider;
+        this.approvalService = approvalService;
+        this.gson = gson;
     }
 
     @Override
@@ -60,77 +61,54 @@ public final class UpdateEpubNavigationTool implements AgentTool {
 
     @Override
     public String getDescription() {
-        return "현재 EPUB 프로젝트의 기존 nav.xhtml 목차 항목을 수정하거나 위치를 이동합니다. "
-                + "기존 목차 전체를 다시 생성하지 않습니다. "
-                + "특정 항목의 제목 변경, 첫 위치 이동, 마지막 위치 이동, 다른 항목 앞 또는 뒤 이동에 사용합니다. "
-                + "position은 FIRST, LAST, BEFORE, AFTER 중 하나를 사용합니다. "
-                + "BEFORE 또는 AFTER를 사용하는 경우 referenceHref가 반드시 필요합니다. "
-                + "nav.xhtml이 없는 경우 이 Tool을 사용하지 말고 create_epub_navigation을 사용합니다.";
+        return "현재 EPUB 프로젝트의 nav.xhtml 목차 항목을 추가, 수정, 삭제하거나 불필요한 빈 li, ol, ul 요소를 정리합니다. 실제 수정 전에는 사용자 승인이 필요합니다.";
     }
 
     @Override
     public Map<String, Object> getInputSchema() {
         Map<String, Object> properties = new LinkedHashMap<>();
 
-        properties.put("href", stringProperty(
-                "수정하거나 이동할 기존 목차 항목의 href입니다. 예: copyright.xhtml"));
-
-        properties.put("label", stringProperty(
-                "목차에 표시할 제목입니다. 기존 제목을 유지하려면 현재 제목을 전달합니다."));
-
-        properties.put("id", stringProperty(
-                "목차 li 요소의 선택적 id입니다. 필요하지 않으면 생략합니다."));
-
-        properties.put("epubType", stringProperty(
-                "목차 링크의 선택적 epub:type입니다. 필요하지 않으면 생략합니다."));
-
-        properties.put("position", enumProperty(
-                "항목의 최종 위치입니다.",
-                List.of("FIRST", "LAST", "BEFORE", "AFTER")));
-
-        properties.put("referenceHref", stringProperty(
-                "position이 BEFORE 또는 AFTER일 때 기준이 되는 목차 항목의 href입니다."));
+        properties.put("operation", enumProperty(List.of("ADD", "UPDATE", "REMOVE", "CLEANUP"), "Navigation 작업 유형입니다."));
+        properties.put("href", stringProperty("목차 항목의 href입니다. ADD, UPDATE, REMOVE 작업에서 사용합니다."));
+        properties.put("label", stringProperty("목차에 표시할 제목입니다. ADD 또는 UPDATE 작업에서 사용합니다."));
+        properties.put("id", stringProperty("목차 li 요소의 선택적 id입니다."));
+        properties.put("position", enumProperty(List.of("FIRST", "LAST", "BEFORE", "AFTER"), "목차 항목의 삽입 또는 이동 위치입니다."));
+        properties.put("referenceHref", stringProperty("BEFORE 또는 AFTER 작업에서 기준이 되는 href입니다."));
 
         Map<String, Object> schema = new LinkedHashMap<>();
 
         schema.put("type", "object");
         schema.put("properties", properties);
-        schema.put("required", List.of("href", "label", "position"));
+        schema.put("required", List.of("operation"));
         schema.put("additionalProperties", false);
 
         return Collections.unmodifiableMap(schema);
     }
 
     @Override
-    public ToolResult execute(
-            ToolRequest request,
-            ToolContext context) {
-
+    public ToolResult execute(ToolRequest request, ToolContext context) {
         try {
             if (request == null) throw new IllegalArgumentException("ToolRequest must not be null.");
 
             EpubProjectContext project = requireCurrentProject();
-            Path navigationPath = requireNavigationFile(project);
-
             Map<String, Object> arguments = request.getArguments();
 
-            if (arguments == null || arguments.isEmpty()) {
-                throw new IllegalArgumentException("EPUB navigation update arguments must not be empty.");
-            }
+            if (arguments == null) arguments = Collections.emptyMap();
 
-            EpubNavigationUpdateItem updateItem = createUpdateItem(arguments);
+            Operation operation = Operation.from(requireString(arguments, "operation"));
 
-            String fileName = navigationPath.getFileName().toString();
-            UpdateEpubNavigationApprovalPayload payload =
-                    new UpdateEpubNavigationApprovalPayload(
-                            fileName,
-                            List.of(updateItem));
+            validateArguments(operation, arguments);
+
+            String fileName = project.getNavigationFile().getFileName().toString();
+            String href = resolvePayloadHref(operation, arguments);
+            List<EpubNavigationUpdateItem> items = createUpdateItems(operation, arguments);
+
+            UpdateEpubNavigationApprovalPayload payload = new UpdateEpubNavigationApprovalPayload(operation.name(), fileName, href, items);
 
             String content = gson.toJson(payload);
-            String preview = createPreview(updateItem);
             String runId = resolveRunId(request, context);
             String projectId = resolveProjectId(project);
-            String approvalMessage = "다음 내용으로 " + fileName + "을 수정하시겠습니까?";
+            String approvalMessage = createApprovalMessage(operation, arguments, fileName);
 
             AgentApproval approval = approvalService.create(
                     runId,
@@ -150,8 +128,13 @@ public final class UpdateEpubNavigationTool implements AgentTool {
             data.put("message", approval.getMessage());
             data.put("fileName", approval.getFileName());
             data.put("content", approval.getContent());
-            data.put("previewTitle", PREVIEW_TITLE);
-            data.put("preview", preview);
+            data.put("operation", operation.name());
+
+            if (href != null) data.put("href", href);
+
+            String label = optionalString(arguments, "label");
+
+            if (label != null) data.put("label", label);
 
             return ToolResult.builder()
                     .toolName(TOOL_NAME)
@@ -163,6 +146,7 @@ public final class UpdateEpubNavigationTool implements AgentTool {
                     .build();
 
         } catch (RuntimeException exception) {
+
             String errorMessage = "Failed to prepare EPUB navigation update: " + safeMessage(exception);
 
             return ToolResult.builder()
@@ -177,138 +161,99 @@ public final class UpdateEpubNavigationTool implements AgentTool {
         }
     }
 
+    private List<EpubNavigationUpdateItem> createUpdateItems(Operation operation, Map<String, Object> arguments) {
+        if (operation == Operation.REMOVE || operation == Operation.CLEANUP) return List.of();
+
+        String href = requireString(arguments, "href");
+        String label = requireString(arguments, "label");
+        String id = optionalString(arguments, "id");
+        String referenceHref = optionalString(arguments, "referenceHref");
+        EpubNavigationInsertPosition position = resolvePosition(arguments);
+
+        EpubNavigationItem.Builder builder = EpubNavigationItem.builder().href(href).label(label);
+
+        if (id != null) builder.id(id);
+
+        EpubNavigationItem item = builder.build();
+        EpubNavigationUpdateItem updateItem = new EpubNavigationUpdateItem(item, position, referenceHref);
+
+        return List.of(updateItem);
+    }
+
+    private String resolvePayloadHref(Operation operation, Map<String, Object> arguments) {
+        if (operation == Operation.CLEANUP) return null;
+
+        return requireString(arguments, "href");
+    }
+
+    private void validateArguments(Operation operation, Map<String, Object> arguments) {
+        if (operation == Operation.CLEANUP) return;
+
+        requireString(arguments, "href");
+
+        if (operation == Operation.REMOVE) return;
+
+        requireString(arguments, "label");
+
+        EpubNavigationInsertPosition position = resolvePosition(arguments);
+
+        if (position == EpubNavigationInsertPosition.BEFORE || position == EpubNavigationInsertPosition.AFTER) requireString(arguments, "referenceHref");
+    }
+
+    private EpubNavigationInsertPosition resolvePosition(Map<String, Object> arguments) {
+        String value = optionalString(arguments, "position");
+
+        if (value == null) return EpubNavigationInsertPosition.LAST;
+
+        try {
+            return EpubNavigationInsertPosition.valueOf(value.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Unsupported navigation position: " + value);
+        }
+    }
+
+    private String createApprovalMessage(Operation operation, Map<String, Object> arguments, String fileName) {
+        if (operation == Operation.CLEANUP) return fileName + "에서 불필요한 빈 li, ol, ul 요소를 정리하시겠습니까?";
+
+        String href = requireString(arguments, "href");
+
+        if (operation == Operation.REMOVE) return fileName + "에서 '" + href + "' 목차 항목을 삭제하시겠습니까?";
+        if (operation == Operation.ADD) return fileName + "에 '" + href + "' 목차 항목을 추가하시겠습니까?";
+
+        return fileName + "의 '" + href + "' 목차 항목을 수정하시겠습니까?";
+    }
+
     private EpubProjectContext requireCurrentProject() {
         EpubProjectContext project = currentProjectProvider.getCurrentProject();
 
         if (project == null) throw new IllegalStateException("Current EPUB project is not available.");
-        if (project.getProjectRoot() == null) throw new IllegalStateException("Current EPUB project root is not available.");
         if (project.getNavigationFile() == null) throw new IllegalStateException("Current EPUB navigation file is not available.");
 
         return project;
     }
 
-    private Path requireNavigationFile(EpubProjectContext project) {
-        Path navigationPath = project.getNavigationFile().toAbsolutePath().normalize();
+    private String resolveRunId(ToolRequest request, ToolContext context) {
+        if (context != null && context.getRequestId() != null && !context.getRequestId().isBlank()) return context.getRequestId().trim();
+        if (request != null && request.getRequestId() != null && !request.getRequestId().isBlank()) return request.getRequestId().trim();
 
-        if (!Files.exists(navigationPath)) {
-            throw new IllegalStateException(
-                    "EPUB navigation does not exist: "
-                            + navigationPath
-                            + ". Use create_epub_navigation instead.");
-        }
-
-        if (!Files.isRegularFile(navigationPath)) {
-            throw new IllegalStateException("EPUB navigation is not a file: " + navigationPath);
-        }
-
-        return navigationPath;
+        throw new IllegalStateException("runId is not available from ToolContext or ToolRequest.");
     }
 
-    private EpubNavigationUpdateItem createUpdateItem(Map<String, Object> arguments) {
-        String href = requireString(arguments, "href");
-        String label = requireString(arguments, "label");
-        String id = getString(arguments, "id");
-        String epubType = getString(arguments, "epubType");
-        EpubNavigationInsertPosition position = parsePosition(requireString(arguments, "position"));
-        String referenceHref = getString(arguments, "referenceHref");
+    private String resolveProjectId(EpubProjectContext project) {
+        if (project.getProjectName() != null && !project.getProjectName().isBlank()) return project.getProjectName().trim();
 
-        validatePosition(position, href, referenceHref);
-
-        EpubNavigationItem.Builder builder = EpubNavigationItem.builder(label, href);
-
-        if (id != null) builder.id(id);
-        if (epubType != null) builder.epubType(epubType);
-
-        EpubNavigationItem navigationItem = builder.build();
-
-        if (position == EpubNavigationInsertPosition.FIRST) {
-            return EpubNavigationUpdateItem.first(navigationItem);
-        }
-
-        if (position == EpubNavigationInsertPosition.LAST) {
-            return EpubNavigationUpdateItem.last(navigationItem);
-        }
-
-        if (position == EpubNavigationInsertPosition.BEFORE) {
-            return EpubNavigationUpdateItem.before(navigationItem, referenceHref);
-        }
-
-        if (position == EpubNavigationInsertPosition.AFTER) {
-            return EpubNavigationUpdateItem.after(navigationItem, referenceHref);
-        }
-
-        throw new IllegalArgumentException("Unsupported EPUB navigation position: " + position);
+        return project.getProjectRoot().toAbsolutePath().normalize().toString();
     }
 
-    private void validatePosition(
-            EpubNavigationInsertPosition position,
-            String href,
-            String referenceHref) {
-
-        if (position == EpubNavigationInsertPosition.FIRST
-                || position == EpubNavigationInsertPosition.LAST) {
-
-            return;
-        }
-
-        if (referenceHref == null || referenceHref.isBlank()) {
-            throw new IllegalArgumentException(
-                    "referenceHref is required when position is "
-                            + position
-                            + ".");
-        }
-
-        if (normalizeHref(href).equals(normalizeHref(referenceHref))) {
-            throw new IllegalArgumentException(
-                    "Navigation item cannot be positioned relative to itself: "
-                            + href);
-        }
-    }
-
-    private EpubNavigationInsertPosition parsePosition(String value) {
-        try {
-            return EpubNavigationInsertPosition.valueOf(value.trim().toUpperCase());
-
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException(
-                    "position must be one of FIRST, LAST, BEFORE, AFTER: "
-                            + value,
-                    exception);
-        }
-    }
-
-    private String createPreview(EpubNavigationUpdateItem updateItem) {
-        EpubNavigationItem item = updateItem.getItem();
-        StringBuilder builder = new StringBuilder();
-
-        builder.append("목차 항목 수정\n");
-        builder.append("제목: ").append(item.getLabel()).append('\n');
-        builder.append("href: ").append(item.getHref()).append('\n');
-        builder.append("위치: ").append(updateItem.getPosition());
-
-        if (updateItem.getReferenceHref() != null) {
-            builder.append('\n');
-            builder.append("기준 href: ").append(updateItem.getReferenceHref());
-        }
-
-        return builder.toString();
-    }
-
-    private String requireString(
-            Map<String, Object> arguments,
-            String name) {
-
-        String value = getString(arguments, name);
+    private String requireString(Map<String, Object> arguments, String name) {
+        String value = optionalString(arguments, name);
 
         if (value == null) throw new IllegalArgumentException(name + " must not be blank.");
 
         return value;
     }
 
-    private String getString(
-            Map<String, Object> arguments,
-            String name) {
-
+    private String optionalString(Map<String, Object> arguments, String name) {
         if (arguments == null || !arguments.containsKey(name)) return null;
 
         Object value = arguments.get(name);
@@ -320,41 +265,6 @@ public final class UpdateEpubNavigationTool implements AgentTool {
         return text.isEmpty() ? null : text;
     }
 
-    private String resolveRunId(
-            ToolRequest request,
-            ToolContext context) {
-
-        if (context != null
-                && context.getRequestId() != null
-                && !context.getRequestId().isBlank()) {
-
-            return context.getRequestId().trim();
-        }
-
-        if (request != null
-                && request.getRequestId() != null
-                && !request.getRequestId().isBlank()) {
-
-            return request.getRequestId().trim();
-        }
-
-        throw new IllegalStateException(
-                "runId is not available from ToolContext or ToolRequest.");
-    }
-
-    private String resolveProjectId(EpubProjectContext project) {
-        if (project.getProjectName() != null
-                && !project.getProjectName().isBlank()) {
-
-            return project.getProjectName().trim();
-        }
-
-        return project.getProjectRoot()
-                .toAbsolutePath()
-                .normalize()
-                .toString();
-    }
-
     private Map<String, Object> stringProperty(String description) {
         Map<String, Object> property = new LinkedHashMap<>();
 
@@ -364,23 +274,14 @@ public final class UpdateEpubNavigationTool implements AgentTool {
         return property;
     }
 
-    private Map<String, Object> enumProperty(
-            String description,
-            List<String> values) {
-
+    private Map<String, Object> enumProperty(List<String> values, String description) {
         Map<String, Object> property = new LinkedHashMap<>();
 
         property.put("type", "string");
-        property.put("description", description);
         property.put("enum", values);
+        property.put("description", description);
 
         return property;
-    }
-
-    private String normalizeHref(String href) {
-        if (href == null) return "";
-
-        return href.trim().replace('\\', '/');
     }
 
     private String safeMessage(Throwable throwable) {
@@ -388,5 +289,21 @@ public final class UpdateEpubNavigationTool implements AgentTool {
         if (throwable.getMessage() == null || throwable.getMessage().isBlank()) return throwable.getClass().getSimpleName();
 
         return throwable.getMessage();
+    }
+
+    private enum Operation {
+
+        ADD,
+        UPDATE,
+        REMOVE,
+        CLEANUP;
+
+        private static Operation from(String value) {
+            try {
+                return Operation.valueOf(value.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException exception) {
+                throw new IllegalArgumentException("Unsupported navigation operation: " + value);
+            }
+        }
     }
 }

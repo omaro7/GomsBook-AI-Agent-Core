@@ -10,10 +10,13 @@ import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
 import kr.co.goms.gomsbook.ai.epub.plan.project.CreateEpubProjectPlanService;
+import kr.co.goms.gomsbook.ai.epub.publish.EpubPublisher;
 import kr.co.goms.gomsbook.ai.epub.service.EpubStructureValidator;
 import kr.co.goms.gomsbook.ai.epub.service.LatestPublishedEpubResolver;
 import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
+import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectAccessibilityValidator;
+import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectValidator;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.tool.accessibility.ValidateAccessibilityTool;
@@ -56,12 +59,16 @@ import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectPlanTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectStructureTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.SwitchCurrentEpubProjectTool;
+import kr.co.goms.gomsbook.ai.tool.epub.publish.PublishEpubTool;
 import kr.co.goms.gomsbook.ai.tool.epub.resource.ApplyEpubStylesheetTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubFileSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.UpdateEpubSpineTool;
-import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubStructureTool;
-import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubTool;
+import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubFileStructureTool;
+import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubFileTool;
+import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubProjectAccessibilityTool;
+import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubProjectTool;
+import kr.co.goms.gomsbook.ai.tool.epub.xhtml.UpdateEpubXhtmlAttributeTool;
 import kr.co.goms.gomsbook.ai.tool.image.InspectEpubImagesTool;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
 import kr.co.goms.gomsbook.ai.agent.event.AgentEventPublisher;
@@ -85,8 +92,11 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     
     private final LatestPublishedEpubResolver latestPublishedEpubResolver;
     private final EpubStructureValidator epubStructureValidator;
+    private final EpubProjectAccessibilityValidator epubProjectAccessibilityValidator;
+    private final EpubProjectValidator epubProjectValidator;
     
     private final Gson gson;
+    
     
     public DefaultAgentToolRegistrar(CurrentProjectProvider currentProjectProvider, PublishDirectoryProvider publishDirectoryProvider, EpubCheckValidator epubCheckValidator, 
     		AccessibilityValidator accessibilityValidator,
@@ -94,7 +104,8 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
             AgentEventPublisher eventPublisher,
             CurrentProjectStore currentProjectStore, CreateEpubProjectPlanService createEpubProjectPlanService, Path epubProjectsRoot,
             LatestPublishedEpubResolver latestPublishedEpubResolver, EpubStructureValidator epubStructureValidator,
-            Gson gson
+            Gson gson,
+            EpubProjectAccessibilityValidator epubProjectAccessibilityValidator, EpubProjectValidator epubProjectValidator
             ) {
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
@@ -108,6 +119,8 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         this.latestPublishedEpubResolver = Objects.requireNonNull(latestPublishedEpubResolver, "latestPublishedEpubResolver must not be null");
         this.epubStructureValidator = Objects.requireNonNull(epubStructureValidator, "epubStructureValidator must not be null");
         this.gson = Objects.requireNonNull(gson, "gson must not be null");
+        this.epubProjectAccessibilityValidator = Objects.requireNonNull(epubProjectAccessibilityValidator, "accessibilityValidator must not be null");
+        this.epubProjectValidator = Objects.requireNonNull(epubProjectValidator, "epubProjectValidator must not be null");
      }
 
 
@@ -124,10 +137,10 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new EchoTool());
         registerIfAbsent(registry, new InspectEpubTool());
         registerIfAbsent(registry, new InspectCurrentProjectTool(currentProjectProvider));
-        registerIfAbsent(registry, new ValidateEpubStructureTool(currentProjectProvider, publishDirectoryProvider, latestPublishedEpubResolver, epubStructureValidator));
+        registerIfAbsent(registry, new ValidateEpubFileStructureTool(currentProjectProvider, publishDirectoryProvider, latestPublishedEpubResolver, epubStructureValidator));
         registerIfAbsent(registry, new InspectEpubImagesTool(currentProjectProvider));
 
-        registerIfAbsent(registry, new ValidateEpubTool(null, null, epubCheckValidator, null, publishDirectoryProvider));
+        registerIfAbsent(registry, new ValidateEpubFileTool(null, null, epubCheckValidator, null, publishDirectoryProvider));
         registerIfAbsent(registry, new ValidateAccessibilityTool(accessibilityValidator));
         registerIfAbsent(registry, new CreateBasicXhtmlTool(currentProjectProvider, approvalService, eventPublisher));
         
@@ -183,6 +196,13 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new UpdateEpubSpineTool(currentProjectProvider, approvalService));						// EPUB Content.opf Spine 수정
         registerIfAbsent(registry, new UpdateEpubManifestTool(currentProjectProvider, approvalService));					// EPUB Content.opf Manifest 수정
         registerIfAbsent(registry, new UpdateEpubMetadataTool(currentProjectProvider, approvalService));					// EPUB Content.opf Metadata 수정
+        
+        registerIfAbsent(registry, new ValidateEpubProjectAccessibilityTool(currentProjectProvider, epubProjectAccessibilityValidator));		// EPUB Project Accessibility Validator
+        registerIfAbsent(registry, new UpdateEpubXhtmlAttributeTool(currentProjectProvider, approvalService));				// EPUB xhtml 속성 수정
+        registerIfAbsent(registry, new ValidateEpubProjectTool(currentProjectProvider, epubProjectValidator));				// EPUB Project 검증
+        
+        registerIfAbsent(registry, new PublishEpubTool(currentProjectProvider, publishDirectoryProvider));	// EPUB .epub 파일 생성
+        
         
     }
 

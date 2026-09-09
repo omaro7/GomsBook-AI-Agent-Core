@@ -2,10 +2,12 @@
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
  */
-package kr.co.goms.gomsbook.ai.epub.navigation.updater;
+package kr.co.goms.gomsbook.ai.epub.updater.navigation;
 
 import java.nio.file.Path;
 import java.util.List;
+
+import kr.co.goms.gomsbook.ai.epub.model.EpubNavigationCleanupResult;
 
 
 public interface EpubNavigationUpdater {
@@ -19,4 +21,8 @@ public interface EpubNavigationUpdater {
     boolean containsItem(Path navigationPath, String href);
 
     void update(Path navigationPath, List<EpubNavigationUpdateItem> items);
+    
+    boolean removeByHrefIfExists(Path navigationPath, String href);
+
+    EpubNavigationCleanupResult cleanup(Path navigationPath);
 }

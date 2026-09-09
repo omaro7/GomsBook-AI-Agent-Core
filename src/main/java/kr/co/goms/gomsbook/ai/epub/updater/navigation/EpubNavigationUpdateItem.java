@@ -2,7 +2,7 @@
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
  */
-package kr.co.goms.gomsbook.ai.epub.navigation.updater;
+package kr.co.goms.gomsbook.ai.epub.updater.navigation;
 
 import kr.co.goms.gomsbook.ai.epub.model.EpubNavigationItem;
 

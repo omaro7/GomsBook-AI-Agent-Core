@@ -2,7 +2,7 @@
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
  */
-package kr.co.goms.gomsbook.ai.epub.pkg.updater;
+package kr.co.goms.gomsbook.ai.epub.updater.pkg;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -935,14 +935,34 @@ public class DefaultEpubPackageUpdater implements EpubPackageUpdater {
 
     private void writeProperties(Element element, EpubManifestItem resource) {
 
-        if (resource.getProperties() == null || resource.getProperties().isEmpty()) {
+        List<String> properties = new ArrayList<>();
+
+        if (resource.getProperties() != null) properties.addAll(resource.getProperties());
+
+        if (isNavigationDocument(resource) && !properties.contains("nav")) properties.add("nav");
+
+        if (properties.isEmpty()) {
 
             element.removeAttribute("properties");
 
             return;
         }
 
-        element.setAttribute("properties", String.join(" ", resource.getProperties()));
+        element.setAttribute("properties", String.join(" ", properties));
+    }
+
+    private boolean isNavigationDocument(EpubManifestItem resource) {
+
+        if (resource == null) return false;
+
+        String href = normalizeHref(resource.getHref());
+
+        if (href.isBlank()) return false;
+
+        int slashIndex = href.lastIndexOf('/');
+        String fileName = slashIndex >= 0 ? href.substring(slashIndex + 1) : href;
+
+        return "nav.xhtml".equalsIgnoreCase(fileName);
     }
 
     private void writeFallback(Element element, EpubManifestItem resource) {

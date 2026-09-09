@@ -2,7 +2,7 @@
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
  */
-package kr.co.goms.gomsbook.ai.epub.navigation.updater;
+package kr.co.goms.gomsbook.ai.epub.updater.navigation;
 
 /**
  * EPUB Navigation 항목의 삽입 위치를 정의합니다.

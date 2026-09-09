@@ -10,7 +10,7 @@ import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
 import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
-import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubTool;
+import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubFileTool;
 
 public final class ValidateEpubToolSmokeTest {
 
@@ -27,7 +27,7 @@ public final class ValidateEpubToolSmokeTest {
         EpubCheckValidator epubCheckValidator = new EpubCheckRunnerValidator(epubCheckRunner, "5.3.0");
         PublishDirectoryProvider publishDirectoryProvider = () -> publishDirectory;
 
-        ValidateEpubTool tool = new ValidateEpubTool(null, null, epubCheckValidator, null, publishDirectoryProvider);
+        ValidateEpubFileTool tool = new ValidateEpubFileTool(null, null, epubCheckValidator, null, publishDirectoryProvider);
 
         ToolRequest request = ToolRequest.builder().toolName(tool.getName()).arguments(Map.of("validationMode", "EPUB_CHECK")).build();
         ToolContext context = ToolContext.builder().build();

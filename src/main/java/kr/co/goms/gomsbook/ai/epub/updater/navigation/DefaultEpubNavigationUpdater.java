@@ -5,7 +5,7 @@
  * Project: GomsBook AI
  * AI-powered EPUB authoring, validation, accessibility, and publishing automation.
  */
-package kr.co.goms.gomsbook.ai.epub.navigation.updater;
+package kr.co.goms.gomsbook.ai.epub.updater.navigation;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +18,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import kr.co.goms.gomsbook.ai.epub.model.EpubNavigationCleanupResult;
 import kr.co.goms.gomsbook.ai.epub.model.EpubNavigationItem;
 import kr.co.goms.gomsbook.ai.util.EpubXmlUtil;
 
@@ -56,13 +57,18 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         Element list = requireNavigationList(document, toc);
 
         removeItemsByHref(list, href);
+        cleanupList(list);
 
         EpubXmlUtil.writeDocument(navigationPath, document);
     }
 
     @Override
     public void removeItemIfExists(Path navigationPath, String href) {
+        removeByHrefIfExists(navigationPath, href);
+    }
 
+    @Override
+    public boolean removeByHrefIfExists(Path navigationPath, String href) {
         validateNavigationPath(navigationPath);
 
         if (href == null || href.isBlank()) throw new IllegalArgumentException("href must not be empty.");
@@ -73,11 +79,30 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         boolean removed = removeItemsByHrefIfExists(list, href);
 
-        if (!removed) return;
+        if (!removed) return false;
+
+        cleanupList(list);
 
         EpubXmlUtil.writeDocument(navigationPath, document);
+
+        return true;
     }
-    
+
+    @Override
+    public EpubNavigationCleanupResult cleanup(Path navigationPath) {
+        validateNavigationPath(navigationPath);
+
+        Document document = EpubXmlUtil.readDocument(navigationPath);
+        Element toc = requireTocNavigation(document);
+        Element list = requireNavigationList(document, toc);
+
+        CleanupCounter counter = cleanupList(list);
+
+        if (counter.getRemovedListItems() > 0 || counter.getRemovedLists() > 0) EpubXmlUtil.writeDocument(navigationPath, document);
+
+        return new EpubNavigationCleanupResult(counter.getRemovedListItems(), counter.getRemovedLists());
+    }
+
     @Override
     public boolean containsItem(Path navigationPath, String href) {
         validateNavigationPath(navigationPath);
@@ -150,18 +175,13 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
         updateNavigationItem(target, item);
 
-        /*
-         * 기존 항목도 position 규칙을 적용할 수 있도록
-         * 현재 위치에서 제거한 후 다시 삽입합니다.
-         */
         if (target.getParentNode() == list) list.removeChild(target);
 
         insertItem(list, target, updateItem);
     }
 
     /**
-     * BEFORE / AFTER 위치 변경에서 자기 자신을 기준 항목으로
-     * 지정하는 잘못된 요청을 방지합니다.
+     * BEFORE / AFTER 위치 변경에서 자기 자신을 기준 항목으로 지정하는 요청을 방지합니다.
      */
     private void validateRelativePosition(EpubNavigationUpdateItem updateItem) {
         EpubNavigationInsertPosition position = updateItem.getPosition();
@@ -172,9 +192,7 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         String href = normalizeHref(item.getHref());
         String referenceHref = normalizeHref(updateItem.getReferenceHref());
 
-        if (href.equals(referenceHref)) {
-            throw new IllegalStateException("Navigation item cannot be positioned relative to itself: " + item.getHref());
-        }
+        if (href.equals(referenceHref)) throw new IllegalStateException("Navigation item cannot be positioned relative to itself: " + item.getHref());
     }
 
     private Element createNavigationItem(Document document, EpubNavigationItem item) {
@@ -233,24 +251,17 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
             return;
         }
 
-        /*
-         * LAST 또는 기본 위치는 마지막에 삽입합니다.
-         */
         list.appendChild(item);
     }
 
     private Element requireReferenceItem(Element list, EpubNavigationUpdateItem updateItem) {
         String referenceHref = updateItem.getReferenceHref();
 
-        if (referenceHref == null || referenceHref.isBlank()) {
-            throw new IllegalStateException("Navigation reference href must not be empty for position: " + updateItem.getPosition());
-        }
+        if (referenceHref == null || referenceHref.isBlank()) throw new IllegalStateException("Navigation reference href must not be empty for position: " + updateItem.getPosition());
 
         Element reference = findItemByHref(list, referenceHref);
 
-        if (reference == null) {
-            throw new IllegalStateException("Navigation reference item does not exist: " + referenceHref);
-        }
+        if (reference == null) throw new IllegalStateException("Navigation reference item does not exist: " + referenceHref);
 
         return reference;
     }
@@ -295,9 +306,15 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
             Element anchor = findDirectAnchor(element);
 
-            if (anchor == null) continue;
+            if (anchor != null && normalizedHref.equals(normalizeHref(anchor.getAttribute("href")))) return element;
 
-            if (normalizedHref.equals(normalizeHref(anchor.getAttribute("href")))) return element;
+            Element nestedList = findDirectList(element);
+
+            if (nestedList == null) continue;
+
+            Element nestedItem = findItemByHref(nestedList, href);
+
+            if (nestedItem != null) return nestedItem;
         }
 
         return null;
@@ -317,6 +334,14 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
             if (!isElement(element, "li")) continue;
             if (id.equals(element.getAttribute("id"))) return element;
+
+            Element nestedList = findDirectList(element);
+
+            if (nestedList == null) continue;
+
+            Element nestedItem = findItemById(nestedList, id);
+
+            if (nestedItem != null) return nestedItem;
         }
 
         return null;
@@ -338,6 +363,22 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         return null;
     }
 
+    private Element findDirectList(Element parent) {
+        NodeList children = parent.getChildNodes();
+
+        for (int index = 0; index < children.getLength(); index++) {
+            Node node = children.item(index);
+
+            if (!(node instanceof Element)) continue;
+
+            Element element = (Element) node;
+
+            if (isElement(element, "ol") || isElement(element, "ul")) return element;
+        }
+
+        return null;
+    }
+
     private void removeItemsByHref(Element list, String href) {
         String normalizedHref = normalizeHref(href);
         NodeList children = list.getChildNodes();
@@ -353,10 +394,45 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
 
             Element anchor = findDirectAnchor(element);
 
-            if (anchor == null) continue;
+            if (anchor != null && normalizedHref.equals(normalizeHref(anchor.getAttribute("href")))) {
+                list.removeChild(element);
+                continue;
+            }
 
-            if (normalizedHref.equals(normalizeHref(anchor.getAttribute("href")))) list.removeChild(element);
+            Element nestedList = findDirectList(element);
+
+            if (nestedList != null) removeItemsByHref(nestedList, href);
         }
+    }
+
+    private boolean removeItemsByHrefIfExists(Element list, String href) {
+        boolean removed = false;
+        String normalizedHref = normalizeHref(href);
+        NodeList children = list.getChildNodes();
+
+        for (int index = children.getLength() - 1; index >= 0; index--) {
+            Node node = children.item(index);
+
+            if (!(node instanceof Element)) continue;
+
+            Element element = (Element) node;
+
+            if (!isElement(element, "li")) continue;
+
+            Element anchor = findDirectAnchor(element);
+
+            if (anchor != null && normalizedHref.equals(normalizeHref(anchor.getAttribute("href")))) {
+                list.removeChild(element);
+                removed = true;
+                continue;
+            }
+
+            Element nestedList = findDirectList(element);
+
+            if (nestedList != null) removed = removeItemsByHrefIfExists(nestedList, href) || removed;
+        }
+
+        return removed;
     }
 
     private void removeItemElement(Element list, Element item) {
@@ -403,6 +479,98 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
             if (!href.isEmpty()) hrefs.put(href, Boolean.TRUE);
             if (!id.isBlank()) ids.put(id, Boolean.TRUE);
         }
+    }
+
+    /**
+     * 빈 li와 중첩된 빈 ol/ul을 재귀적으로 정리합니다.
+     *
+     * 최상위 TOC ol은 삭제하지 않습니다.
+     */
+    private CleanupCounter cleanupList(Element list) {
+        CleanupCounter counter = new CleanupCounter();
+        NodeList children = list.getChildNodes();
+
+        for (int index = children.getLength() - 1; index >= 0; index--) {
+            Node node = children.item(index);
+
+            if (!(node instanceof Element)) continue;
+
+            Element li = (Element) node;
+
+            if (!isElement(li, "li")) continue;
+
+            cleanupNestedLists(li, counter);
+
+            if (!isEmptyListItem(li)) continue;
+
+            list.removeChild(li);
+            counter.incrementRemovedListItems();
+        }
+
+        return counter;
+    }
+
+    private void cleanupNestedLists(Element li, CleanupCounter counter) {
+        NodeList children = li.getChildNodes();
+
+        for (int index = children.getLength() - 1; index >= 0; index--) {
+            Node node = children.item(index);
+
+            if (!(node instanceof Element)) continue;
+
+            Element child = (Element) node;
+
+            if (!isElement(child, "ol") && !isElement(child, "ul")) continue;
+
+            CleanupCounter nestedCounter = cleanupList(child);
+
+            counter.add(nestedCounter);
+
+            if (hasDirectListItem(child)) continue;
+
+            li.removeChild(child);
+            counter.incrementRemovedLists();
+        }
+    }
+
+    private boolean isEmptyListItem(Element li) {
+        if (findDirectAnchor(li) != null) return false;
+        if (hasDirectElement(li, "span")) return false;
+        if (hasDirectElement(li, "ol")) return false;
+        if (hasDirectElement(li, "ul")) return false;
+
+        return !hasMeaningfulDirectText(li);
+    }
+
+    private boolean hasDirectElement(Element parent, String localName) {
+        NodeList children = parent.getChildNodes();
+
+        for (int index = 0; index < children.getLength(); index++) {
+            Node node = children.item(index);
+
+            if (!(node instanceof Element)) continue;
+
+            if (isElement((Element) node, localName)) return true;
+        }
+
+        return false;
+    }
+
+    private boolean hasDirectListItem(Element list) {
+        return hasDirectElement(list, "li");
+    }
+
+    private boolean hasMeaningfulDirectText(Element element) {
+        NodeList children = element.getChildNodes();
+
+        for (int index = 0; index < children.getLength(); index++) {
+            Node node = children.item(index);
+
+            if (node.getNodeType() != Node.TEXT_NODE) continue;
+            if (!node.getTextContent().trim().isEmpty()) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -464,56 +632,33 @@ public class DefaultEpubNavigationUpdater implements EpubNavigationUpdater {
         if (!Files.exists(navigationPath)) throw new IllegalStateException("EPUB navigation does not exist: " + navigationPath);
         if (!Files.isRegularFile(navigationPath)) throw new IllegalStateException("EPUB navigation is not a file: " + navigationPath);
     }
-    
-    private boolean removeItemsByHrefIfExists(Element list, String href) {
 
-        boolean removed = false;
-        NodeList children = list.getChildNodes();
+    private static class CleanupCounter {
 
-        for (int index = children.getLength() - 1; index >= 0; index--) {
+        private int removedListItems;
+        private int removedLists;
 
-            Node node = children.item(index);
-
-            if (!(node instanceof Element)) continue;
-
-            Element element = (Element) node;
-
-            if (!isElement(element, "li")) continue;
-
-            Element anchor = findDirectAnchor(element);
-
-            if (anchor != null && href.equals(anchor.getAttribute("href"))) {
-
-                list.removeChild(element);
-
-                removed = true;
-
-                continue;
-            }
-
-            Element nestedList = findDirectList(element);
-
-            if (nestedList != null) removed = removeItemsByHrefIfExists(nestedList, href) || removed;
+        public int getRemovedListItems() {
+            return removedListItems;
         }
 
-        return removed;
-    }
-    
-    private Element findDirectList(Element parent) {
-
-        NodeList children = parent.getChildNodes();
-
-        for (int index = 0; index < children.getLength(); index++) {
-
-            Node node = children.item(index);
-
-            if (!(node instanceof Element)) continue;
-
-            Element element = (Element) node;
-
-            if (isElement(element, "ol") || isElement(element, "ul")) return element;
+        public int getRemovedLists() {
+            return removedLists;
         }
 
-        return null;
+        public void incrementRemovedListItems() {
+            removedListItems++;
+        }
+
+        public void incrementRemovedLists() {
+            removedLists++;
+        }
+
+        public void add(CleanupCounter counter) {
+            if (counter == null) return;
+
+            removedListItems += counter.removedListItems;
+            removedLists += counter.removedLists;
+        }
     }
 }

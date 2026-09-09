@@ -11,9 +11,9 @@ import java.util.List;
 import kr.co.goms.gomsbook.ai.epub.model.EpubManifestItem;
 import kr.co.goms.gomsbook.ai.epub.model.EpubNavigationItem;
 import kr.co.goms.gomsbook.ai.epub.model.EpubSpineItem;
-import kr.co.goms.gomsbook.ai.epub.navigation.updater.EpubNavigationUpdateItem;
-import kr.co.goms.gomsbook.ai.epub.navigation.updater.EpubNavigationUpdater;
-import kr.co.goms.gomsbook.ai.epub.pkg.updater.EpubPackageUpdater;
+import kr.co.goms.gomsbook.ai.epub.updater.navigation.EpubNavigationUpdateItem;
+import kr.co.goms.gomsbook.ai.epub.updater.navigation.EpubNavigationUpdater;
+import kr.co.goms.gomsbook.ai.epub.updater.pkg.EpubPackageUpdater;
 
 public class EpubAuthorService {
 
