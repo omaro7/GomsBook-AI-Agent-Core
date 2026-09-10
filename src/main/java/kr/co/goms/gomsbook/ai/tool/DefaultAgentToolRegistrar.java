@@ -64,6 +64,7 @@ import kr.co.goms.gomsbook.ai.tool.epub.resource.ApplyEpubStylesheetTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubFileSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.UpdateEpubSpineTool;
+import kr.co.goms.gomsbook.ai.tool.epub.validation.FixEpubFileCheckTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubFileStructureTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubFileTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubProjectAccessibilityTool;
@@ -73,6 +74,9 @@ import kr.co.goms.gomsbook.ai.tool.image.InspectEpubImagesTool;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
 import kr.co.goms.gomsbook.ai.agent.event.AgentEventPublisher;
 import com.google.gson.Gson;
+import kr.co.goms.gomsbook.ai.epub.service.EpubCheckRunner;
+import kr.co.goms.gomsbook.ai.epub.validation.fix.EpubFileCheckFixService;
+import kr.co.goms.gomsbook.ai.tool.epub.validation.FixEpubFileCheckTool;
 
 /**
  * Core 공통 Agent Tool을 등록하는 기본 구현체입니다.
@@ -97,6 +101,8 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     
     private final Gson gson;
     
+    private final EpubCheckRunner epubCheckRunner;
+    private final EpubFileCheckFixService epubFileCheckFixService;
     
     public DefaultAgentToolRegistrar(CurrentProjectProvider currentProjectProvider, PublishDirectoryProvider publishDirectoryProvider, EpubCheckValidator epubCheckValidator, 
     		AccessibilityValidator accessibilityValidator,
@@ -105,7 +111,8 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
             CurrentProjectStore currentProjectStore, CreateEpubProjectPlanService createEpubProjectPlanService, Path epubProjectsRoot,
             LatestPublishedEpubResolver latestPublishedEpubResolver, EpubStructureValidator epubStructureValidator,
             Gson gson,
-            EpubProjectAccessibilityValidator epubProjectAccessibilityValidator, EpubProjectValidator epubProjectValidator
+            EpubProjectAccessibilityValidator epubProjectAccessibilityValidator, EpubProjectValidator epubProjectValidator,
+            EpubCheckRunner epubCheckRunner, EpubFileCheckFixService epubFileCheckFixService
             ) {
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
@@ -121,6 +128,9 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         this.gson = Objects.requireNonNull(gson, "gson must not be null");
         this.epubProjectAccessibilityValidator = Objects.requireNonNull(epubProjectAccessibilityValidator, "accessibilityValidator must not be null");
         this.epubProjectValidator = Objects.requireNonNull(epubProjectValidator, "epubProjectValidator must not be null");
+        this.epubCheckRunner = Objects.requireNonNull(epubCheckRunner, "epubCheckRunner must not be null");
+        this.epubFileCheckFixService = Objects.requireNonNull(epubFileCheckFixService, "epubFileCheckFixService must not be null");
+               
      }
 
 
@@ -140,7 +150,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new ValidateEpubFileStructureTool(currentProjectProvider, publishDirectoryProvider, latestPublishedEpubResolver, epubStructureValidator));
         registerIfAbsent(registry, new InspectEpubImagesTool(currentProjectProvider));
 
-        registerIfAbsent(registry, new ValidateEpubFileTool(null, null, epubCheckValidator, null, publishDirectoryProvider));
+        registerIfAbsent(registry, new ValidateEpubFileTool(null, null, epubCheckValidator, null, publishDirectoryProvider, currentProjectProvider));
         registerIfAbsent(registry, new ValidateAccessibilityTool(accessibilityValidator));
         registerIfAbsent(registry, new CreateBasicXhtmlTool(currentProjectProvider, approvalService, eventPublisher));
         
@@ -201,8 +211,8 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new UpdateEpubXhtmlAttributeTool(currentProjectProvider, approvalService));				// EPUB xhtml 속성 수정
         registerIfAbsent(registry, new ValidateEpubProjectTool(currentProjectProvider, epubProjectValidator));				// EPUB Project 검증
         
-        registerIfAbsent(registry, new PublishEpubTool(currentProjectProvider, publishDirectoryProvider));	// EPUB .epub 파일 생성
-        
+        registerIfAbsent(registry, new PublishEpubTool(currentProjectProvider, publishDirectoryProvider));					// EPUB .epub 파일 생성
+        registerIfAbsent(registry, new FixEpubFileCheckTool(currentProjectProvider, publishDirectoryProvider, epubCheckRunner, epubFileCheckFixService));	// EPUB .epub 파일 검증 후 Fix하기
         
     }
 

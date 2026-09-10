@@ -7,6 +7,8 @@ import kr.co.goms.gomsbook.ai.epub.service.EpubCheckRunner;
 import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckRunnerValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
+import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
 import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
@@ -22,12 +24,21 @@ public final class ValidateEpubToolSmokeTest {
         Path publishDirectory = Path.of("C:/1004.GomsBook/02.Publish/lunchwork_seoul");
         Path projectRoot = Path.of("C:/1004.GomsBook/03.Project/lunchwork_seoul");
         Path epubFile = Path.of("C:/1004.GomsBook/02.Publish/lunchwork_seoul/lunchwork_seoul-202608163712.epub");
+
         
         EpubCheckRunner epubCheckRunner = new EpubCheckRunner(epubCheckDirectory, "5.3.0");
         EpubCheckValidator epubCheckValidator = new EpubCheckRunnerValidator(epubCheckRunner, "5.3.0");
         PublishDirectoryProvider publishDirectoryProvider = () -> publishDirectory;
 
-        ValidateEpubFileTool tool = new ValidateEpubFileTool(null, null, epubCheckValidator, null, publishDirectoryProvider);
+        EpubProjectContext projectContext = new EpubProjectContext(
+                "epub-ai-agent",
+                Path.of("C:\\1004.GomsBook\\03.Project\\epub-ai-agent"), 
+                null, null, null
+        );
+
+        CurrentProjectProvider currentProjectProvider = () -> projectContext;
+
+        ValidateEpubFileTool tool = new ValidateEpubFileTool(null, null, epubCheckValidator, null, publishDirectoryProvider, currentProjectProvider);
 
         ToolRequest request = ToolRequest.builder().toolName(tool.getName()).arguments(Map.of("validationMode", "EPUB_CHECK")).build();
         ToolContext context = ToolContext.builder().build();

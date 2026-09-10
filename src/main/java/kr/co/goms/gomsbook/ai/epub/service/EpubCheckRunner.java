@@ -1,6 +1,9 @@
 /*
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
+ *
+ * Project: GomsBook AI
+ * AI-powered EPUB authoring, validation, accessibility, and publishing automation.
  */
 package kr.co.goms.gomsbook.ai.epub.service;
 
@@ -23,7 +26,6 @@ import com.google.gson.JsonParser;
 import kr.co.goms.gomsbook.ai.epub.model.EpubCheckMessage;
 import kr.co.goms.gomsbook.ai.epub.model.EpubCheckResult;
 
-
 /**
  * EPUBCheck 배포본을 외부 Java Process로 실행합니다.
  *
@@ -32,46 +34,29 @@ import kr.co.goms.gomsbook.ai.epub.model.EpubCheckResult;
  */
 public final class EpubCheckRunner {
 
-
-    private static final String EPUBCHECK_JAR = "epubcheck.jar";
-    
     private static final String EPUBCHECK_JAR_PREFIX = "epubcheck-";
     private static final String EPUBCHECK_JAR_SUFFIX = ".jar";
-
     private static final String EPUBCHECK_LIB_DIRECTORY = "lib";
-
     private static final String EPUBCHECK_MAIN_CLASS = "com.adobe.epubcheck.tool.Checker";
 
-
     private final Path epubCheckDirectory;
-
     private final String epubCheckVersion;
 
+    public EpubCheckRunner(Path epubCheckDirectory, String epubCheckVersion) {
 
-    public EpubCheckRunner(
-            Path epubCheckDirectory,
-            String epubCheckVersion) {
-
-        if (epubCheckDirectory == null) {
-
-            throw new IllegalArgumentException("epubCheckDirectory must not be null.");
-        }
+        if (epubCheckDirectory == null) throw new IllegalArgumentException("epubCheckDirectory must not be null.");
 
         this.epubCheckDirectory = epubCheckDirectory.toAbsolutePath().normalize();
-
         this.epubCheckVersion = normalizeVersion(epubCheckVersion);
 
         validateEpubCheckRuntime();
     }
 
-
-    public EpubCheckResult run(
-            Path epubFile) {
+    public EpubCheckResult run(Path epubFile) {
 
         validateEpubFile(epubFile);
 
         Path normalizedEpubFile = epubFile.toAbsolutePath().normalize();
-
         Path reportFile = null;
 
         try {
@@ -102,10 +87,7 @@ public final class EpubCheckRunner {
         }
     }
 
-
-    private ProcessResult execute(
-            Path epubFile,
-            Path reportFile) throws IOException, InterruptedException {
+    private ProcessResult execute(Path epubFile, Path reportFile) throws IOException, InterruptedException {
 
         String classpath = createClasspath();
 
@@ -120,7 +102,6 @@ public final class EpubCheckRunner {
                 reportFile.toString());
 
         builder.directory(epubCheckDirectory.toFile());
-
         builder.redirectErrorStream(true);
 
         Process process = builder.start();
@@ -144,8 +125,7 @@ public final class EpubCheckRunner {
         return String.join(File.pathSeparator, epubCheckJar, epubCheckLib);
     }
 
-    private String readProcessOutput(
-            Process process) throws IOException {
+    private String readProcessOutput(Process process) throws IOException {
 
         StringBuilder output = new StringBuilder();
 
@@ -153,23 +133,16 @@ public final class EpubCheckRunner {
 
             String line;
 
-            while ((line = reader.readLine()) != null) {
-
-                output.append(line).append(System.lineSeparator());
-            }
+            while ((line = reader.readLine()) != null) output.append(line).append(System.lineSeparator());
         }
 
         return output.toString().trim();
     }
 
-
-    private void validateProcessResult(
-            ProcessResult processResult,
-            Path reportFile) {
+    private void validateProcessResult(ProcessResult processResult, Path reportFile) {
 
         /*
          * EPUBCheck는 검증 오류가 발견된 경우 exit code 1을 반환할 수 있습니다.
-         *
          * 이것은 Tool 실행 실패가 아니라 EPUB 검증 결과입니다.
          */
         if (processResult.getExitCode() > 1) {
@@ -181,34 +154,19 @@ public final class EpubCheckRunner {
                             + processResult.getOutput());
         }
 
-        if (!Files.exists(reportFile)) {
-
-            throw new IllegalStateException(
-                    "EPUBCheck JSON report was not created: "
-                            + processResult.getOutput());
-        }
+        if (!Files.exists(reportFile)) throw new IllegalStateException("EPUBCheck JSON report was not created: " + processResult.getOutput());
 
         try {
 
-            if (Files.size(reportFile) == 0) {
-
-                throw new IllegalStateException(
-                        "EPUBCheck JSON report is empty: "
-                                + processResult.getOutput());
-            }
+            if (Files.size(reportFile) == 0) throw new IllegalStateException("EPUBCheck JSON report is empty: " + processResult.getOutput());
 
         } catch (IOException exception) {
 
-            throw new IllegalStateException(
-                    "Failed to inspect EPUBCheck JSON report: "
-                            + reportFile,
-                    exception);
+            throw new IllegalStateException("Failed to inspect EPUBCheck JSON report: " + reportFile, exception);
         }
     }
 
-
-    private List<EpubCheckMessage> readMessages(
-            Path reportFile) {
+    private List<EpubCheckMessage> readMessages(Path reportFile) {
 
         try {
 
@@ -216,38 +174,24 @@ public final class EpubCheckRunner {
 
             JsonElement rootElement = JsonParser.parseString(json);
 
-            if (!rootElement.isJsonObject()) {
-
-                throw new IllegalStateException("EPUBCheck JSON report root must be an object.");
-            }
+            if (!rootElement.isJsonObject()) throw new IllegalStateException("EPUBCheck JSON report root must be an object.");
 
             JsonObject root = rootElement.getAsJsonObject();
 
             JsonArray messages = readArray(root, "messages");
 
+            if (messages == null) return List.of();
+
             List<EpubCheckMessage> results = new ArrayList<>();
-
-            if (messages == null) {
-
-                return results;
-            }
 
             for (JsonElement element : messages) {
 
-                if (!element.isJsonObject()) {
+                if (!element.isJsonObject()) continue;
 
-                    continue;
-                }
-
-                EpubCheckMessage message = readMessage(element.getAsJsonObject());
-
-                if (message != null) {
-
-                    results.add(message);
-                }
+                results.addAll(readMessages(element.getAsJsonObject()));
             }
 
-            return results;
+            return List.copyOf(results);
 
         } catch (IOException exception) {
 
@@ -259,150 +203,104 @@ public final class EpubCheckRunner {
         }
     }
 
-
-    private EpubCheckMessage readMessage(
-            JsonObject object) {
+    /**
+     * EPUBCheck JSON message 하나를 location 단위의 EpubCheckMessage 목록으로 변환합니다.
+     *
+     * <p>동일한 EPUBCheck 오류 코드와 메시지라도 locations가 여러 개이면
+     * 각각 독립적인 검증 오류로 보존합니다.</p>
+     */
+    private List<EpubCheckMessage> readMessages(JsonObject object) {
 
         String id = readString(object, "ID");
 
-        if (id == null) {
-
-            id = readString(object, "id");
-        }
+        if (id == null) id = readString(object, "id");
 
         String severity = readString(object, "severity");
-
         String message = readString(object, "message");
 
-        String location = readLocation(object);
-
-        if (severity == null || message == null) {
-
-            return null;
-        }
-
-        return new EpubCheckMessage(id, severity, message, location);
-    }
-
-
-    private String readLocation(
-            JsonObject object) {
+        if (severity == null || message == null) return List.of();
 
         JsonArray locations = readArray(object, "locations");
 
-        if (locations == null || locations.size() == 0) {
+        if (locations == null || locations.isEmpty()) {
 
-            return null;
+            return List.of(new EpubCheckMessage(
+                    id,
+                    severity,
+                    message,
+                    null,
+                    null,
+                    null));
         }
 
-        JsonElement locationElement = locations.get(0);
+        List<EpubCheckMessage> results = new ArrayList<>();
 
-        if (!locationElement.isJsonObject()) {
+        for (JsonElement element : locations) {
 
-            return null;
+            if (!element.isJsonObject()) continue;
+
+            JsonObject location = element.getAsJsonObject();
+
+            String file = normalizePath(readString(location, "path"));
+            Integer line = readInteger(location, "line");
+            Integer column = readInteger(location, "column");
+
+            results.add(new EpubCheckMessage(
+                    id,
+                    severity,
+                    message,
+                    file,
+                    line,
+                    column));
         }
 
-        JsonObject location = locationElement.getAsJsonObject();
+        if (results.isEmpty()) {
 
-        String path = readString(location, "path");
-
-        Integer line = readInteger(location, "line");
-
-        Integer column = readInteger(location, "column");
-
-        StringBuilder result = new StringBuilder();
-
-        if (path != null && !path.isBlank()) {
-
-            result.append(path.replace('\\', '/'));
+            return List.of(new EpubCheckMessage(
+                    id,
+                    severity,
+                    message,
+                    null,
+                    null,
+                    null));
         }
 
-        if (line != null && line > 0) {
-
-            if (result.length() > 0) {
-
-                result.append(':');
-            }
-
-            result.append(line);
-        }
-
-        if (column != null && column > 0) {
-
-            if (result.length() > 0) {
-
-                result.append(':');
-            }
-
-            result.append(column);
-        }
-
-        return result.length() == 0 ? null : result.toString();
+        return List.copyOf(results);
     }
 
+    private JsonArray readArray(JsonObject object, String name) {
 
-    private JsonArray readArray(
-            JsonObject object,
-            String name) {
-
-        if (object == null || name == null) {
-
-            return null;
-        }
+        if (object == null || name == null) return null;
 
         JsonElement element = object.get(name);
 
-        if (element == null || !element.isJsonArray()) {
-
-            return null;
-        }
+        if (element == null || !element.isJsonArray()) return null;
 
         return element.getAsJsonArray();
     }
 
+    private String readString(JsonObject object, String name) {
 
-    private String readString(
-            JsonObject object,
-            String name) {
-
-        if (object == null || name == null) {
-
-            return null;
-        }
+        if (object == null || name == null) return null;
 
         JsonElement element = object.get(name);
 
-        if (element == null || element.isJsonNull()) {
+        if (element == null || element.isJsonNull()) return null;
 
-            return null;
-        }
-
-        if (!element.isJsonPrimitive()) {
-
-            return null;
-        }
+        if (!element.isJsonPrimitive()) return null;
 
         String value = element.getAsString();
 
         return value == null || value.isBlank() ? null : value.trim();
     }
 
+    private Integer readInteger(JsonObject object, String name) {
 
-    private Integer readInteger(
-            JsonObject object,
-            String name) {
-
-        if (object == null || name == null) {
-
-            return null;
-        }
+        if (object == null || name == null) return null;
 
         JsonElement element = object.get(name);
 
-        if (element == null || element.isJsonNull()) {
-
-            return null;
-        }
+        if (element == null || element.isJsonNull()) return null;
 
         try {
 
@@ -414,102 +312,65 @@ public final class EpubCheckRunner {
         }
     }
 
+    private String normalizePath(String path) {
+
+        if (path == null) return null;
+
+        String normalized = path.trim().replace('\\', '/');
+
+        return normalized.isEmpty() ? null : normalized;
+    }
 
     private void validateEpubCheckRuntime() {
 
-        if (!Files.exists(epubCheckDirectory)) {
+        if (!Files.exists(epubCheckDirectory)) throw new IllegalStateException("EPUBCheck directory does not exist: " + epubCheckDirectory);
 
-            throw new IllegalStateException("EPUBCheck directory does not exist: " + epubCheckDirectory);
-        }
-
-        if (!Files.isDirectory(epubCheckDirectory)) {
-
-            throw new IllegalStateException("EPUBCheck path is not a directory: " + epubCheckDirectory);
-        }
+        if (!Files.isDirectory(epubCheckDirectory)) throw new IllegalStateException("EPUBCheck path is not a directory: " + epubCheckDirectory);
 
         Path epubCheckJar = epubCheckDirectory.resolve(getEpubCheckJarName());
 
-        if (!Files.isRegularFile(epubCheckJar)) {
+        if (!Files.isRegularFile(epubCheckJar)) throw new IllegalStateException("epubcheck.jar was not found: " + epubCheckJar);
 
-            throw new IllegalStateException("epubcheck.jar was not found: " + epubCheckJar);
-        }
+        Path libraryDirectory = epubCheckDirectory.resolve(EPUBCHECK_LIB_DIRECTORY);
 
-        Path libraryDirectory = epubCheckDirectory.resolve("lib");
-
-        if (!Files.isDirectory(libraryDirectory)) {
-
-            throw new IllegalStateException("EPUBCheck lib directory was not found: " + libraryDirectory);
-        }
+        if (!Files.isDirectory(libraryDirectory)) throw new IllegalStateException("EPUBCheck lib directory was not found: " + libraryDirectory);
     }
 
+    private void validateEpubFile(Path epubFile) {
 
-    private void validateEpubFile(
-            Path epubFile) {
-
-        if (epubFile == null) {
-
-            throw new IllegalArgumentException("epubFile must not be null.");
-        }
+        if (epubFile == null) throw new IllegalArgumentException("epubFile must not be null.");
 
         Path normalized = epubFile.toAbsolutePath().normalize();
 
-        if (!Files.exists(normalized)) {
+        if (!Files.exists(normalized)) throw new IllegalStateException("EPUB file does not exist: " + normalized);
 
-            throw new IllegalStateException("EPUB file does not exist: " + normalized);
-        }
+        if (!Files.isRegularFile(normalized)) throw new IllegalStateException("EPUB path is not a regular file: " + normalized);
 
-        if (!Files.isRegularFile(normalized)) {
-
-            throw new IllegalStateException("EPUB path is not a regular file: " + normalized);
-        }
-
-        if (!Files.isReadable(normalized)) {
-
-            throw new IllegalStateException("EPUB file is not readable: " + normalized);
-        }
+        if (!Files.isReadable(normalized)) throw new IllegalStateException("EPUB file is not readable: " + normalized);
 
         Path fileNamePath = normalized.getFileName();
 
-        if (fileNamePath == null) {
-
-            throw new IllegalStateException("EPUB file name is not available.");
-        }
+        if (fileNamePath == null) throw new IllegalStateException("EPUB file name is not available.");
 
         String fileName = fileNamePath.toString().toLowerCase(Locale.ROOT);
 
-        if (!fileName.endsWith(".epub")) {
-
-            throw new IllegalStateException("EPUBCheck target must use the .epub extension: " + normalized);
-        }
+        if (!fileName.endsWith(".epub")) throw new IllegalStateException("EPUBCheck target must use the .epub extension: " + normalized);
     }
 
+    private String normalizeVersion(String value) {
 
-    private String normalizeVersion(
-            String value) {
-
-        if (value == null || value.isBlank()) {
-
-            return "";
-        }
+        if (value == null || value.isBlank()) return "";
 
         String normalized = value.trim();
 
-        if (normalized.toLowerCase(Locale.ROOT).startsWith("epubcheck-")) {
-
-            return normalized.substring("epubcheck-".length());
-        }
+        if (normalized.toLowerCase(Locale.ROOT).startsWith("epubcheck-")) return normalized.substring("epubcheck-".length());
 
         return normalized;
     }
 
+    private void deleteQuietly(Path file) {
 
-    private void deleteQuietly(
-            Path file) {
-
-        if (file == null) {
-
-            return;
-        }
+        if (file == null) return;
 
         try {
 
@@ -523,33 +384,22 @@ public final class EpubCheckRunner {
         }
     }
 
-
     private static final class ProcessResult {
 
-
         private final int exitCode;
-
         private final String output;
 
-
-        private ProcessResult(
-                int exitCode,
-                String output) {
+        private ProcessResult(int exitCode, String output) {
 
             this.exitCode = exitCode;
-
             this.output = output;
         }
 
-
         private int getExitCode() {
-
             return exitCode;
         }
 
-
         private String getOutput() {
-
             return output;
         }
     }

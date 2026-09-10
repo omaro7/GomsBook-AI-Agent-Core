@@ -36,7 +36,6 @@ public final class EpubCheckRunnerSmokeTest {
                     "[GomsBook AI Core] "
                             + message.getSeverity()
                             + " | id=" + message.getId()
-                            + " | location=" + message.getLocation().orElse("")
                             + " | message=" + message.getMessage());
         }
 

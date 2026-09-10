@@ -6,13 +6,15 @@
 package kr.co.goms.gomsbook.ai.agent;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.LinkedHashMap;
-import com.google.gson.Gson;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.google.gson.Gson;
+
+import kr.co.goms.gomsbook.ai.agent.prompt.ToolResponsePromptResolver;
 import kr.co.goms.gomsbook.ai.llm.LlmClient;
 import kr.co.goms.gomsbook.ai.llm.LlmMessage;
 import kr.co.goms.gomsbook.ai.llm.LlmRequest;
@@ -38,6 +40,10 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
     private static final int DEFAULT_MAX_ITERATIONS = 10;
 
+    private static final String RUN_ID_ATTRIBUTE = "runId";
+
+    private static final String PROJECT_ID_ATTRIBUTE = "projectId";
+
     private final LlmClient llmClient;
 
     private final ToolExecutor toolExecutor;
@@ -46,15 +52,14 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
     private final ChatModelProvider chatModelProvider;
 
+    private final ToolResponsePromptResolver toolResponsePromptResolver;
+
     private final int maxIterations;
-    
+
     private final Gson gson = new Gson();
 
     private final List<AgentToolResultListener> toolResultListeners = new CopyOnWriteArrayList<>();
 
-    private static final String RUN_ID_ATTRIBUTE = "runId";
-    private static final String PROJECT_ID_ATTRIBUTE = "projectId";
-    
     public DefaultAgentExecutor(
             LlmClient llmClient,
             ToolExecutor toolExecutor,
@@ -66,10 +71,10 @@ public final class DefaultAgentExecutor implements AgentExecutor {
                 toolExecutor,
                 toolDefinitionProvider,
                 chatModelProvider,
-                DEFAULT_MAX_ITERATIONS
+                DEFAULT_MAX_ITERATIONS,
+                null
         );
     }
-
 
     public DefaultAgentExecutor(
             LlmClient llmClient,
@@ -78,205 +83,124 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             ChatModelProvider chatModelProvider,
             int maxIterations) {
 
-        this.llmClient =
-                Objects.requireNonNull(
-                        llmClient,
-                        "llmClient must not be null"
-                );
-
-        this.toolExecutor =
-                Objects.requireNonNull(
-                        toolExecutor,
-                        "toolExecutor must not be null"
-                );
-
-        this.toolDefinitionProvider =
-                Objects.requireNonNull(
-                        toolDefinitionProvider,
-                        "toolDefinitionProvider must not be null"
-                );
-
-        this.chatModelProvider =
-                Objects.requireNonNull(
-                        chatModelProvider,
-                        "chatModelProvider must not be null"
-                );
-
-
-        if (maxIterations <= 0) {
-
-            throw new IllegalArgumentException(
-                    "maxIterations must be greater than zero"
-            );
-        }
-
-
-        this.maxIterations =
-                maxIterations;
+        this(
+                llmClient,
+                toolExecutor,
+                toolDefinitionProvider,
+                chatModelProvider,
+                maxIterations,
+                null
+        );
     }
 
+    public DefaultAgentExecutor(
+            LlmClient llmClient,
+            ToolExecutor toolExecutor,
+            ToolDefinitionProvider toolDefinitionProvider,
+            ChatModelProvider chatModelProvider,
+            ToolResponsePromptResolver toolResponsePromptResolver) {
+
+        this(
+                llmClient,
+                toolExecutor,
+                toolDefinitionProvider,
+                chatModelProvider,
+                DEFAULT_MAX_ITERATIONS,
+                toolResponsePromptResolver
+        );
+    }
+
+    public DefaultAgentExecutor(
+            LlmClient llmClient,
+            ToolExecutor toolExecutor,
+            ToolDefinitionProvider toolDefinitionProvider,
+            ChatModelProvider chatModelProvider,
+            int maxIterations,
+            ToolResponsePromptResolver toolResponsePromptResolver) {
+
+        this.llmClient = Objects.requireNonNull(llmClient, "llmClient must not be null");
+
+        this.toolExecutor = Objects.requireNonNull(toolExecutor, "toolExecutor must not be null");
+
+        this.toolDefinitionProvider = Objects.requireNonNull(toolDefinitionProvider, "toolDefinitionProvider must not be null");
+
+        this.chatModelProvider = Objects.requireNonNull(chatModelProvider, "chatModelProvider must not be null");
+
+        if (maxIterations <= 0) throw new IllegalArgumentException("maxIterations must be greater than zero");
+
+        this.maxIterations = maxIterations;
+
+        this.toolResponsePromptResolver = toolResponsePromptResolver;
+    }
 
     /**
      * AgentExecutor 인터페이스의 기본 진입점입니다.
      */
     @Override
-    public AgentResponse execute(
-            AgentRequest request) {
+    public AgentResponse execute(AgentRequest request) {
 
-        Objects.requireNonNull(
-                request,
-                "request must not be null"
-        );
+        Objects.requireNonNull(request, "request must not be null");
 
-
-        AgentContext context =
-                new AgentContext(
-                        request
-                );
-
-
-        return execute(
-                context
-        );
+        return execute(new AgentContext(request));
     }
-
 
     /**
      * AgentContext 기반으로 Agent를 실행합니다.
-     *
-     * <p>
-     * 이 메서드는 내부 실행 및 향후 Runtime에서 사용할 수 있습니다.
-     * </p>
      */
     @Override
-    public AgentResponse execute(
-            AgentContext context) {
+    public AgentResponse execute(AgentContext context) {
 
-        Objects.requireNonNull(
-                context,
-                "context must not be null"
-        );
+        Objects.requireNonNull(context, "context must not be null");
 
+        AgentRequest request = Objects.requireNonNull(context.getRequest(), "context.request must not be null");
 
-        AgentRequest request =
-                Objects.requireNonNull(
-                        context.getRequest(),
-                        "context.request must not be null"
-                );
-
-
-        long startedNanos =
-                System.nanoTime();
-
+        long startedNanos = System.nanoTime();
 
         try {
 
-            /*
-             * 초기 대화 메시지 구성
-             */
-            List<LlmMessage> messages =
-                    createInitialMessages(
-                            request
-                    );
+            List<LlmMessage> messages = createInitialMessages(request);
 
+            List<LlmToolDefinition> tools = resolveToolDefinitions();
 
-            /*
-             * 현재 Agent에 공개할 Tool 정의 구성
-             */
-            List<LlmToolDefinition> tools =
-                    resolveToolDefinitions();
+            System.out.println("[GomsBook AI] Available tools = " + tools.size());
 
+            for (LlmToolDefinition tool : tools) System.out.println("[GomsBook AI] Tool = " + tool.getName());
 
-            /*
-             * ======================================================
-             * Tool Definition 진단 로그
-             * ======================================================
-             */
-            System.out.println(
-                    "[GomsBook AI] Available tools = "
-                            + tools.size()
-            );
+            List<ToolResult> toolResults = new ArrayList<>();
 
+            List<String> pendingToolResponsePrompts = new ArrayList<>();
 
-            for (LlmToolDefinition tool
-                    : tools) {
+            LlmResponse lastResponse = null;
 
-                System.out.println(
-                        "[GomsBook AI] Tool = "
-                                + tool.getName()
-                );
-            }
+            for (int iteration = 1; iteration <= maxIterations; iteration++) {
 
-
-            List<ToolResult> toolResults =
-                    new ArrayList<>();
-
-
-            LlmResponse lastResponse =
-                    null;
-
-
-            /*
-             * Agent Loop
-             */
-            for (int iteration = 1;
-                    iteration <= maxIterations;
-                    iteration++) {
-
-
-                System.out.println(
-                        "[GomsBook AI] Agent iteration = "
-                                + iteration
-                );
-
-
-                LlmRequest llmRequest =
-                        createLlmRequest(
-                                request,
-                                messages,
-                                tools
-                        );
-
+                System.out.println("[GomsBook AI] Agent iteration = " + iteration);
 
                 /*
-                 * LLM 호출
+                 * Tool 실행 후 생성된 Prompt Rule은
+                 * 다음 LLM 호출에만 일시적으로 적용합니다.
                  */
-                lastResponse =
-                        llmClient.chat(
-                                llmRequest
-                        );
-
-
-                if (lastResponse == null) {
-
-                    throw new AgentException(
-                            "LLM returned null response."
-                    );
-                }
-
-
-                System.out.println(
-                        "[GomsBook AI] LLM response model = "
-                                + lastResponse.getModel()
-                );
-
-
-                System.out.println(
-                        "[GomsBook AI] LLM tool call count = "
-                                + lastResponse.getToolCallCount()
-                );
-
+                List<LlmMessage> llmMessages = createLlmMessages(messages, pendingToolResponsePrompts);
 
                 /*
-                 * Tool Call이 없다면 Agent 실행 완료입니다.
+                 * 이번 LLM 요청에 적용한 Prompt Rule은 즉시 제거합니다.
+                 * 다음 Tool 실행 결과에서 필요한 Rule을 다시 수집합니다.
                  */
+                pendingToolResponsePrompts.clear();
+
+                LlmRequest llmRequest = createLlmRequest(request, llmMessages, tools);
+
+                lastResponse = llmClient.chat(llmRequest);
+
+                if (lastResponse == null) throw new AgentException("LLM returned null response.");
+
+                System.out.println("[GomsBook AI] LLM response model = " + lastResponse.getModel());
+
+                System.out.println("[GomsBook AI] LLM tool call count = " + lastResponse.getToolCallCount());
+
                 if (!lastResponse.hasToolCalls()) {
 
-                    System.out.println(
-                            "[GomsBook AI] No Tool Call. "
-                                    + "Agent execution completed."
-                    );
-
+                    System.out.println("[GomsBook AI] No Tool Call. Agent execution completed.");
 
                     return createCompletedResponse(
                             request,
@@ -287,94 +211,32 @@ public final class DefaultAgentExecutor implements AgentExecutor {
                     );
                 }
 
+                messages.add(createAssistantMessage(lastResponse));
 
-                /*
-                 * Assistant의 Tool Call 메시지를
-                 * 대화 이력에 추가합니다.
-                 */
-                messages.add(
-                        createAssistantMessage(
-                                lastResponse
-                        )
-                );
+                for (LlmToolCall toolCall : lastResponse.getToolCalls()) {
 
+                    System.out.println("[GomsBook AI] Tool Call = " + toolCall.getToolName());
 
-                /*
-                 * LLM이 요청한 Tool들을 실행합니다.
-                 */
-                for (LlmToolCall toolCall
-                        : lastResponse.getToolCalls()) {
+                    System.out.println("[GomsBook AI] Tool Call ID = " + toolCall.getId());
 
+                    System.out.println("[GomsBook AI] Tool Arguments = " + toolCall.getArguments());
 
-                    /*
-                     * ==================================================
-                     * Tool Call 진단 로그
-                     * ==================================================
-                     */
-                    System.out.println(
-                            "[GomsBook AI] Tool Call = "
-                                    + toolCall.getToolName()
-                    );
+                    ToolResult toolResult = executeTool(request, context, toolCall);
 
+                    System.out.println("[GomsBook AI] Tool Result = " + toolResult);
 
-                    System.out.println(
-                            "[GomsBook AI] Tool Call ID = "
-                                    + toolCall.getId()
-                    );
+                    toolResults.add(toolResult);
 
+                    messages.add(createToolMessage(toolCall, toolResult));
 
-                    System.out.println(
-                            "[GomsBook AI] Tool Arguments = "
-                                    + toolCall.getArguments()
-                    );
-
-
-                    ToolResult toolResult =
-                            executeTool(
-                                    request,
-                                    context,
-                                    toolCall
-                            );
-
-
-                    /*
-                     * ==================================================
-                     * Tool Result 진단 로그
-                     * ==================================================
-                     */
-                    System.out.println(
-                            "[GomsBook AI] Tool Result = "
-                                    + toolResult
-                    );
-
-
-                    toolResults.add(
-                            toolResult
-                    );
-
-
-                    /*
-                     * Tool 실행 결과를 다시
-                     * LLM 대화에 전달합니다.
-                     */
-                    messages.add(
-                            createToolMessage(
-                                    toolCall,
-                                    toolResult
-                            )
+                    addToolResponsePrompt(
+                            pendingToolResponsePrompts,
+                            toolCall.getToolName()
                     );
                 }
             }
 
-
-            /*
-             * maxIterations까지 Tool Call이 계속되면
-             * 무한 Tool 호출을 방지하기 위해 종료합니다.
-             */
-            System.out.println(
-                    "[GomsBook AI] Agent iteration limit reached."
-            );
-
+            System.out.println("[GomsBook AI] Agent iteration limit reached.");
 
             return createIterationLimitResponse(
                     request,
@@ -382,7 +244,6 @@ public final class DefaultAgentExecutor implements AgentExecutor {
                     toolResults,
                     startedNanos
             );
-
 
         } catch (AgentException exception) {
 
@@ -405,90 +266,35 @@ public final class DefaultAgentExecutor implements AgentExecutor {
         }
     }
 
-
     /**
      * Agent 실행을 위한 초기 LLM 메시지를 생성합니다.
-     *
-     * <p>
-     * 요청별 System Prompt가 있으면 먼저 추가하고,
-     * 기존 대화 메시지를 추가한 후 마지막으로
-     * 현재 사용자의 instruction을 User 메시지로 추가합니다.
-     * </p>
      */
-    private List<LlmMessage> createInitialMessages(
-            AgentRequest request) {
+    private List<LlmMessage> createInitialMessages(AgentRequest request) {
 
-        Objects.requireNonNull(
-                request,
-                "request must not be null"
-        );
+        Objects.requireNonNull(request, "request must not be null");
 
+        List<LlmMessage> messages = new ArrayList<>();
 
-        List<LlmMessage> messages =
-                new ArrayList<>();
+        if (request.hasSystemPrompt()) messages.add(LlmMessage.system(request.getSystemPrompt()));
 
+        if (request.hasMessages()) messages.addAll(request.getMessages());
 
-        /*
-         * 요청별 System Prompt
-         */
-        if (request.hasSystemPrompt()) {
-
-            messages.add(
-                    LlmMessage.system(
-                            request.getSystemPrompt()
-                    )
-            );
-        }
-
-
-        /*
-         * 이전 대화 이력
-         */
-        if (request.hasMessages()) {
-
-            messages.addAll(
-                    request.getMessages()
-            );
-        }
-
-
-        /*
-         * 현재 Agent 실행 명령
-         */
-        messages.add(
-                LlmMessage.user(
-                        request.getInstruction()
-                )
-        );
-
+        messages.add(LlmMessage.user(request.getInstruction()));
 
         return messages;
     }
 
-
     /**
      * 현재 등록된 Tool 정의를 가져옵니다.
      */
-    private List<LlmToolDefinition>
-            resolveToolDefinitions() {
+    private List<LlmToolDefinition> resolveToolDefinitions() {
 
-        List<LlmToolDefinition> definitions =
-                toolDefinitionProvider
-                        .getToolDefinitions();
+        List<LlmToolDefinition> definitions = toolDefinitionProvider.getToolDefinitions();
 
+        if (definitions == null || definitions.isEmpty()) return List.of();
 
-        if (definitions == null
-                || definitions.isEmpty()) {
-
-            return List.of();
-        }
-
-
-        return List.copyOf(
-                definitions
-        );
+        return List.copyOf(definitions);
     }
-
 
     /**
      * LLM 요청을 생성합니다.
@@ -498,49 +304,25 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             List<LlmMessage> messages,
             List<LlmToolDefinition> tools) {
 
-        LlmRequest.Builder builder =
-                LlmRequest.builder()
-                        .messages(
-                                messages
-                        )
-                        .stream(
-                                false
-                        );
-
+        LlmRequest.Builder builder = LlmRequest.builder()
+                .messages(messages)
+                .stream(false);
 
         if (request.hasModel()) {
 
-            builder.model(
-                    request.getModel()
-            );
+            builder.model(request.getModel());
 
         } else {
 
-            String model =
-                    chatModelProvider.getModel();
+            String model = chatModelProvider.getModel();
 
-            if (model != null
-                    && !model.isBlank()) {
-
-                builder.model(
-                        model
-                );
-            }
+            if (model != null && !model.isBlank()) builder.model(model);
         }
 
-
-        if (tools != null
-                && !tools.isEmpty()) {
-
-            builder.tools(
-                    tools
-            );
-        }
-
+        if (tools != null && !tools.isEmpty()) builder.tools(tools);
 
         return builder.build();
     }
-
 
     /**
      * Tool을 실행합니다.
@@ -550,86 +332,33 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             AgentContext agentContext,
             LlmToolCall toolCall) {
 
-        if (toolCall == null) {
+        if (toolCall == null) throw new AgentException("LLM returned null Tool Call.");
 
-            throw new AgentException(
-                    "LLM returned null Tool Call."
-            );
-        }
+        if (!toolCall.isFunctionCall()) throw new AgentException("Unsupported Tool Call type: " + toolCall.getType());
 
+        String toolName = toolCall.getToolName();
 
-        if (!toolCall.isFunctionCall()) {
+        if (toolName == null || toolName.isBlank()) throw new AgentException("Tool Call name must not be blank.");
 
-            throw new AgentException(
-                    "Unsupported Tool Call type: "
-                            + toolCall.getType()
-            );
-        }
+        Map<String, Object> arguments = toolCall.getArguments();
 
+        ToolContext toolContext = createToolContext(agentRequest, agentContext);
 
-        String toolName =
-                toolCall.getToolName();
+        ToolRequest toolRequest = ToolRequest.builder()
+                .requestId(agentRequest.getRequestId())
+                .toolCallId(toolCall.getId())
+                .toolName(toolName)
+                .arguments(arguments == null ? Map.of() : arguments)
+                .build();
 
+        ToolResult result = toolExecutor.execute(toolRequest, toolContext);
 
-        if (toolName == null
-                || toolName.isBlank()) {
-
-            throw new AgentException(
-                    "Tool Call name must not be blank."
-            );
-        }
-
-
-        Map<String, Object> arguments =
-                toolCall.getArguments();
-
-
-        ToolContext toolContext =
-                createToolContext(
-                        agentRequest,
-                        agentContext
-                );
-
-
-        ToolRequest toolRequest =
-                ToolRequest.builder()
-                        .requestId(
-                                agentRequest.getRequestId()
-                        )
-                        .toolCallId(
-                                toolCall.getId()
-                        )
-                        .toolName(
-                                toolName
-                        )
-                        .arguments(
-                                arguments == null
-                                        ? Map.of()
-                                        : arguments
-                        )
-                        .build();
-
-
-        ToolResult result =
-                toolExecutor.execute(
-                        toolRequest,
-                        toolContext
-                );
-
-
-        if (result == null) {
-
-            throw new AgentException(
-                    "Tool executor returned null. tool="
-                            + toolName
-            );
-        }
+        if (result == null) throw new AgentException("Tool executor returned null. tool=" + toolName);
 
         notifyToolResult(result);
-        
+
         return result;
     }
-
 
     /**
      * AgentContext를 ToolContext로 변환합니다.
@@ -642,14 +371,14 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
         if (request.hasRequestId()) builder.requestId(request.getRequestId());
 
-        if (request.getAttributes() != null && !request.getAttributes().isEmpty()) {
-            builder.attributes(request.getAttributes());
-        }
+        if (request.getAttributes() != null && !request.getAttributes().isEmpty()) builder.attributes(request.getAttributes());
 
         String runId = getStringAttribute(request, RUN_ID_ATTRIBUTE);
+
         String projectId = getStringAttribute(request, PROJECT_ID_ATTRIBUTE);
 
         if (runId != null) builder.runId(runId);
+
         if (projectId != null) builder.projectId(projectId);
 
         return builder.build();
@@ -658,47 +387,20 @@ public final class DefaultAgentExecutor implements AgentExecutor {
     /**
      * LLM Tool Call 응답을 Assistant 메시지로 변환합니다.
      */
-    private LlmMessage createAssistantMessage(
-            LlmResponse response) {
+    private LlmMessage createAssistantMessage(LlmResponse response) {
 
-        Objects.requireNonNull(
-                response,
-                "response must not be null"
-        );
+        Objects.requireNonNull(response, "response must not be null");
 
+        String content = response.getContent();
 
-        String content =
-                response.getContent();
+        if (content == null) content = "";
 
+        if (response.hasToolCalls()) return LlmMessage.assistantToolCalls(content, response.getToolCalls());
 
-        if (content == null) {
+        if (content.isBlank()) throw new AgentException("LLM Assistant response content is empty.");
 
-            content = "";
-        }
-
-
-        if (response.hasToolCalls()) {
-
-            return LlmMessage.assistantToolCalls(
-                    content,
-                    response.getToolCalls()
-            );
-        }
-
-
-        if (content.isBlank()) {
-
-            throw new AgentException(
-                    "LLM Assistant response content is empty."
-            );
-        }
-
-
-        return LlmMessage.assistant(
-                content
-        );
+        return LlmMessage.assistant(content);
     }
-
 
     /**
      * Tool 실행 결과를 LLM Tool 메시지로 변환합니다.
@@ -707,98 +409,91 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             LlmToolCall toolCall,
             ToolResult toolResult) {
 
-        Objects.requireNonNull(
-                toolCall,
-                "toolCall must not be null"
-        );
+        Objects.requireNonNull(toolCall, "toolCall must not be null");
 
-        Objects.requireNonNull(
-                toolResult,
-                "toolResult must not be null"
-        );
+        Objects.requireNonNull(toolResult, "toolResult must not be null");
 
+        Map<String, Object> payload = new LinkedHashMap<>();
 
-        Map<String, Object> payload =
-                new LinkedHashMap<>();
+        payload.put("toolName", toolResult.getToolName());
 
+        payload.put("status", toolResult.getStatus());
 
-        payload.put(
-                "toolName",
-                toolResult.getToolName()
-        );
+        if (toolResult.hasMessage()) payload.put("message", toolResult.getMessage());
 
-        payload.put(
-                "status",
-                toolResult.getStatus()
-        );
-
-
-        if (toolResult.hasMessage()) {
-
-            payload.put(
-                    "message",
-                    toolResult.getMessage()
-            );
-        }
-
-
-        /*
-         * Tool의 실제 결과값을 LLM에게 전달합니다.
-         */
         if (toolResult.hasData()) {
 
-            Map<String, Object> data =
-                    new LinkedHashMap<>(
-                            toolResult.getData()
-                    );
+            Map<String, Object> data = new LinkedHashMap<>(toolResult.getData());
 
             /*
              * InspectEpubTool의 inspectionResult 객체에는 Path 등
              * 복합 객체가 포함되므로 이미 평탄화된 개별 data 값만
              * LLM에 전달합니다.
              */
-            data.remove(
-                    "inspectionResult"
-            );
+            data.remove("inspectionResult");
 
-            payload.put(
-                    "data",
-                    data
-            );
+            payload.put("data", data);
         }
-
 
         if (toolResult.hasError()) {
 
-            payload.put(
-                    "errorCode",
-                    toolResult.getErrorCode()
-            );
+            payload.put("errorCode", toolResult.getErrorCode());
 
-            payload.put(
-                    "errorMessage",
-                    toolResult.getErrorMessage()
-            );
+            payload.put("errorMessage", toolResult.getErrorMessage());
         }
 
+        String content = gson.toJson(payload);
 
-        String content =
-                gson.toJson(
-                        payload
-                );
-
-
-        System.out.println(
-                "[GomsBook AI] Tool Message = "
-                        + content
-        );
-
+        System.out.println("[GomsBook AI] Tool Message = " + content);
 
         return LlmMessage.toolResult(
                 toolCall.getId(),
                 toolCall.getToolName(),
                 content
         );
+    }
+
+    /**
+     * Tool에 등록된 추가 Prompt Rule을 수집합니다.
+     */
+    private void addToolResponsePrompt(
+            List<String> prompts,
+            String toolName) {
+
+        if (prompts == null) return;
+
+        if (toolResponsePromptResolver == null) return;
+
+        if (toolName == null || toolName.isBlank()) return;
+
+        String prompt = toolResponsePromptResolver.resolve(toolName);
+
+        if (prompt == null || prompt.isBlank()) return;
+
+        if (prompts.contains(prompt)) return;
+
+        prompts.add(prompt);
+    }
+
+    /**
+     * 다음 LLM 호출에만 Tool별 추가 Prompt Rule을 적용합니다.
+     */
+    private List<LlmMessage> createLlmMessages(
+            List<LlmMessage> messages,
+            List<String> toolResponsePrompts) {
+
+        if (toolResponsePrompts == null || toolResponsePrompts.isEmpty()) return messages;
+
+        List<LlmMessage> llmMessages = new ArrayList<>(messages);
+
+        for (String prompt : toolResponsePrompts) {
+
+            if (prompt == null || prompt.isBlank()) continue;
+
+            llmMessages.add(LlmMessage.system(prompt));
+        }
+
+        return llmMessages;
     }
 
     /**
@@ -812,30 +507,15 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             long startedNanos) {
 
         return AgentResponse.builder()
-                .requestId(
-                        request.getRequestId()
-                )
-                .sessionId(
-                        request.getSessionId()
-                )
-                .status(
-                        AgentStatus.COMPLETED
-                )
-                .content(
-                        llmResponse.getContent()
-                )
-                .model(
-                        llmResponse.getModel()
-                )
-                .toolResults(
-                        toolResults
-                )
-                .iterations(
-                        iterations
-                )
+                .requestId(request.getRequestId())
+                .sessionId(request.getSessionId())
+                .status(AgentStatus.COMPLETED)
+                .content(llmResponse.getContent())
+                .model(llmResponse.getModel())
+                .toolResults(toolResults)
+                .iterations(iterations)
                 .build();
     }
-
 
     /**
      * 최대 Tool 호출 반복 횟수에 도달한 응답을 생성합니다.
@@ -847,59 +527,46 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             long startedNanos) {
 
         return AgentResponse.builder()
-                .requestId(
-                        request.getRequestId()
-                )
-                .sessionId(
-                        request.getSessionId()
-                )
-                .status(
-                        AgentStatus.ITERATION_LIMIT_REACHED
-                )
-                .content(
-                        lastResponse == null
-                                ? ""
-                                : lastResponse.getContent()
-                )
-                .model(
-                        lastResponse == null
-                                ? null
-                                : lastResponse.getModel()
-                )
-                .toolResults(
-                        toolResults
-                )
-                .iterations(
-                        maxIterations
-                )
-                .errorCode(
-                        "AGENT_ITERATION_LIMIT_REACHED"
-                )
-                .errorMessage(
-                        "Agent reached maximum Tool Call iterations."
-                )
+                .requestId(request.getRequestId())
+                .sessionId(request.getSessionId())
+                .status(AgentStatus.ITERATION_LIMIT_REACHED)
+                .content(lastResponse == null ? "" : lastResponse.getContent())
+                .model(lastResponse == null ? null : lastResponse.getModel())
+                .toolResults(toolResults)
+                .iterations(maxIterations)
+                .errorCode("AGENT_ITERATION_LIMIT_REACHED")
+                .errorMessage("Agent reached maximum Tool Call iterations.")
                 .build();
     }
-    
+
     @Override
     public void addToolResultListener(AgentToolResultListener listener) {
+
         if (listener == null) return;
+
         toolResultListeners.add(listener);
     }
 
     @Override
     public void removeToolResultListener(AgentToolResultListener listener) {
+
         if (listener == null) return;
+
         toolResultListeners.remove(listener);
     }
 
     private void notifyToolResult(ToolResult result) {
+
         if (result == null) return;
+
         for (AgentToolResultListener listener : toolResultListeners) notifyToolResult(listener, result);
     }
 
-    private void notifyToolResult(AgentToolResultListener listener, ToolResult result) {
-    	try {
+    private void notifyToolResult(
+            AgentToolResultListener listener,
+            ToolResult result) {
+
+        try {
 
             listener.onToolResult(result);
 
@@ -909,11 +576,16 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
         } catch (Exception exception) {
 
-            throw new AgentException("Tool result listener failed: " + exception.getMessage(), exception);
+            throw new AgentException(
+                    "Tool result listener failed: " + exception.getMessage(),
+                    exception
+            );
         }
     }
-    
-    private String getStringAttribute(AgentRequest request, String name) {
+
+    private String getStringAttribute(
+            AgentRequest request,
+            String name) {
 
         if (request == null || request.getAttributes() == null) return null;
 
@@ -923,5 +595,4 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
         return text.trim();
     }
-    
 }

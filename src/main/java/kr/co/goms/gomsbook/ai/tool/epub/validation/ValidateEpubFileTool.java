@@ -2,6 +2,10 @@
  * Copyright (c) 2026 GomsBook (JungHoon Han)
  * All rights reserved.
  */
+/*
+ * Copyright (c) 2026 GomsBook (JungHoon Han)
+ * All rights reserved.
+ */
 package kr.co.goms.gomsbook.ai.tool.epub.validation;
 
 import java.nio.file.Files;
@@ -22,6 +26,8 @@ import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubValidationIssue;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubValidationResult;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubValidator;
+import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
 import kr.co.goms.gomsbook.ai.tool.AgentTool;
 import kr.co.goms.gomsbook.ai.tool.ToolContext;
 import kr.co.goms.gomsbook.ai.tool.ToolIssue;
@@ -33,14 +39,16 @@ import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
 
 /**
  * 생성된 EPUB 파일을 검증하는 Agent Tool입니다.
- * Epubcheck5.3.0
- * <p>EpubRuntime 전체에 의존하지 않고 검증기만 직접 주입받습니다.</p>
+ * EPUBCheck 5.3.0
  */
 public final class ValidateEpubFileTool implements AgentTool {
 
     public static final String TOOL_NAME = "validate_epub_file";
-    public static final String DESCRIPTION = "Validates an already generated .epub file using internal EPUB validation, accessibility validation, EPUBCheck, or all configured validators. "
-    		+ "Use this tool for post-generation validation of the final EPUB file, not for validating the current EPUB project before the .epub file is created.";
+
+    public static final String DESCRIPTION =
+            "Validates an already generated .epub file using internal EPUB validation, accessibility validation, EPUBCheck, or all configured validators. "
+                    + "Returns detailed validation issues including severity, error code, message and EPUB location. "
+                    + "Use this tool for post-generation validation of the final EPUB file, not for validating the current EPUB project before the .epub file is created.";
 
     private static final String PROJECT_ROOT_ARGUMENT = "projectRoot";
     private static final String EPUB_GENERATION_REQUEST_ATTRIBUTE = "epubGenerationRequest";
@@ -54,20 +62,44 @@ public final class ValidateEpubFileTool implements AgentTool {
     private final CompositeEpubValidator compositeValidator;
     private final PublishDirectoryProvider publishDirectoryProvider;
     private final LatestPublishedEpubResolver publishedEpubResolver;
-    
+    private final CurrentProjectProvider currentProjectProvider;
 
-    public ValidateEpubFileTool(EpubValidator internalValidator, EpubAccessibilityValidator accessibilityValidator, EpubCheckValidator epubCheckValidator, CompositeEpubValidator compositeValidator, PublishDirectoryProvider publishDirectoryProvider) {
-        this(internalValidator, accessibilityValidator, epubCheckValidator, compositeValidator, publishDirectoryProvider, new LatestPublishedEpubResolver());
+    public ValidateEpubFileTool(
+            EpubValidator internalValidator,
+            EpubAccessibilityValidator accessibilityValidator,
+            EpubCheckValidator epubCheckValidator,
+            CompositeEpubValidator compositeValidator,
+            PublishDirectoryProvider publishDirectoryProvider,
+            CurrentProjectProvider currentProjectProvider) {
+
+        this(
+                internalValidator,
+                accessibilityValidator,
+                epubCheckValidator,
+                compositeValidator,
+                publishDirectoryProvider,
+                new LatestPublishedEpubResolver(),
+                currentProjectProvider);
     }
 
-    public ValidateEpubFileTool(EpubValidator internalValidator, EpubAccessibilityValidator accessibilityValidator, EpubCheckValidator epubCheckValidator, CompositeEpubValidator compositeValidator, PublishDirectoryProvider publishDirectoryProvider, LatestPublishedEpubResolver publishedEpubResolver) {
+    public ValidateEpubFileTool(
+            EpubValidator internalValidator,
+            EpubAccessibilityValidator accessibilityValidator,
+            EpubCheckValidator epubCheckValidator,
+            CompositeEpubValidator compositeValidator,
+            PublishDirectoryProvider publishDirectoryProvider,
+            LatestPublishedEpubResolver publishedEpubResolver,
+            CurrentProjectProvider currentProjectProvider) {
+
         this.internalValidator = internalValidator;
         this.accessibilityValidator = accessibilityValidator;
         this.epubCheckValidator = epubCheckValidator;
         this.compositeValidator = compositeValidator;
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
         this.publishedEpubResolver = Objects.requireNonNull(publishedEpubResolver, "publishedEpubResolver must not be null");
+        this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
     }
+
     @Override
     public String getName() {
         return TOOL_NAME;
@@ -93,12 +125,14 @@ public final class ValidateEpubFileTool implements AgentTool {
             return result.valid(false).issue(errorIssue("EPUB_VALIDATION_ARGUMENT_INVALID", safeMessage(exception))).build();
         }
 
-        if (epubFile == null) return result.valid(false).issue(errorIssue("EPUB_VALIDATION_FILE_MISSING", "EPUB file was not provided.")).build();
+        if (epubFile == null) return result.valid(false).issue(errorIssue("EPUB_VALIDATION_FILE_MISSING", "Published EPUB file could not be resolved.")).build();
 
         Path normalized = epubFile.toAbsolutePath().normalize();
 
         if (!Files.exists(normalized)) return result.valid(false).issue(errorIssue("EPUB_VALIDATION_FILE_NOT_FOUND", "EPUB file does not exist: " + normalized)).build();
+
         if (!Files.isRegularFile(normalized)) return result.valid(false).issue(errorIssue("EPUB_VALIDATION_NOT_FILE", "EPUB path is not a regular file: " + normalized)).build();
+
         if (!Files.isReadable(normalized)) return result.valid(false).issue(errorIssue("EPUB_VALIDATION_NOT_READABLE", "EPUB file is not readable: " + normalized)).build();
 
         String fileName = normalized.getFileName() == null ? "" : normalized.getFileName().toString().toLowerCase(Locale.ROOT);
@@ -126,108 +160,307 @@ public final class ValidateEpubFileTool implements AgentTool {
         if (!validation.isValid()) return ToolResult.builder().toolName(TOOL_NAME).status(ToolStatus.VALIDATION_FAILED).validationResult(validation).message("EPUB validation request is invalid.").build();
 
         Path projectRoot = resolveProjectRoot(request, context);
-        Path epubFile = Objects.requireNonNull(resolveEpubFile(request, context), "EPUB file must not be null.").toAbsolutePath().normalize();
+
+        Path epubFile = Objects.requireNonNull(
+                resolveEpubFile(request, context),
+                "EPUB file must not be null.")
+                .toAbsolutePath()
+                .normalize();
+
         ValidationMode mode = resolveValidationMode(request, context);
+
         EpubGenerationOptions options = resolveOptions(context);
 
         try {
-            EpubValidationResult validationResult = executeValidation(projectRoot, epubFile, options, mode);
-            return convertResult(epubFile, mode, validationResult);
+
+            EpubValidationResult validationResult =
+                    executeValidation(
+                            projectRoot,
+                            epubFile,
+                            options,
+                            mode);
+
+            return convertResult(
+                    epubFile,
+                    mode,
+                    validationResult);
+
         } catch (RuntimeException exception) {
-            return failure("EPUB_VALIDATION_UNEXPECTED_ERROR", "Unexpected EPUB validation error: " + safeMessage(exception), epubFile, mode, exception);
+
+            return failure(
+                    "EPUB_VALIDATION_UNEXPECTED_ERROR",
+                    "Unexpected EPUB validation error: " + safeMessage(exception),
+                    epubFile,
+                    mode,
+                    exception);
         }
     }
 
-    private EpubValidationResult executeValidation(Path projectRoot, Path epubFile, EpubGenerationOptions options, ValidationMode mode) {
+    private EpubValidationResult executeValidation(
+            Path projectRoot,
+            Path epubFile,
+            EpubGenerationOptions options,
+            ValidationMode mode) {
 
         return switch (mode) {
-            case INTERNAL -> requireInternalValidator().validate(projectRoot, epubFile, options);
-            case ACCESSIBILITY -> requireAccessibilityValidator().validate(projectRoot, epubFile, options);
-            case EPUB_CHECK -> requireEpubCheckValidator().validate(projectRoot, epubFile, options);
-            case ALL -> requireCompositeValidator().validate(projectRoot, epubFile, options);
+
+            case INTERNAL ->
+                    requireInternalValidator()
+                            .validate(
+                                    projectRoot,
+                                    epubFile,
+                                    options);
+
+            case ACCESSIBILITY ->
+                    requireAccessibilityValidator()
+                            .validate(
+                                    projectRoot,
+                                    epubFile,
+                                    options);
+
+            case EPUB_CHECK ->
+                    requireEpubCheckValidator()
+                            .validate(
+                                    projectRoot,
+                                    epubFile,
+                                    options);
+
+            case ALL ->
+                    requireCompositeValidator()
+                            .validate(
+                                    projectRoot,
+                                    epubFile,
+                                    options);
         };
     }
 
-    private ToolResult convertResult(Path epubFile, ValidationMode mode, EpubValidationResult validationResult) {
+    private ToolResult convertResult(
+            Path epubFile,
+            ValidationMode mode,
+            EpubValidationResult validationResult) {
 
-        Objects.requireNonNull(validationResult, "EPUB validation result must not be null.");
+        Objects.requireNonNull(
+                validationResult,
+                "EPUB validation result must not be null.");
 
-        ToolStatus status = resolveToolStatus(validationResult);
-        String message = validationResult.getMessage().orElseGet(validationResult::getSummary);
+        ToolStatus status =
+                resolveToolStatus(validationResult);
 
-        ToolResult.Builder builder = ToolResult.builder()
-                .toolName(TOOL_NAME)
-                .status(status)
-                .message(message)
-                .validationResult(null)
-                .data("validationResult", validationResult)
-                .data("epubFile", epubFile.toString())
-                .data("validationMode", mode.name())
-                .data("validationStatus", validationResult.getStatus().name())
-                .data("issueCount", validationResult.getIssueCount())
-                .data("fatalCount", validationResult.getFatalCount())
-                .data("errorCount", validationResult.getErrorCount())
-                .data("warningCount", validationResult.getWarningCount())
-                .data("infoCount", validationResult.getInfoCount())
-                .data("autoFixableIssueCount", validationResult.getAutoFixableIssueCount())
-                .data("durationMillis", validationResult.getDurationMillis());
+        String message =
+                validationResult
+                        .getMessage()
+                        .orElseGet(
+                                validationResult::getSummary);
 
-        validationResult.getValidatorName().ifPresent(value -> builder.data("validator", value));
-        validationResult.getValidatorVersion().ifPresent(value -> builder.data("validatorVersion", value));
+        List<Map<String, Object>> issues =
+                validationResult
+                        .getIssues()
+                        .stream()
+                        .filter(Objects::nonNull)
+                        .map(this::toIssueData)
+                        .toList();
 
-        for (EpubValidationIssue issue : validationResult.getIssues()) if (issue != null) builder.issue(convertIssue(issue));
+        ToolResult.Builder builder =
+                ToolResult.builder()
+                        .toolName(TOOL_NAME)
+                        .status(status)
+                        .message(message)
+                        .validationResult(null)
+                        .data("epubFile", epubFile.toString())
+                        .data("validationMode", mode.name())
+                        .data("validationStatus", validationResult.getStatus().name())
+                        .data("issueCount", validationResult.getIssueCount())
+                        .data("fatalCount", validationResult.getFatalCount())
+                        .data("errorCount", validationResult.getErrorCount())
+                        .data("warningCount", validationResult.getWarningCount())
+                        .data("infoCount", validationResult.getInfoCount())
+                        .data("autoFixableIssueCount", validationResult.getAutoFixableIssueCount())
+                        .data("durationMillis", validationResult.getDurationMillis())
+                        .data("issues", issues);
 
-        validationResult.getCause().ifPresent(cause -> {
-            builder.data("exceptionType", cause.getClass().getName());
-            builder.data("exceptionMessage", safeMessage(cause));
-            if (status != ToolStatus.SUCCESS) builder.cause(cause);
-        });
+        validationResult
+                .getValidatorName()
+                .ifPresent(
+                        value ->
+                                builder.data(
+                                        "validator",
+                                        value));
+
+        validationResult
+                .getValidatorVersion()
+                .ifPresent(
+                        value ->
+                                builder.data(
+                                        "validatorVersion",
+                                        value));
+
+        for (EpubValidationIssue issue : validationResult.getIssues()) {
+
+            if (issue != null) builder.issue(convertIssue(issue));
+        }
+
+        validationResult
+                .getCause()
+                .ifPresent(
+                        cause -> {
+
+                            builder.data(
+                                    "exceptionType",
+                                    cause.getClass().getName());
+
+                            builder.data(
+                                    "exceptionMessage",
+                                    safeMessage(cause));
+
+                            if (status != ToolStatus.SUCCESS) builder.cause(cause);
+                        });
 
         if (status == ToolStatus.VALIDATION_FAILED) builder.errorMessage(message == null || message.isBlank() ? "EPUB validation failed." : message);
 
         return builder.build();
     }
 
-    private ToolIssue convertIssue(EpubValidationIssue issue) {
+    private Map<String, Object> toIssueData(
+            EpubValidationIssue issue) {
 
-        Objects.requireNonNull(issue, "EPUB validation issue must not be null.");
+        Map<String, Object> data =
+                new LinkedHashMap<>();
 
-        StringBuilder message = new StringBuilder(issue.getDisplayMessage());
-        issue.getSuggestion().ifPresent(suggestion -> message.append(" / suggestion: ").append(suggestion));
+        data.put(
+                "severity",
+                issue.getSeverity() == null
+                        ? ""
+                        : issue.getSeverity().name());
 
-        return ToolIssue.builder().severity(mapSeverity(issue.getSeverity())).code(issue.getCode()).message(message.toString()).build();
+        data.put(
+                "code",
+                issue.getCode());
+
+        data.put(
+                "message",
+                issue.getMessage());
+
+        issue.getEpubPath()
+                .ifPresent(
+                        value ->
+                                data.put(
+                                        "epubPath",
+                                        value));
+
+        if (issue.hasLine()) data.put("line", issue.getLine());
+
+        if (issue.hasColumn()) data.put("column", issue.getColumn());
+
+        issue.getLocationDescription()
+                .ifPresent(
+                        value ->
+                                data.put(
+                                        "location",
+                                        value));
+
+        issue.getSuggestion()
+                .ifPresent(
+                        value ->
+                                data.put(
+                                        "suggestion",
+                                        value));
+
+        return Map.copyOf(data);
     }
 
-    private ToolIssueSeverity mapSeverity(EpubValidationIssue.Severity severity) {
+    private ToolIssue convertIssue(
+            EpubValidationIssue issue) {
+
+        Objects.requireNonNull(
+                issue,
+                "EPUB validation issue must not be null.");
+
+        StringBuilder message =
+                new StringBuilder(
+                        issue.getMessage());
+
+        issue.getLocationDescription()
+                .ifPresent(
+                        location ->
+                                message
+                                        .append(" (")
+                                        .append(location)
+                                        .append(')'));
+
+        issue.getSuggestion()
+                .ifPresent(
+                        suggestion ->
+                                message
+                                        .append(" / suggestion: ")
+                                        .append(suggestion));
+
+        return ToolIssue.builder()
+                .severity(
+                        mapSeverity(
+                                issue.getSeverity()))
+                .code(
+                        issue.getCode())
+                .message(
+                        message.toString())
+                .build();
+    }
+
+    private ToolIssueSeverity mapSeverity(
+            EpubValidationIssue.Severity severity) {
 
         if (severity == null) return ToolIssueSeverity.ERROR;
 
         return switch (severity) {
-            case INFO -> ToolIssueSeverity.INFO;
-            case WARNING -> ToolIssueSeverity.WARNING;
-            case ERROR, FATAL -> ToolIssueSeverity.ERROR;
+
+            case INFO ->
+                    ToolIssueSeverity.INFO;
+
+            case WARNING ->
+                    ToolIssueSeverity.WARNING;
+
+            case ERROR, FATAL ->
+                    ToolIssueSeverity.ERROR;
         };
     }
 
-    private ToolStatus resolveToolStatus(EpubValidationResult result) {
+    private ToolStatus resolveToolStatus(
+            EpubValidationResult result) {
 
         if (result == null) return ToolStatus.FAILED;
 
         return switch (result.getStatus()) {
-            case PASSED, PASSED_WITH_WARNINGS, PARTIAL -> ToolStatus.SUCCESS;
-            case NOT_PERFORMED, FAILED -> ToolStatus.VALIDATION_FAILED;
+
+            case PASSED,
+                 PASSED_WITH_WARNINGS,
+                 PARTIAL ->
+                    ToolStatus.SUCCESS;
+
+            case NOT_PERFORMED,
+                 FAILED ->
+                    ToolStatus.VALIDATION_FAILED;
         };
     }
 
-    private boolean supportsMode(ValidationMode mode) {
+    private boolean supportsMode(
+            ValidationMode mode) {
 
         if (mode == null) return false;
 
         return switch (mode) {
-            case INTERNAL -> internalValidator != null;
-            case ACCESSIBILITY -> accessibilityValidator != null;
-            case EPUB_CHECK -> epubCheckValidator != null && epubCheckValidator.isAvailable();
-            case ALL -> compositeValidator != null && !compositeValidator.isEmpty();
+
+            case INTERNAL ->
+                    internalValidator != null;
+
+            case ACCESSIBILITY ->
+                    accessibilityValidator != null;
+
+            case EPUB_CHECK ->
+                    epubCheckValidator != null
+                            && epubCheckValidator.isAvailable();
+
+            case ALL ->
+                    compositeValidator != null
+                            && !compositeValidator.isEmpty();
         };
     }
 
@@ -248,6 +481,7 @@ public final class ValidateEpubFileTool implements AgentTool {
     private EpubCheckValidator requireEpubCheckValidator() {
 
         if (epubCheckValidator == null) throw new IllegalStateException("EPUBCheck validator is not configured.");
+
         if (!epubCheckValidator.isAvailable()) throw new IllegalStateException(epubCheckValidator.getAvailability().getMessage().orElse("EPUBCheck is not available."));
 
         return epubCheckValidator;
@@ -260,89 +494,186 @@ public final class ValidateEpubFileTool implements AgentTool {
         return compositeValidator;
     }
 
-    private Path resolveEpubFile(ToolRequest request, ToolContext context) {
+    private Path resolveEpubFile(
+            ToolRequest request,
+            ToolContext context) {
 
-        Path result = request == null ? null : resolvePathFromArguments(request.getArguments());
+        Path result =
+                request == null
+                        ? null
+                        : resolvePathFromArguments(
+                                request.getArguments());
 
         if (result != null) return result;
 
         if (context != null) {
-            result = toPath(context.getAttribute(EPUB_FILE_ARGUMENT));
+
+            result =
+                    toPath(
+                            context.getAttribute(
+                                    EPUB_FILE_ARGUMENT));
+
             if (result != null) return result;
         }
 
-        Path publishDirectory = publishDirectoryProvider.getPublishDirectory();
+        Path publishDirectory =
+                publishDirectoryProvider
+                        .getPublishDirectory();
 
         if (publishDirectory == null) return null;
 
-        return publishedEpubResolver.resolve(publishDirectory);
+        EpubProjectContext projectContext =
+                currentProjectProvider
+                        .getCurrentProject();
+
+        if (projectContext == null) return null;
+
+        String projectId =
+                projectContext
+                        .getProjectName();
+
+        if (projectId == null || projectId.isBlank()) return null;
+
+        Path projectPublishDirectory =
+                publishDirectory
+                        .resolve(projectId)
+                        .normalize();
+
+        return publishedEpubResolver
+                .resolve(
+                        projectPublishDirectory);
     }
 
-    private Path resolvePathFromArguments(Object arguments) {
+    private Path resolvePathFromArguments(
+            Object arguments) {
 
         if (arguments == null) return null;
 
-        Path direct = toPath(arguments);
+        Path direct =
+                toPath(arguments);
 
         if (direct != null) return direct;
+
         if (arguments instanceof Map<?, ?> map) return toPath(map.get(EPUB_FILE_ARGUMENT));
 
         return null;
     }
 
-    private Path resolveProjectRoot(ToolRequest request, ToolContext context) {
+    private Path resolveProjectRoot(
+            ToolRequest request,
+            ToolContext context) {
 
         if (context != null) {
-            Path path = toPath(context.getAttribute(PROJECT_ROOT_ARGUMENT));
+
+            Path path =
+                    toPath(
+                            context.getAttribute(
+                                    PROJECT_ROOT_ARGUMENT));
+
             if (path != null) return path.toAbsolutePath().normalize();
         }
 
         if (context != null) {
-            EpubGenerationRequest generationRequest = context.getAttribute(EPUB_GENERATION_REQUEST_ATTRIBUTE, EpubGenerationRequest.class);
-            if (generationRequest != null && generationRequest.getProjectRoot() != null) return generationRequest.getProjectRoot().toAbsolutePath().normalize();
+
+            EpubGenerationRequest generationRequest =
+                    context.getAttribute(
+                            EPUB_GENERATION_REQUEST_ATTRIBUTE,
+                            EpubGenerationRequest.class);
+
+            if (generationRequest != null
+                    && generationRequest.getProjectRoot() != null) {
+
+                return generationRequest
+                        .getProjectRoot()
+                        .toAbsolutePath()
+                        .normalize();
+            }
         }
 
-        Path path = toPath(getArgumentValue(request, PROJECT_ROOT_ARGUMENT));
+        Path path =
+                toPath(
+                        getArgumentValue(
+                                request,
+                                PROJECT_ROOT_ARGUMENT));
 
-        return path == null ? null : path.toAbsolutePath().normalize();
+        return path == null
+                ? null
+                : path
+                        .toAbsolutePath()
+                        .normalize();
     }
 
-    private ValidationMode resolveValidationMode(ToolRequest request, ToolContext context) {
+    private ValidationMode resolveValidationMode(
+            ToolRequest request,
+            ToolContext context) {
 
-        Object value = getArgumentValue(request, VALIDATION_MODE_ARGUMENT);
+        Object value =
+                getArgumentValue(
+                        request,
+                        VALIDATION_MODE_ARGUMENT);
 
         if (value == null && context != null) value = context.getAttribute(VALIDATION_MODE_ARGUMENT);
+
         if (value instanceof ValidationMode mode) return mode;
-        if (value instanceof String text && !text.isBlank()) return ValidationMode.from(text);
+
+        if (value instanceof String text
+                && !text.isBlank()) {
+
+            return ValidationMode.from(text);
+        }
 
         return ValidationMode.ALL;
     }
 
-    private EpubGenerationOptions resolveOptions(ToolContext context) {
+    private EpubGenerationOptions resolveOptions(
+            ToolContext context) {
 
         if (context != null) {
-            EpubGenerationOptions options = context.getAttribute(GENERATION_OPTIONS_ATTRIBUTE, EpubGenerationOptions.class);
+
+            EpubGenerationOptions options =
+                    context.getAttribute(
+                            GENERATION_OPTIONS_ATTRIBUTE,
+                            EpubGenerationOptions.class);
+
             if (options != null) return options;
         }
 
         return EpubGenerationOptions.defaultOptions();
     }
 
-    private Object getArgumentValue(ToolRequest request, String name) {
+    private Object getArgumentValue(
+            ToolRequest request,
+            String name) {
 
-        if (request == null || name == null || name.isBlank()) return null;
+        if (request == null
+                || name == null
+                || name.isBlank()) {
 
-        return request.getArguments().get(name);
+            return null;
+        }
+
+        Object arguments =
+                request.getArguments();
+
+        if (!(arguments instanceof Map<?, ?> map)) return null;
+
+        return map.get(name);
     }
 
-    private Path toPath(Object value) {
+    private Path toPath(
+            Object value) {
 
         if (value == null) return null;
+
         if (value instanceof Path path) return path;
 
         if (value instanceof String text) {
-            String normalized = text.trim();
+
+            String normalized =
+                    text.trim();
+
             if (normalized.isEmpty()) return null;
+
             return Path.of(normalized);
         }
 
@@ -352,49 +683,125 @@ public final class ValidateEpubFileTool implements AgentTool {
     @Override
     public Map<String, Object> getInputSchema() {
 
-        Map<String, Object> properties = new LinkedHashMap<>();
+        Map<String, Object> properties =
+                new LinkedHashMap<>();
 
-        properties.put(EPUB_FILE_ARGUMENT, Map.of("type", "string", "description", "Path of the EPUB file to validate."));
-        properties.put(VALIDATION_MODE_ARGUMENT, Map.of("type", "string", "enum", List.of("INTERNAL", "ACCESSIBILITY", "EPUB_CHECK", "ALL"), "description", "EPUB validation mode."));
+        properties.put(
+                EPUB_FILE_ARGUMENT,
+                Map.of(
+                        "type",
+                        "string",
+                        "description",
+                        "Optional EPUB file path. If omitted, the latest published EPUB file of the current project is used."));
 
-        Map<String, Object> schema = new LinkedHashMap<>();
+        properties.put(
+                VALIDATION_MODE_ARGUMENT,
+                Map.of(
+                        "type",
+                        "string",
+                        "enum",
+                        List.of(
+                                "INTERNAL",
+                                "ACCESSIBILITY",
+                                "EPUB_CHECK",
+                                "ALL"),
+                        "description",
+                        "EPUB validation mode."));
 
-        schema.put("type", "object");
-        schema.put("properties", Map.copyOf(properties));
-        schema.put("required", List.of(EPUB_FILE_ARGUMENT));
+        Map<String, Object> schema =
+                new LinkedHashMap<>();
+
+        schema.put(
+                "type",
+                "object");
+
+        schema.put(
+                "properties",
+                Map.copyOf(properties));
+
+        schema.put(
+                "required",
+                List.of());
 
         return Map.copyOf(schema);
     }
 
-    private ToolResult failure(String errorCode, String errorMessage, Path epubFile, ValidationMode mode, Throwable cause) {
+    private ToolResult failure(
+            String errorCode,
+            String errorMessage,
+            Path epubFile,
+            ValidationMode mode,
+            Throwable cause) {
 
-        String code = errorCode == null || errorCode.isBlank() ? "EPUB_VALIDATION_FAILED" : errorCode.trim();
-        String message = errorMessage == null || errorMessage.isBlank() ? "EPUB validation failed." : errorMessage.trim();
+        String code =
+                errorCode == null
+                        || errorCode.isBlank()
+                        ? "EPUB_VALIDATION_FAILED"
+                        : errorCode.trim();
 
-        ToolResult.Builder builder = ToolResult.builder().toolName(TOOL_NAME).status(ToolStatus.FAILED).message(message).errorCode(code).errorMessage(message).issue(errorIssue(code, message));
+        String message =
+                errorMessage == null
+                        || errorMessage.isBlank()
+                        ? "EPUB validation failed."
+                        : errorMessage.trim();
+
+        ToolResult.Builder builder =
+                ToolResult.builder()
+                        .toolName(TOOL_NAME)
+                        .status(ToolStatus.FAILED)
+                        .message(message)
+                        .errorCode(code)
+                        .errorMessage(message)
+                        .issue(
+                                errorIssue(
+                                        code,
+                                        message));
 
         if (epubFile != null) builder.data("epubFile", epubFile.toAbsolutePath().normalize().toString());
+
         if (mode != null) builder.data("validationMode", mode.name());
 
         if (cause != null) {
+
             builder.cause(cause);
-            builder.data("exceptionType", cause.getClass().getName());
+
+            builder.data(
+                    "exceptionType",
+                    cause.getClass().getName());
+
+            builder.data(
+                    "exceptionMessage",
+                    safeMessage(cause));
         }
 
         return builder.build();
     }
 
-    private ToolIssue errorIssue(String code, String message) {
-        return ToolIssue.builder().severity(ToolIssueSeverity.ERROR).code(code).message(message).build();
+    private ToolIssue errorIssue(
+            String code,
+            String message) {
+
+        return ToolIssue.builder()
+                .severity(ToolIssueSeverity.ERROR)
+                .code(code)
+                .message(message)
+                .build();
     }
 
-    private static String safeMessage(Throwable throwable) {
+    private static String safeMessage(
+            Throwable throwable) {
 
         if (throwable == null) return "Unknown EPUB validation error.";
 
-        String message = throwable.getMessage();
+        String message =
+                throwable.getMessage();
 
-        return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message.trim();
+        return message == null
+                || message.isBlank()
+                ? throwable
+                        .getClass()
+                        .getSimpleName()
+                : message.trim();
     }
 
     public enum ValidationMode {
@@ -404,18 +811,42 @@ public final class ValidateEpubFileTool implements AgentTool {
         EPUB_CHECK,
         ALL;
 
-        public static ValidationMode from(String value) {
+        public static ValidationMode from(
+                String value) {
 
             if (value == null || value.isBlank()) return ALL;
 
-            String normalized = value.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
+            String normalized =
+                    value
+                            .trim()
+                            .toUpperCase(Locale.ROOT)
+                            .replace('-', '_')
+                            .replace(' ', '_');
 
             return switch (normalized) {
-                case "INTERNAL", "STRUCTURE", "BASIC" -> INTERNAL;
-                case "ACCESSIBILITY", "A11Y" -> ACCESSIBILITY;
-                case "EPUBCHECK", "EPUB_CHECK", "CHECK" -> EPUB_CHECK;
-                case "ALL", "FULL" -> ALL;
-                default -> throw new IllegalArgumentException("Unsupported EPUB validation mode: " + value);
+
+                case "INTERNAL",
+                     "STRUCTURE",
+                     "BASIC" ->
+                        INTERNAL;
+
+                case "ACCESSIBILITY",
+                     "A11Y" ->
+                        ACCESSIBILITY;
+
+                case "EPUBCHECK",
+                     "EPUB_CHECK",
+                     "CHECK" ->
+                        EPUB_CHECK;
+
+                case "ALL",
+                     "FULL" ->
+                        ALL;
+
+                default ->
+                        throw new IllegalArgumentException(
+                                "Unsupported EPUB validation mode: "
+                                        + value);
             };
         }
     }

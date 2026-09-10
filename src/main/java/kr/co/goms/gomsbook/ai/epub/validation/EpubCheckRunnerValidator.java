@@ -6,6 +6,7 @@ package kr.co.goms.gomsbook.ai.epub.validation;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.epub.model.EpubCheckMessage;
@@ -25,6 +26,7 @@ public final class EpubCheckRunnerValidator implements EpubCheckValidator {
     private final String epubCheckVersion;
 
     public EpubCheckRunnerValidator(EpubCheckRunner epubCheckRunner, String epubCheckVersion) {
+
         this.epubCheckRunner = Objects.requireNonNull(epubCheckRunner, "epubCheckRunner must not be null");
         this.epubCheckVersion = normalizeVersion(epubCheckVersion);
     }
@@ -104,9 +106,25 @@ public final class EpubCheckRunnerValidator implements EpubCheckValidator {
                 .detail("epubCheckLevel", level.name());
 
         if (message.getId() != null && !message.getId().isBlank()) builder.detail("epubCheckCode", message.getId());
-        message.getLocation().ifPresent(location -> builder.detail("location", location));
+
+        applyLocation(builder, message);
 
         return builder.build();
+    }
+
+    private void applyLocation(EpubValidationIssue.Builder builder, EpubCheckMessage message) {
+
+        if (builder == null || message == null) return;
+        if (message.getFile() == null || message.getFile().isBlank()) return;
+
+        int line = message.getLine() == null ? -1 : message.getLine();
+        int column = message.getColumn() == null ? -1 : message.getColumn();
+
+        builder.location(message.getFile(), line, column);
+        builder.detail("file", message.getFile());
+
+        if (message.getLine() != null) builder.detail("line", String.valueOf(message.getLine()));
+        if (message.getColumn() != null) builder.detail("column", String.valueOf(message.getColumn()));
     }
 
     private String resolveValidationCode(String code) {
@@ -124,7 +142,7 @@ public final class EpubCheckRunnerValidator implements EpubCheckValidator {
 
         String normalized = value.trim();
 
-        if (normalized.toLowerCase(java.util.Locale.ROOT).startsWith("epubcheck-")) normalized = normalized.substring("epubcheck-".length());
+        if (normalized.toLowerCase(Locale.ROOT).startsWith("epubcheck-")) normalized = normalized.substring("epubcheck-".length());
 
         return normalized;
     }

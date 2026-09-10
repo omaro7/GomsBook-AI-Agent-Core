@@ -31,10 +31,17 @@ import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckRunnerValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectAccessibilityValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectValidator;
+import kr.co.goms.gomsbook.ai.epub.validation.fix.DefaultEpubFileCheckFixService;
+import kr.co.goms.gomsbook.ai.epub.validation.fix.EpubFileCheckFixService;
 import kr.co.goms.gomsbook.ai.epub.validation.DefaultEpubProjectValidator;
 import kr.co.goms.gomsbook.ai.tool.DefaultAgentToolRegistrar;
 import kr.co.goms.gomsbook.ai.tool.AgentToolRegistrar;
-
+import kr.co.goms.gomsbook.ai.epub.validation.DefaultEpubFileCheckIssueAnalyzer;
+import kr.co.goms.gomsbook.ai.epub.validation.EpubFileCheckIssueAnalyzer;
+import kr.co.goms.gomsbook.ai.epub.validation.fix.DefaultEpubFileCheckFixPlan;
+import kr.co.goms.gomsbook.ai.epub.validation.fix.DefaultEpubFileCheckFixResolver;
+import kr.co.goms.gomsbook.ai.epub.validation.fix.EpubFileCheckFixPlan;
+import kr.co.goms.gomsbook.ai.epub.validation.fix.EpubFileCheckFixResolver;
 
 import com.google.gson.Gson;
 public final class AgentToolRegistrarSmokeTest {
@@ -76,13 +83,19 @@ public final class AgentToolRegistrarSmokeTest {
 	    EpubProjectAccessibilityValidator epubProjectAccessibilityValidator = new DefaultEpubProjectAccessibilityValidator(accessibilityValidator);
 	    EpubProjectValidator epubProjectValidator = new DefaultEpubProjectValidator();
 	    
+	    EpubFileCheckIssueAnalyzer issueAnalyzer = new DefaultEpubFileCheckIssueAnalyzer();
+	    EpubFileCheckFixPlan fixPlan = new DefaultEpubFileCheckFixPlan();
+	    EpubFileCheckFixResolver fixResolver = new DefaultEpubFileCheckFixResolver();
+	    EpubFileCheckFixService epubFileCheckFixService = new DefaultEpubFileCheckFixService(issueAnalyzer, fixPlan, fixResolver);
+
 	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(
 	    		currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
 	    		approvalService, eventPublisher, 
 	    		currentProjectStore, createEpubProjectPlanService, epubProjectsRoot,
 	    		latestPublishedEpubResolver, epubStructureValidator,
 	    		gson,
-	    		epubProjectAccessibilityValidator, epubProjectValidator
+	    		epubProjectAccessibilityValidator, epubProjectValidator,
+	    		epubCheckRunner, epubFileCheckFixService
 	    );
 
 	    
