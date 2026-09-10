@@ -27,6 +27,9 @@ import kr.co.goms.gomsbook.ai.tool.ToolRequest;
 import kr.co.goms.gomsbook.ai.tool.ToolResult;
 import kr.co.goms.gomsbook.ai.tool.ToolStatus;
 import kr.co.goms.gomsbook.ai.tool.ToolValidationResult;
+import kr.co.goms.gomsbook.ai.epub.publish.EpubArtifactFingerprint;
+import kr.co.goms.gomsbook.ai.epub.publish.EpubArtifactFingerprintService;
+import kr.co.goms.gomsbook.ai.epub.publish.PublishEpubResult;
 
 public final class PublishEpubTool implements AgentTool {
 
@@ -36,15 +39,18 @@ public final class PublishEpubTool implements AgentTool {
 
     private final CurrentProjectProvider currentProjectProvider;
     private final PublishDirectoryProvider publishDirectoryProvider;
-
+    private final EpubArtifactFingerprintService fingerprintService;
+    
     public PublishEpubTool(
             CurrentProjectProvider currentProjectProvider,
-            PublishDirectoryProvider publishDirectoryProvider) {
+            PublishDirectoryProvider publishDirectoryProvider,
+            EpubArtifactFingerprintService fingerprintService) {
 
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
+        this.fingerprintService = Objects.requireNonNull(fingerprintService, "fingerprintService must not be null");
     }
-
+    
     @Override
     public String getName() {
 
@@ -136,8 +142,11 @@ public final class PublishEpubTool implements AgentTool {
             EpubProjectContext project = requireCurrentProject();
             Path projectRoot = project.getProjectRoot().toAbsolutePath().normalize();
             Path publishDirectory = requirePublishDirectory();
-            EpubPublisher epubPublisher = new DefaultEpubPublisher(projectRoot, publishDirectory);
-            Path epubFile = epubPublisher.publish();
+
+            EpubPublisher epubPublisher = new DefaultEpubPublisher(projectRoot, publishDirectory, fingerprintService);
+            PublishEpubResult publishResult = epubPublisher.publish();
+            Path epubFile = publishResult.getEpubPath();
+            EpubArtifactFingerprint fingerprint = publishResult.getFingerprint();
 
             return ToolResult.builder()
                     .toolName(TOOL_NAME)
@@ -150,6 +159,9 @@ public final class PublishEpubTool implements AgentTool {
                     .data("publishDirectory", normalizePath(publishDirectory))
                     .data("fileName", epubFile.getFileName().toString())
                     .data("epubFile", normalizePath(epubFile))
+                    .data("fileSize", fingerprint.getFileSize())
+                    .data("sha256", fingerprint.getSha256())
+                    .data("publishedAt", publishResult.getPublishedAt().toString())
                     .build();
 
         } catch (Exception exception) {

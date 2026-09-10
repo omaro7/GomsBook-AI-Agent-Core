@@ -10,6 +10,7 @@ import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
 import kr.co.goms.gomsbook.ai.epub.plan.project.CreateEpubProjectPlanService;
+import kr.co.goms.gomsbook.ai.epub.publish.EpubArtifactFingerprintService;
 import kr.co.goms.gomsbook.ai.epub.publish.EpubPublisher;
 import kr.co.goms.gomsbook.ai.epub.service.EpubStructureValidator;
 import kr.co.goms.gomsbook.ai.epub.service.LatestPublishedEpubResolver;
@@ -103,6 +104,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     
     private final EpubCheckRunner epubCheckRunner;
     private final EpubFileCheckFixService epubFileCheckFixService;
+    private final EpubArtifactFingerprintService epubArtifactFingerprintService;
     
     public DefaultAgentToolRegistrar(CurrentProjectProvider currentProjectProvider, PublishDirectoryProvider publishDirectoryProvider, EpubCheckValidator epubCheckValidator, 
     		AccessibilityValidator accessibilityValidator,
@@ -112,7 +114,8 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
             LatestPublishedEpubResolver latestPublishedEpubResolver, EpubStructureValidator epubStructureValidator,
             Gson gson,
             EpubProjectAccessibilityValidator epubProjectAccessibilityValidator, EpubProjectValidator epubProjectValidator,
-            EpubCheckRunner epubCheckRunner, EpubFileCheckFixService epubFileCheckFixService
+            EpubCheckRunner epubCheckRunner, EpubFileCheckFixService epubFileCheckFixService,
+            EpubArtifactFingerprintService epubArtifactFingerprintService
             ) {
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
@@ -130,6 +133,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         this.epubProjectValidator = Objects.requireNonNull(epubProjectValidator, "epubProjectValidator must not be null");
         this.epubCheckRunner = Objects.requireNonNull(epubCheckRunner, "epubCheckRunner must not be null");
         this.epubFileCheckFixService = Objects.requireNonNull(epubFileCheckFixService, "epubFileCheckFixService must not be null");
+        this.epubArtifactFingerprintService = Objects.requireNonNull(epubArtifactFingerprintService, "epubArtifactFingerprintService must not be null");
                
      }
 
@@ -211,7 +215,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new UpdateEpubXhtmlAttributeTool(currentProjectProvider, approvalService));				// EPUB xhtml 속성 수정
         registerIfAbsent(registry, new ValidateEpubProjectTool(currentProjectProvider, epubProjectValidator));				// EPUB Project 검증
         
-        registerIfAbsent(registry, new PublishEpubTool(currentProjectProvider, publishDirectoryProvider));					// EPUB .epub 파일 생성
+        registerIfAbsent(registry, new PublishEpubTool(currentProjectProvider, publishDirectoryProvider, epubArtifactFingerprintService));					// EPUB .epub 파일 생성
         registerIfAbsent(registry, new FixEpubFileCheckTool(currentProjectProvider, publishDirectoryProvider, epubCheckRunner, epubFileCheckFixService));	// EPUB .epub 파일 검증 후 Fix하기
         
     }

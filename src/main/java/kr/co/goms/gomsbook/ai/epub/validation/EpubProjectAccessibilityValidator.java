@@ -9,7 +9,7 @@ package kr.co.goms.gomsbook.ai.epub.validation;
 
 import java.nio.file.Path;
 
-import kr.co.goms.gomsbook.ai.epub.model.EpubProjectAccessibilityValidationResult;
+import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidationResult;
 
 /**
  * EPUB 파일 생성 전 현재 EPUB 프로젝트의 접근성을 검증합니다.
@@ -22,5 +22,5 @@ public interface EpubProjectAccessibilityValidator {
      * @param projectRoot EPUB 프로젝트 루트 디렉터리
      * @return EPUB 프로젝트 접근성 검증 결과
      */
-    EpubProjectAccessibilityValidationResult validate(Path projectRoot);
+     AccessibilityValidationResult validate(Path projectRoot);
 }

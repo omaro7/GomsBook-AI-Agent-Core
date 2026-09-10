@@ -14,12 +14,12 @@ kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalRequest.class
 kr\co\goms\gomsbook\ai\tool\epub\navigation\ReadEpubNavigationTool.class
 kr\co\goms\gomsbook\ai\epub\model\EpubProjectValidationResult.class
 kr\co\goms\gomsbook\ai\epub\service\EpubArchivePackageReader.class
-kr\co\goms\gomsbook\ai\epub\validation\DefaultEpubProjectAccessibilityValidator$ManifestDocument.class
 kr\co\goms\gomsbook\ai\epub\plan\author\CreateEpubAuthorPlan.class
 kr\co\goms\gomsbook\ai\test\InspectEpubImagesToolSmokeTest.class
 kr\co\goms\gomsbook\ai\epub\generation\author\DefaultEpubAuthorXhtmlGenerator.class
 kr\co\goms\gomsbook\ai\epub\model\EpubNavigation$Builder.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationRequest$Builder.class
+kr\co\goms\gomsbook\ai\accessibility\validation\DefaultEpubProjectValidator.class
 kr\co\goms\gomsbook\ai\conversation\model\ConversationHistoryMessage.class
 kr\co\goms\gomsbook\ai\test\DefaultAgentToolCallingSmokeTest$1.class
 kr\co\goms\gomsbook\ai\tool\epub\publish\PublishEpubTool.class
@@ -44,8 +44,6 @@ kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilitySeverity.class
 kr\co\goms\gomsbook\ai\epub\model\EpubGenerationRequest$Builder.class
 kr\co\goms\gomsbook\ai\tool\epub\resource\ApplyEpubStylesheetTool.class
 kr\co\goms\gomsbook\ai\agent\event\DefaultAgentEventPublisher.class
-kr\co\goms\gomsbook\ai\epub\model\EpubProjectAccessibilityValidationIssue$Severity.class
-kr\co\goms\gomsbook\ai\epub\validation\DefaultEpubProjectAccessibilityValidator.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityIssueCode.class
 kr\co\goms\gomsbook\ai\tool\epub\chapter\UpdateEpubChapterTool.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidator.class
@@ -62,6 +60,7 @@ kr\co\goms\gomsbook\ai\epub\model\EpubMetadataItem$Builder.class
 kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubFileTool$1.class
 kr\co\goms\gomsbook\ai\agent\AgentToolResultListener.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationResult$Builder.class
+kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateAccessibilityTool.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationException.class
 kr\co\goms\gomsbook\ai\tool\ToolExecutionException$ErrorCodes.class
 kr\co\goms\gomsbook\ai\test\ReadEpubNavigationToolSmokeTest.class
@@ -91,6 +90,7 @@ kr\co\goms\gomsbook\ai\tool\DefaultToolExecutor.class
 kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubProjectTool.class
 kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubNavigationApprovalHandler.class
 kr\co\goms\gomsbook\ai\tool\epub\spine\ReadEpubFileSpineTool.class
+kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationResultMapper.class
 kr\co\goms\gomsbook\ai\epub\model\EpubNavigationItem$Builder.class
 kr\co\goms\gomsbook\ai\epub\plan\project\CreateEpubProjectPlan.class
 kr\co\goms\gomsbook\ai\epub\model\EpubSpine$Builder.class
@@ -149,6 +149,7 @@ kr\co\goms\gomsbook\ai\llm\LlmRequest.class
 kr\co\goms\gomsbook\ai\llm\LlmResponse.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityIssueCode$AccessibilityCategory.class
 kr\co\goms\gomsbook\ai\epub\generation\navigation\EpubNavigationService.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\HeadingAccessibilityRule$HeadingEntry.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaConfiguration$Builder.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaToolDefinition$FunctionDefinition.class
 kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalExecutor.class
@@ -160,7 +161,6 @@ kr\co\goms\gomsbook\ai\epub\validation\CompositeEpubValidator.class
 kr\co\goms\gomsbook\ai\tool\epub\spine\UpdateEpubSpineTool.class
 kr\co\goms\gomsbook\ai\util\ToolUtil.class
 kr\co\goms\gomsbook\ai\epub\model\EpubInspectionResult$Builder.class
-kr\co\goms\gomsbook\ai\epub\model\EpubProjectAccessibilityValidationResult.class
 kr\co\goms\gomsbook\ai\epub\model\EpubCheckMessage.class
 kr\co\goms\gomsbook\ai\epub\model\EpubStructureValidationResult.class
 kr\co\goms\gomsbook\ai\agent\approval\payload\UpdateEpubNavigationApprovalPayload.class
@@ -194,6 +194,7 @@ kr\co\goms\gomsbook\ai\epub\updater\navigation\EpubNavigationUpdateItem.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaChatRequest.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationErrorCode.class
 kr\co\goms\gomsbook\ai\epub\generation\author\EpubAuthorPage.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\TableAccessibilityRule.class
 kr\co\goms\gomsbook\ai\json\JsonMappingException.class
 kr\co\goms\gomsbook\ai\epub\author\EpubAuthorPageState.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubValidationResult$Status.class
@@ -210,6 +211,8 @@ kr\co\goms\gomsbook\ai\epub\publish\EpubPublisher.class
 kr\co\goms\gomsbook\ai\epub\model\EpubManifest.class
 kr\co\goms\gomsbook\ai\llm\LlmAttachmentType.class
 kr\co\goms\gomsbook\ai\tool\epub\author\CreateEpubAuthorTool.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\LinkAccessibilityRule$AccessibleName.class
+kr\co\goms\gomsbook\ai\accessibility\validation\DefaultEpubProjectAccessibilityValidator.class
 kr\co\goms\gomsbook\ai\epub\model\EpubSpread$1.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaConfiguration.class
 kr\co\goms\gomsbook\ai\epub\model\EpubNavigation.class
@@ -218,7 +221,6 @@ kr\co\goms\gomsbook\ai\agent\approval\handler\DeleteEpubChapterApprovalHandler.c
 kr\co\goms\gomsbook\ai\epub\generation\part\EpubPartPage.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityIssue.class
 kr\co\goms\gomsbook\ai\epub\generation\part\EpubPartXhtmlGenerator.class
-kr\co\goms\gomsbook\ai\epub\model\EpubProjectAccessibilityValidationIssue.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaToolCall.class
 kr\co\goms\gomsbook\ai\epub\model\EpubVersion.class
 kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubProjectStructureTool.class
@@ -229,6 +231,7 @@ kr\co\goms\gomsbook\ai\conversation\repository\AiConversationMessageRepository.c
 kr\co\goms\gomsbook\ai\epub\validation\DefaultEpubFileCheckIssueAnalyzer.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubCheckValidator$Level.class
 kr\co\goms\gomsbook\ai\epub\validation\fix\DefaultEpubFileCheckFixPlan$1.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\TableAccessibilityRule$TableStructure.class
 kr\co\goms\gomsbook\ai\test\ValidateAccessibilityToolSmokeTest.class
 kr\co\goms\gomsbook\ai\epub\model\EpubMetadata.class
 kr\co\goms\gomsbook\ai\tool\EchoTool.class
@@ -249,6 +252,7 @@ kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalHandler.class
 kr\co\goms\gomsbook\ai\conversation\repository\jdbc\JdbcAiConversationRepository.class
 kr\co\goms\gomsbook\ai\tool\epub\author\DeleteEpubAuthorTool.class
 kr\co\goms\gomsbook\ai\llm\LlmRole.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\ImageAltAccessibilityRule.class
 kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubAuthorApprovalHandler.class
 kr\co\goms\gomsbook\ai\epub\generation\copyright\EpubCopyrightService.class
 kr\co\goms\gomsbook\ai\tool\epub\manifest\UpdateEpubManifestTool.class
@@ -269,11 +273,13 @@ kr\co\goms\gomsbook\ai\epub\validation\EpubProjectValidator.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationRequest.class
 kr\co\goms\gomsbook\ai\llm\LlmUnavailableException.class
 kr\co\goms\gomsbook\ai\test\DefaultToolExecutorSmokeTest$1.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\HeadingAccessibilityRule.class
 kr\co\goms\gomsbook\ai\agent\approval\handler\UpdateEpubMetadataApprovalHandler.class
 kr\co\goms\gomsbook\ai\epub\validation\fix\DefaultEpubFileCheckFixPlan.class
 kr\co\goms\gomsbook\ai\agent\approval\payload\UpdateEpubMetadataApprovalPayload.class
 kr\co\goms\gomsbook\ai\logging\ExecutionLogContext.class
 kr\co\goms\gomsbook\ai\json\GsonFactory$InstantAdapter.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\AriaAccessibilityRule.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubCheckRunnerValidator.class
 kr\co\goms\gomsbook\ai\agent\approval\payload\UpdateEpubChapterApprovalPayload.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaChatResponse.class
@@ -284,6 +290,7 @@ kr\co\goms\gomsbook\ai\epub\model\EpubProjectValidationIssue.class
 kr\co\goms\gomsbook\ai\epub\updater\navigation\DefaultEpubNavigationUpdater.class
 kr\co\goms\gomsbook\ai\tool\epub\generation\chapter\CreateBasicXhtmlTool.class
 kr\co\goms\gomsbook\ai\tool\ToolStatus.class
+kr\co\goms\gomsbook\ai\accessibility\validation\DefaultEpubProjectValidator$ManifestValidationContext.class
 kr\co\goms\gomsbook\ai\agent\approval\payload\EpubAuthorApprovalPayload.class
 kr\co\goms\gomsbook\ai\tool\ToolDefinitionMapper.class
 kr\co\goms\gomsbook\ai\json\GsonJsonMapper$2.class
@@ -312,6 +319,7 @@ kr\co\goms\gomsbook\ai\epub\validation\EpubFileCheckIssueAnalyzer.class
 kr\co\goms\gomsbook\ai\epub\validation\fix\EpubFileCheckFixType.class
 kr\co\goms\gomsbook\ai\epub\model\EpubMetadataItem$Kind.class
 kr\co\goms\gomsbook\ai\tool\epub\project\CreateEpubProjectPlanTool.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\DocumentLanguageAccessibilityRule.class
 kr\co\goms\gomsbook\ai\epub\service\EpubStructureValidator$ManifestEntry.class
 kr\co\goms\gomsbook\ai\epub\model\EpubGenerationRequest.class
 kr\co\goms\gomsbook\ai\tool\ToolRegistry.class
@@ -328,7 +336,6 @@ kr\co\goms\gomsbook\ai\agent\AgentResponse$Builder.class
 kr\co\goms\gomsbook\ai\epub\generation\xhtml\BasicXhtmlGenerator.class
 kr\co\goms\gomsbook\ai\tool\ToolIssue.class
 kr\co\goms\gomsbook\ai\tool\epub\chapter\DeleteEpubChapterTool.class
-kr\co\goms\gomsbook\ai\epub\validation\DefaultEpubProjectValidator$ManifestValidationContext.class
 kr\co\goms\gomsbook\ai\tool\xhtml\ApplyXhtmlTool.class
 kr\co\goms\gomsbook\ai\project\InMemoryCurrentProjectStore.class
 kr\co\goms\gomsbook\ai\epub\model\EpubMetadataItem$TextDirection.class
@@ -341,7 +348,6 @@ kr\co\goms\gomsbook\ai\epub\generation\copyright\DefaultEpubCopyrightXhtmlGenera
 kr\co\goms\gomsbook\ai\epub\part\EpubPartReader.class
 kr\co\goms\gomsbook\ai\tool\xhtml\ApplyXhtmlTool$ApplyXhtmlRequest.class
 kr\co\goms\gomsbook\ai\test\DefaultToolExecutorSmokeTest.class
-kr\co\goms\gomsbook\ai\epub\model\EpubProjectAccessibilityValidationResult$Builder.class
 kr\co\goms\gomsbook\ai\epub\resource\stylesheet\EpubStylesheetResolver.class
 kr\co\goms\gomsbook\ai\epub\model\EpubGenerationOptions$LineSeparator.class
 kr\co\goms\gomsbook\ai\epub\service\EpubStructureValidator.class
@@ -351,10 +357,12 @@ kr\co\goms\gomsbook\ai\epub\validation\EpubValidator.class
 kr\co\goms\gomsbook\ai\epub\generation\part\EpubPartService.class
 kr\co\goms\gomsbook\ai\epub\updater\navigation\DefaultEpubNavigationUpdater$CleanupCounter.class
 kr\co\goms\gomsbook\ai\tool\epub\manifest\CompareEpubImageManifestTool.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\LinkAccessibilityRule$LinkReference.class
 kr\co\goms\gomsbook\ai\tool\epub\metadata\UpdateEpubMetadataTool.class
 kr\co\goms\gomsbook\ai\epub\policy\spine\EpubSpineOrderPolicy.class
 kr\co\goms\gomsbook\ai\agent\approval\handler\UpdateEpubSpineApprovalHandler.class
 kr\co\goms\gomsbook\ai\agent\approval\handler\CreateEpubCopyrightApprovalHandler.class
+kr\co\goms\gomsbook\ai\accessibility\validation\rule\LinkAccessibilityRule.class
 kr\co\goms\gomsbook\ai\epub\model\EpubSpineItem.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaToolFunction.class
 kr\co\goms\gomsbook\ai\tool\epub\manifest\ReadEpubFileManifestTool.class
@@ -388,7 +396,6 @@ kr\co\goms\gomsbook\ai\tool\image\InspectEpubImagesTool.class
 kr\co\goms\gomsbook\ai\agent\approval\handler\UpdateEpubChapterApprovalHandler.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubCheckValidator$CheckMessage.class
 kr\co\goms\gomsbook\ai\test\DefaultAgentToolCallingSmokeTest.class
-kr\co\goms\gomsbook\ai\epub\validation\DefaultEpubProjectValidator.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityRuleContext$Builder.class
 kr\co\goms\gomsbook\ai\epub\generation\xhtml\BasicXhtmlService.class
 kr\co\goms\gomsbook\ai\tool\epub\pkg\ReadEpubFilePackageTool.class

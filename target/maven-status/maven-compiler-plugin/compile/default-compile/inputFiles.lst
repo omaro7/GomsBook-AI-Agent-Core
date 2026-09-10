@@ -10,8 +10,17 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\ac
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationException.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationRequest.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationResult.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationResultMapper.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidator.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\DefaultAccessibilityValidator.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\DefaultEpubProjectAccessibilityValidator.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\DefaultEpubProjectValidator.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\rule\AriaAccessibilityRule.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\rule\DocumentLanguageAccessibilityRule.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\rule\HeadingAccessibilityRule.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\rule\ImageAltAccessibilityRule.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\rule\LinkAccessibilityRule.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\accessibility\validation\rule\TableAccessibilityRule.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\AgentContext.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\AgentException.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\agent\AgentExecutor.java
@@ -130,8 +139,6 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\ep
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\model\EpubPageProgressionDirection.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\model\EpubPageSpread.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\model\EpubPathConfiguration.java
-D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\model\EpubProjectAccessibilityValidationIssue.java
-D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\model\EpubProjectAccessibilityValidationResult.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\model\EpubProjectValidationIssue.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\model\EpubProjectValidationResult.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\model\EpubPublicationType.java
@@ -173,8 +180,6 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\ep
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\updater\xhtml\EpubXhtmlUpdater.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\validation\CompositeEpubValidator.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\validation\DefaultEpubFileCheckIssueAnalyzer.java
-D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\validation\DefaultEpubProjectAccessibilityValidator.java
-D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\validation\DefaultEpubProjectValidator.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\validation\EpubAccessibilityValidator.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\validation\EpubCheckRunnerValidator.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\epub\validation\EpubCheckValidator.java
@@ -295,6 +300,7 @@ D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\to
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\spine\ReadEpubSpineTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\spine\UpdateEpubSpineTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\validation\FixEpubFileCheckTool.java
+D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateAccessibilityTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubFileStructureTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubFileTool.java
 D:\04.GomsBook-AI\GomsBook-AI-Agent-Core\src\main\java\kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubProjectAccessibilityTool.java

@@ -9,7 +9,9 @@ import kr.co.goms.gomsbook.ai.epub.plan.project.DefaultCreateEpubProjectPlanServ
 import kr.co.goms.gomsbook.ai.epub.plan.project.InMemoryCreateEpubProjectPlanStore;
 import kr.co.goms.gomsbook.ai.epub.policy.spine.DefaultEpubSpineOrderPolicy;
 import kr.co.goms.gomsbook.ai.epub.policy.spine.EpubSpineOrderPolicy;
+import kr.co.goms.gomsbook.ai.epub.publish.DefaultEpubArtifactFingerprintService;
 import kr.co.goms.gomsbook.ai.epub.publish.DefaultEpubPublisher;
+import kr.co.goms.gomsbook.ai.epub.publish.EpubArtifactFingerprintService;
 import kr.co.goms.gomsbook.ai.epub.publish.EpubPublisher;
 import kr.co.goms.gomsbook.ai.epub.service.EpubCheckRunner;
 import kr.co.goms.gomsbook.ai.epub.service.EpubStructureValidator;
@@ -22,18 +24,18 @@ import kr.co.goms.gomsbook.ai.project.InMemoryCurrentProjectStore;
 import kr.co.goms.gomsbook.ai.tool.ToolRegistry;
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
 import kr.co.goms.gomsbook.ai.accessibility.validation.DefaultAccessibilityValidator;
+import kr.co.goms.gomsbook.ai.accessibility.validation.DefaultEpubProjectAccessibilityValidator;
+import kr.co.goms.gomsbook.ai.accessibility.validation.DefaultEpubProjectValidator;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
 import kr.co.goms.gomsbook.ai.agent.approval.DefaultAgentApprovalService;
 import kr.co.goms.gomsbook.ai.agent.event.AgentEventPublisher;
 import kr.co.goms.gomsbook.ai.agent.event.DefaultAgentEventPublisher;
-import kr.co.goms.gomsbook.ai.epub.validation.DefaultEpubProjectAccessibilityValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckRunnerValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectAccessibilityValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.fix.DefaultEpubFileCheckFixService;
 import kr.co.goms.gomsbook.ai.epub.validation.fix.EpubFileCheckFixService;
-import kr.co.goms.gomsbook.ai.epub.validation.DefaultEpubProjectValidator;
 import kr.co.goms.gomsbook.ai.tool.DefaultAgentToolRegistrar;
 import kr.co.goms.gomsbook.ai.tool.AgentToolRegistrar;
 import kr.co.goms.gomsbook.ai.epub.validation.DefaultEpubFileCheckIssueAnalyzer;
@@ -74,7 +76,10 @@ public final class AgentToolRegistrarSmokeTest {
 
 	    Path epubProjectsRoot = Path.of("C:\\1004.GomsBook\\03.Project");
 	    
-	    EpubPublisher epubPublisher = new DefaultEpubPublisher(projectRoot, publishDirectory);
+
+	    EpubArtifactFingerprintService epubArtifactFingerprintService = new DefaultEpubArtifactFingerprintService();
+	    
+	    EpubPublisher epubPublisher = new DefaultEpubPublisher(projectRoot, publishDirectory, epubArtifactFingerprintService);
 	    
 	    EpubSpineOrderPolicy spineOrderPolicy = new DefaultEpubSpineOrderPolicy();
 	    LatestPublishedEpubResolver latestPublishedEpubResolver = new LatestPublishedEpubResolver();
@@ -88,6 +93,7 @@ public final class AgentToolRegistrarSmokeTest {
 	    EpubFileCheckFixResolver fixResolver = new DefaultEpubFileCheckFixResolver();
 	    EpubFileCheckFixService epubFileCheckFixService = new DefaultEpubFileCheckFixService(issueAnalyzer, fixPlan, fixResolver);
 
+	    
 	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(
 	    		currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
 	    		approvalService, eventPublisher, 
@@ -95,7 +101,8 @@ public final class AgentToolRegistrarSmokeTest {
 	    		latestPublishedEpubResolver, epubStructureValidator,
 	    		gson,
 	    		epubProjectAccessibilityValidator, epubProjectValidator,
-	    		epubCheckRunner, epubFileCheckFixService
+	    		epubCheckRunner, epubFileCheckFixService,
+	    		epubArtifactFingerprintService
 	    );
 
 	    

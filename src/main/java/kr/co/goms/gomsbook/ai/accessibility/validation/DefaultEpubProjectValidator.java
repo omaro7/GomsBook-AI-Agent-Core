@@ -5,7 +5,7 @@
  * Project: GomsBook AI
  * AI-powered EPUB authoring, validation, accessibility, and publishing automation.
  */
-package kr.co.goms.gomsbook.ai.epub.validation;
+package kr.co.goms.gomsbook.ai.accessibility.validation;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -30,6 +30,7 @@ import org.w3c.dom.NodeList;
 import kr.co.goms.gomsbook.ai.epub.model.EpubManifestItem;
 import kr.co.goms.gomsbook.ai.epub.model.EpubProjectValidationIssue;
 import kr.co.goms.gomsbook.ai.epub.model.EpubProjectValidationResult;
+import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectValidator;
 
 /**
  * EPUB 파일 생성 전 현재 EPUB 프로젝트의 구조와 정합성을 검증합니다.

@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import kr.co.goms.gomsbook.ai.epub.model.EpubProjectAccessibilityValidationIssue;
-import kr.co.goms.gomsbook.ai.epub.model.EpubProjectAccessibilityValidationResult;
+import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidationResult;
+import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidationResultMapper;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectAccessibilityValidator;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
@@ -31,10 +31,15 @@ import kr.co.goms.gomsbook.ai.util.ToolUtil;
 public final class ValidateEpubProjectAccessibilityTool implements AgentTool {
 
     public static final String TOOL_NAME = "validate_epub_project_accessibility";
+
     public static final String DESCRIPTION =
-            "Validates accessibility requirements of the current EPUB project before the .epub file is created, including accessibility metadata, document language, image alternative text, headings, ARIA, "
-            + "navigation accessibility, and cover accessibility. "
-            + "Do not use this tool for general EPUB structural validation.";
+            "Validates accessibility of the entire current EPUB project before publication or EPUB generation. "
+            + "Use this tool when the user asks to validate project-wide accessibility, check whether the current EPUB project is accessibility-ready, "
+            + "or perform a final accessibility check before creating the .epub file. "
+            + "Automatically discovers and validates applicable EPUB package documents and content documents in the current project; no documentPath is required. "
+            + "Do not use this tool for targeted validation of a single named document, general EPUB structural validation, EPUBCheck validation, or validation of an already generated .epub file. "
+            + "This tool does not modify project files.";
+
     private final CurrentProjectProvider currentProjectProvider;
     private final EpubProjectAccessibilityValidator accessibilityValidator;
 
@@ -78,7 +83,7 @@ public final class ValidateEpubProjectAccessibilityTool implements AgentTool {
 
             if (projectRoot == null) return ToolUtil.validationFailed(requestId, TOOL_NAME, "Current EPUB project root is not available.");
 
-            EpubProjectAccessibilityValidationResult validationResult = accessibilityValidator.validate(projectRoot);
+            AccessibilityValidationResult validationResult = accessibilityValidator.validate(projectRoot);
 
             return success(requestId, validationResult);
 
@@ -97,33 +102,16 @@ public final class ValidateEpubProjectAccessibilityTool implements AgentTool {
         }
     }
 
-    private ToolResult success(String requestId, EpubProjectAccessibilityValidationResult validationResult) {
-
-        Map<String, Object> data = new LinkedHashMap<>();
-
-        data.put("valid", validationResult.isValid());
-        data.put("projectRoot", validationResult.getProjectRoot() == null ? null : validationResult.getProjectRoot().toString());
-        data.put("packagePath", validationResult.getPackagePath() == null ? null : validationResult.getPackagePath().toString());
-        data.put("errorCount", validationResult.getErrorCount());
-        data.put("warningCount", validationResult.getWarningCount());
-        data.put("issueCount", validationResult.getIssueCount());
-        data.put("summary", validationResult.createSummary());
-        data.put("issues", validationResult.getIssues().stream().map(this::toIssueData).toList());
+    private ToolResult success(String requestId, AccessibilityValidationResult validationResult) {
 
         return ToolResult.builder()
                 .requestId(requestId)
                 .toolName(TOOL_NAME)
                 .status(ToolStatus.SUCCESS)
-                .message(validationResult.createSummary())
-                .data(data)
+                .message(validationResult.toSummaryString())
+                .data(AccessibilityValidationResultMapper.toData(validationResult))
                 .build();
     }
 
-    private Map<String, Object> toIssueData(EpubProjectAccessibilityValidationIssue issue) {
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("severity", issue.getSeverity().name());
-        data.put("code", issue.getCode());
-        data.put("message", issue.getMessage());
-        return data;
-    }
+
 }

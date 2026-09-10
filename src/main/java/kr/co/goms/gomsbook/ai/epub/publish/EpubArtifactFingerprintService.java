@@ -8,8 +8,9 @@
 package kr.co.goms.gomsbook.ai.epub.publish;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
-public interface EpubPublisher {
+public interface EpubArtifactFingerprintService {
 
-	PublishEpubResult publish() throws IOException;
+    EpubArtifactFingerprint calculate(Path epubPath) throws IOException;
 }

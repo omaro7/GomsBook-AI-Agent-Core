@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import java.time.Instant;
 
 public class DefaultEpubPublisher implements EpubPublisher {
 
@@ -30,17 +31,25 @@ public class DefaultEpubPublisher implements EpubPublisher {
 
     private final Path projectRoot;
     private final Path publishDirectory;
+    private final EpubArtifactFingerprintService fingerprintService;
 
     public DefaultEpubPublisher(
             Path projectRoot,
-            Path publishDirectory) {
+            Path publishDirectory,
+            EpubArtifactFingerprintService fingerprintService) {
+
+        if (fingerprintService == null) {
+
+            throw new IllegalArgumentException("fingerprintService must not be null.");
+        }
 
         this.projectRoot = projectRoot;
         this.publishDirectory = publishDirectory;
+        this.fingerprintService = fingerprintService;
     }
-
+    
     @Override
-    public Path publish() throws IOException {
+    public PublishEpubResult publish() throws IOException {
 
         validateProjectRoot(projectRoot);
         validatePublishDirectory(publishDirectory);
@@ -56,7 +65,12 @@ public class DefaultEpubPublisher implements EpubPublisher {
 
         createEpub(projectRoot, publishEpubPath);
 
-        return publishEpubPath;
+        EpubArtifactFingerprint fingerprint = fingerprintService.calculate(publishEpubPath);
+
+        return new PublishEpubResult(
+                publishEpubPath,
+                fingerprint,
+                Instant.now());
     }
 
     private void createEpub(
