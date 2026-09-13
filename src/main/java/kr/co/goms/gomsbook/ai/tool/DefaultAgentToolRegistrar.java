@@ -11,10 +11,11 @@ import java.util.Objects;
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
 import kr.co.goms.gomsbook.ai.epub.plan.project.CreateEpubProjectPlanService;
 import kr.co.goms.gomsbook.ai.epub.publish.EpubArtifactFingerprintService;
-import kr.co.goms.gomsbook.ai.epub.publish.EpubPublisher;
+import kr.co.goms.gomsbook.ai.epub.release.EpubReleasePolicy;
 import kr.co.goms.gomsbook.ai.epub.service.EpubStructureValidator;
 import kr.co.goms.gomsbook.ai.epub.service.LatestPublishedEpubResolver;
 import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
+import kr.co.goms.gomsbook.ai.epub.updater.xhtml.EpubTypographyUpdater;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubCheckValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectAccessibilityValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectValidator;
@@ -35,6 +36,8 @@ import kr.co.goms.gomsbook.ai.tool.epub.copyright.UpdateEpubCopyrightTool;
 import kr.co.goms.gomsbook.ai.tool.epub.generation.chapter.CreateBasicXhtmlTool;
 import kr.co.goms.gomsbook.ai.tool.epub.inspect.InspectCurrentProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.inspect.InspectEpubTool;
+import kr.co.goms.gomsbook.ai.tool.epub.loi.CreateEpubLoiTool;
+import kr.co.goms.gomsbook.ai.tool.epub.lot.CreateEpubLotTool;
 import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubFontManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubImageManifestTool;
 import kr.co.goms.gomsbook.ai.tool.epub.manifest.CompareEpubJsManifestTool;
@@ -61,6 +64,7 @@ import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectStructureTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.CreateEpubProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.project.SwitchCurrentEpubProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.publish.PublishEpubTool;
+import kr.co.goms.gomsbook.ai.tool.epub.release.ReleaseEpubTool;
 import kr.co.goms.gomsbook.ai.tool.epub.resource.ApplyEpubStylesheetTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubFileSpineTool;
 import kr.co.goms.gomsbook.ai.tool.epub.spine.ReadEpubSpineTool;
@@ -71,13 +75,17 @@ import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubFileTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubProjectAccessibilityTool;
 import kr.co.goms.gomsbook.ai.tool.epub.validation.ValidateEpubProjectTool;
 import kr.co.goms.gomsbook.ai.tool.epub.xhtml.UpdateEpubXhtmlAttributeTool;
+import kr.co.goms.gomsbook.ai.tool.epub.xhtml.CleanEpubTypographyTool;
+import kr.co.goms.gomsbook.ai.tool.epub.xhtml.CleanEpubXhtmlTool;
 import kr.co.goms.gomsbook.ai.tool.image.InspectEpubImagesTool;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
 import kr.co.goms.gomsbook.ai.agent.event.AgentEventPublisher;
 import com.google.gson.Gson;
 import kr.co.goms.gomsbook.ai.epub.service.EpubCheckRunner;
 import kr.co.goms.gomsbook.ai.epub.validation.fix.EpubFileCheckFixService;
-import kr.co.goms.gomsbook.ai.tool.epub.validation.FixEpubFileCheckTool;
+import kr.co.goms.gomsbook.ai.epub.proofreading.KoreanTypoChecker;
+import kr.co.goms.gomsbook.ai.tool.epub.proofreading.CheckEpubKoreanTypoTool;
+import kr.co.goms.gomsbook.ai.tool.epub.proofreading.FixEpubKoreanTypoTool;
 
 /**
  * Core 공통 Agent Tool을 등록하는 기본 구현체입니다.
@@ -106,6 +114,12 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     private final EpubFileCheckFixService epubFileCheckFixService;
     private final EpubArtifactFingerprintService epubArtifactFingerprintService;
     
+    private final EpubTypographyUpdater epubTypographyUpdate;
+    
+    private final KoreanTypoChecker koreanTypoChecker;
+    
+    private final EpubReleasePolicy epubReleasePolicy;
+    
     public DefaultAgentToolRegistrar(CurrentProjectProvider currentProjectProvider, PublishDirectoryProvider publishDirectoryProvider, EpubCheckValidator epubCheckValidator, 
     		AccessibilityValidator accessibilityValidator,
             AgentApprovalService approvalService,
@@ -115,7 +129,10 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
             Gson gson,
             EpubProjectAccessibilityValidator epubProjectAccessibilityValidator, EpubProjectValidator epubProjectValidator,
             EpubCheckRunner epubCheckRunner, EpubFileCheckFixService epubFileCheckFixService,
-            EpubArtifactFingerprintService epubArtifactFingerprintService
+            EpubArtifactFingerprintService epubArtifactFingerprintService,
+            EpubTypographyUpdater epubTypographyUpdate,
+            KoreanTypoChecker koreanTypoChecker,
+            EpubReleasePolicy epubReleasePolicy
             ) {
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
@@ -134,6 +151,9 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         this.epubCheckRunner = Objects.requireNonNull(epubCheckRunner, "epubCheckRunner must not be null");
         this.epubFileCheckFixService = Objects.requireNonNull(epubFileCheckFixService, "epubFileCheckFixService must not be null");
         this.epubArtifactFingerprintService = Objects.requireNonNull(epubArtifactFingerprintService, "epubArtifactFingerprintService must not be null");
+        this.epubTypographyUpdate = Objects.requireNonNull(epubTypographyUpdate, "epubTypographyUpdate must not be null");
+        this.koreanTypoChecker = Objects.requireNonNull(koreanTypoChecker, "koreanTypoChecker must not be null");
+        this.epubReleasePolicy = Objects.requireNonNull(epubReleasePolicy, "epubReleasePolicy must not be null");
                
      }
 
@@ -213,11 +233,19 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         
         registerIfAbsent(registry, new ValidateEpubProjectAccessibilityTool(currentProjectProvider, epubProjectAccessibilityValidator));		// EPUB Project Accessibility Validator
         registerIfAbsent(registry, new UpdateEpubXhtmlAttributeTool(currentProjectProvider, approvalService));				// EPUB xhtml 속성 수정
+        registerIfAbsent(registry, new CleanEpubXhtmlTool(currentProjectProvider, approvalService, gson));					// EPUB xhtml clean
+        registerIfAbsent(registry, new CleanEpubTypographyTool(currentProjectProvider, approvalService, epubTypographyUpdate));	// EPUB xhtml clean
+        registerIfAbsent(registry, new CreateEpubLoiTool(currentProjectProvider, approvalService));							// EPUB loi.xhtml 생성
+        registerIfAbsent(registry, new CreateEpubLotTool(currentProjectProvider, approvalService));							// EPUB lot.xhtml 생성
+        registerIfAbsent(registry, new CheckEpubKoreanTypoTool(currentProjectProvider, koreanTypoChecker));					// EPUB 한글 맞춤법 체크
+        registerIfAbsent(registry, new FixEpubKoreanTypoTool(currentProjectProvider, approvalService, gson));				// EPUB 한글 맞춤법 수정
+        
         registerIfAbsent(registry, new ValidateEpubProjectTool(currentProjectProvider, epubProjectValidator));				// EPUB Project 검증
         
         registerIfAbsent(registry, new PublishEpubTool(currentProjectProvider, publishDirectoryProvider, epubArtifactFingerprintService));					// EPUB .epub 파일 생성
         registerIfAbsent(registry, new FixEpubFileCheckTool(currentProjectProvider, publishDirectoryProvider, epubCheckRunner, epubFileCheckFixService));	// EPUB .epub 파일 검증 후 Fix하기
         
+        registerIfAbsent(registry, new ReleaseEpubTool(currentProjectProvider, publishDirectoryProvider, latestPublishedEpubResolver, epubArtifactFingerprintService, epubReleasePolicy, approvalService, gson));        // EPUB Release
     }
 
     private void registerIfAbsent(ToolRegistry registry, AgentTool tool) {

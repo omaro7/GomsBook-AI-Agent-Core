@@ -4,6 +4,8 @@
  */
 package kr.co.goms.gomsbook.ai.agent;
 
+import kr.co.goms.gomsbook.ai.agent.event.AgentRagEventListener;
+
 /**
  * AI Agent 실행 진입점을 정의하는 인터페이스입니다.
  *
@@ -62,21 +64,42 @@ public interface AgentExecutor {
      * @param request Agent 실행 요청
      * @return Agent 실행 결과
      */
-    default AgentResponse executeWithNewContext(
-            AgentRequest request) {
+    default AgentResponse executeWithNewContext(AgentRequest request) {
 
-        if (request == null) {
-            throw AgentException.invalidRequest(
-                    "Agent request must not be null."
-            );
-        }
+        if (request == null) throw AgentException.invalidRequest("Agent request must not be null.");
 
         return execute(new AgentContext(request));
     }
-    
+
+    /**
+     * Tool 실행 결과 Listener를 등록합니다.
+     *
+     * @param listener Tool 실행 결과 Listener
+     */
     default void addToolResultListener(AgentToolResultListener listener) {
     }
 
+    /**
+     * Tool 실행 결과 Listener를 제거합니다.
+     *
+     * @param listener Tool 실행 결과 Listener
+     */
     default void removeToolResultListener(AgentToolResultListener listener) {
+    }
+
+    /**
+     * RAG 실행 이벤트 Listener를 등록합니다.
+     *
+     * @param listener RAG 실행 이벤트 Listener
+     */
+    default void addRagEventListener(AgentRagEventListener listener) {
+    }
+
+    /**
+     * RAG 실행 이벤트 Listener를 제거합니다.
+     *
+     * @param listener RAG 실행 이벤트 Listener
+     */
+    default void removeRagEventListener(AgentRagEventListener listener) {
     }
 }

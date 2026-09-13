@@ -51,7 +51,8 @@ public final class DefaultCurrentProjectProvider implements CurrentProjectProvid
             throw new IllegalStateException("Current project root does not exist: " + projectRoot);
         }
 
-        String projectName = resolveProjectName(projectRoot);
+        String projectId = resolveProjectName(projectRoot);
+        String projectName = projectId;
         Path packageDocument = resolvePackageDocument(projectRoot);
         Path contentRoot = packageDocument.getParent();
 
@@ -63,7 +64,7 @@ public final class DefaultCurrentProjectProvider implements CurrentProjectProvid
         Path textDirectory = resolveTextDirectory(contentRoot);
         Path navigationFile = resolveNavigationFile(textDirectory);
 
-        return new EpubProjectContext(projectName, projectRoot, textDirectory, navigationFile, packageDocument);
+        return new EpubProjectContext(projectId, projectName, projectRoot, textDirectory, navigationFile, packageDocument);
     }
 
 

@@ -26,82 +26,99 @@ import org.w3c.dom.NodeList;
 
 public final class EpubXmlUtil {
 
+    private static final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+    private static final String HTML_DOCTYPE = "<!DOCTYPE html>";
+
     private EpubXmlUtil() {
     }
-    
-    public static Document readDocument(Path path) {
 
+    public static Document readDocument(Path path) {
         if (path == null) throw new IllegalArgumentException("path must not be null.");
         if (!Files.exists(path)) throw new IllegalStateException("XML document does not exist: " + path);
         if (!Files.isRegularFile(path)) throw new IllegalStateException("XML document is not a file: " + path);
 
         try {
-
             DocumentBuilderFactory factory = createDocumentBuilderFactory();
             DocumentBuilder builder = factory.newDocumentBuilder();
 
             try (InputStream inputStream = Files.newInputStream(path)) {
                 return builder.parse(inputStream);
             }
-
         } catch (Exception exception) {
-
-            throw new IllegalStateException(
-                    "Failed to read XML document: " + path,
-                    exception);
+            throw new IllegalStateException("Failed to read XML document: " + path, exception);
         }
     }
-    
-    public static void writeDocument(Path path, Document document) {
 
+    public static void writeDocument(Path path, Document document) {
         if (path == null) throw new IllegalArgumentException("path must not be null.");
         if (document == null) throw new IllegalArgumentException("document must not be null.");
 
         try {
-
-            String xml = xmlDocumentToString(document);
-
-            Files.writeString(
-                    path,
-                    xml,
-                    StandardCharsets.UTF_8);
-
+            Files.writeString(path, xmlDocumentToString(document), StandardCharsets.UTF_8);
         } catch (Exception exception) {
+            throw new IllegalStateException("Failed to write XML document: " + path, exception);
+        }
+    }
 
-            throw new IllegalStateException(
-                    "Failed to write XML document: " + path,
-                    exception);
+    public static void writeXhtmlDocument(Path path, Document document) {
+        if (path == null) throw new IllegalArgumentException("path must not be null.");
+        if (document == null) throw new IllegalArgumentException("document must not be null.");
+
+        try {
+            Files.writeString(path, xhtmlDocumentToString(document), StandardCharsets.UTF_8);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Failed to write XHTML document: " + path, exception);
         }
     }
 
     public static String xmlDocumentToString(Document document) throws Exception {
-
         if (document == null) throw new IllegalArgumentException("document must not be null.");
 
         removeWhitespaceNodes(document);
 
-        TransformerFactory factory = TransformerFactory.newInstance();
-        Transformer transformer = factory.newTransformer();
+        Transformer transformer = createTransformer();
 
         transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+
+        StringWriter writer = new StringWriter();
+
+        transformer.transform(new DOMSource(document), new StreamResult(writer));
+
+        return writer.toString();
+    }
+
+    public static String xhtmlDocumentToString(Document document) throws Exception {
+        if (document == null) throw new IllegalArgumentException("document must not be null.");
+
+        removeWhitespaceNodes(document);
+
+        Transformer transformer = createTransformer();
+
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+
+        StringWriter writer = new StringWriter();
+
+        transformer.transform(new DOMSource(document), new StreamResult(writer));
+
+        String body = removeDoctype(writer.toString()).stripLeading();
+
+        return XML_DECLARATION + "\n" + HTML_DOCTYPE + "\n" + body;
+    }
+
+    private static Transformer createTransformer() throws Exception {
+        TransformerFactory factory = createTransformerFactory();
+        Transformer transformer = factory.newTransformer();
+
         transformer.setOutputProperty(OutputKeys.METHOD, "xml");
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
         transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
         transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
 
-        StringWriter writer = new StringWriter();
-
-        transformer.transform(
-                new DOMSource(document),
-                new StreamResult(writer));
-
-        return writer.toString();
+        return transformer;
     }
 
     private static DocumentBuilderFactory createDocumentBuilderFactory() {
-
         try {
-
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
             factory.setNamespaceAware(true);
@@ -115,15 +132,12 @@ public final class EpubXmlUtil {
             factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
 
             return factory;
-
         } catch (Exception exception) {
-
             throw new IllegalStateException("Failed to configure EPUB XML parser.", exception);
         }
     }
 
     private static TransformerFactory createTransformerFactory() {
-
         TransformerFactory factory = TransformerFactory.newInstance();
 
         try {
@@ -138,46 +152,30 @@ public final class EpubXmlUtil {
 
         return factory;
     }
-    
+
     public static boolean hasHtmlDoctype(String source) {
-
-        if (source == null) {
-
-            return false;
-        }
-
+        if (source == null) return false;
         return source.matches("(?is).*<!DOCTYPE\\s+html\\s*>.*");
     }
-    
+
     public static String removeDoctype(String source) {
-
-        if (source == null) {
-
-            return "";
-        }
-
+        if (source == null) return "";
         return source.replaceFirst("(?is)<!DOCTYPE\\s+html\\s*>", "");
     }
 
-    
     public static Element findTargetElement(Document document, String elementName, String matchAttributeName, String matchAttributeValue) {
-
         NodeList elements = document.getElementsByTagNameNS("*", elementName);
 
         Element matchedElement = null;
-
         int matchedCount = 0;
 
         for (int index = 0; index < elements.getLength(); index++) {
-
             Element element = (Element) elements.item(index);
-
             String value = getAttribute(element, matchAttributeName);
 
             if (!matchAttributeValue.equals(value)) continue;
 
             matchedElement = element;
-
             matchedCount++;
         }
 
@@ -188,15 +186,12 @@ public final class EpubXmlUtil {
     }
 
     public static String getAttribute(Element element, String attributeName) {
-
         int separatorIndex = attributeName.indexOf(':');
 
         if (separatorIndex < 0) return element.getAttribute(attributeName);
 
         String prefix = attributeName.substring(0, separatorIndex);
-
         String localName = attributeName.substring(separatorIndex + 1);
-
         String namespaceUri = element.lookupNamespaceURI(prefix);
 
         if (namespaceUri == null || namespaceUri.isBlank()) return element.getAttribute(attributeName);
@@ -205,62 +200,76 @@ public final class EpubXmlUtil {
     }
 
     public static void setAttribute(Element element, String attributeName, String attributeValue) {
-
         int separatorIndex = attributeName.indexOf(':');
 
         if (separatorIndex < 0) {
-
             element.setAttribute(attributeName, attributeValue);
-
             return;
         }
 
         String prefix = attributeName.substring(0, separatorIndex);
-
         String namespaceUri = element.lookupNamespaceURI(prefix);
 
         if (namespaceUri == null || namespaceUri.isBlank()) throw new IllegalStateException("XML namespace prefix was not found: " + prefix);
 
         element.setAttributeNS(namespaceUri, attributeName, attributeValue);
-    }    
-    
-    private static void removeWhitespaceNodes(Node node) {
+    }
 
+    private static void removeWhitespaceNodes(Node node) {
         Node child = node.getFirstChild();
 
         while (child != null) {
-
             Node next = child.getNextSibling();
 
-            if (child.getNodeType() == Node.TEXT_NODE
-                    && child.getTextContent().trim().isEmpty()) {
-
+            if (child.getNodeType() == Node.TEXT_NODE && child.getTextContent().trim().isEmpty()) {
                 node.removeChild(child);
-
             } else {
-
                 removeWhitespaceNodes(child);
             }
 
             child = next;
         }
     }
-    
-    public static String normalizeRefines(String value) {
 
+    public static String normalizeRefines(String value) {
         String refines = trimToNull(value);
 
         if (refines == null) return null;
 
         return refines.startsWith("#") ? refines : "#" + refines;
     }
+
+    public static String normalize(String value) {
+
+        if (value == null || value.isBlank()) return null;
+
+        return value.trim();
+    }
     
     public static String trimToNull(String value) {
-
         if (value == null) return null;
 
         String trimmed = value.trim();
 
         return trimmed.isEmpty() ? null : trimmed;
+    }
+    
+    public static String escapeText(String value) {
+
+        if (value == null) return "";
+
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    public static String escapeAttribute(String value) {
+
+        if (value == null) return "";
+
+        return escapeText(value).replace("\"", "&quot;").replace("'", "&apos;");
+    }
+
+    public static boolean isBlank(String value) {
+
+        return value == null || value.isBlank();
     }
 }

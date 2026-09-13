@@ -21,6 +21,7 @@ import org.w3c.dom.NodeList;
 public final class EpubStylesheetResolver {
 
     private static final String DEFAULT_STYLESHEET_FILE_NAME = "style1.css";
+    private static final String NAVIGATION_STYLESHEET_FILE_NAME = "nav.css";
     private static final String CSS_MEDIA_TYPE = "text/css";
 
     public String resolveHref(Path xhtmlFile) {
@@ -43,6 +44,24 @@ public final class EpubStylesheetResolver {
         Path stylesheet = resolve(packageDirectory);
 
         System.out.println("[GomsBook EPUB] Stylesheet       = " + stylesheet);
+
+        return textDirectory.relativize(stylesheet).toString().replace('\\', '/');
+    }
+
+    public String resolveNavigationHref(Path xhtmlFile) {
+
+        if (xhtmlFile == null) throw new IllegalArgumentException("xhtmlFile must not be null.");
+
+        Path normalizedXhtmlFile = xhtmlFile.toAbsolutePath().normalize();
+        Path textDirectory = normalizedXhtmlFile.getParent();
+
+        if (textDirectory == null) throw new IllegalStateException("XHTML parent directory is not available: " + normalizedXhtmlFile);
+
+        Path packageDirectory = textDirectory.getParent();
+
+        if (packageDirectory == null) throw new IllegalStateException("EPUB package directory is not available: " + textDirectory);
+
+        Path stylesheet = resolveNavigation(packageDirectory);
 
         return textDirectory.relativize(stylesheet).toString().replace('\\', '/');
     }
@@ -73,7 +92,26 @@ public final class EpubStylesheetResolver {
 
         throw new IllegalStateException("EPUB stylesheet could not be resolved: " + normalizedPackageDirectory);
     }
-    
+
+    public Path resolveNavigation(Path packageDirectory) {
+
+        if (packageDirectory == null) throw new IllegalArgumentException("packageDirectory must not be null.");
+
+        Path normalizedPackageDirectory = packageDirectory.toAbsolutePath().normalize();
+
+        if (!Files.isDirectory(normalizedPackageDirectory)) throw new IllegalStateException("EPUB package directory does not exist: " + normalizedPackageDirectory);
+
+        Path manifestStylesheet = resolveNavigationFromPackageDocument(normalizedPackageDirectory);
+
+        if (manifestStylesheet != null) return manifestStylesheet;
+
+        Path directoryStylesheet = normalizedPackageDirectory.resolve("Styles").resolve(NAVIGATION_STYLESHEET_FILE_NAME).normalize();
+
+        if (Files.isRegularFile(directoryStylesheet)) return directoryStylesheet;
+
+        throw new IllegalStateException("EPUB navigation stylesheet could not be resolved: " + normalizedPackageDirectory);
+    }
+
     private Path resolveFromPackageDocument(Path packageDirectory) {
 
         Path packageDocument = findPackageDocument(packageDirectory);
@@ -104,6 +142,43 @@ public final class EpubStylesheetResolver {
 
                     if (stylesheet.startsWith(packageDirectory) && Files.isRegularFile(stylesheet)) return stylesheet;
                 }
+            }
+
+            return null;
+
+        } catch (Exception exception) {
+
+            throw new IllegalStateException("Failed to read EPUB package document: " + packageDocument, exception);
+        }
+    }
+
+    private Path resolveNavigationFromPackageDocument(Path packageDirectory) {
+
+        Path packageDocument = findPackageDocument(packageDirectory);
+
+        if (packageDocument == null) return null;
+
+        try {
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+
+            Document document = factory.newDocumentBuilder().parse(packageDocument.toFile());
+            NodeList items = document.getElementsByTagNameNS("*", "item");
+            Path packageDocumentDirectory = packageDocument.getParent();
+
+            for (int index = 0; index < items.getLength(); index++) {
+
+                Element item = (Element) items.item(index);
+                String href = item.getAttribute("href");
+                String mediaType = item.getAttribute("media-type");
+
+                if (!isCss(href, mediaType)) continue;
+                if (!isNavigationStylesheet(href)) continue;
+
+                Path stylesheet = packageDocumentDirectory.resolve(href).normalize();
+
+                if (stylesheet.startsWith(packageDirectory) && Files.isRegularFile(stylesheet)) return stylesheet;
             }
 
             return null;
@@ -148,13 +223,13 @@ public final class EpubStylesheetResolver {
 
         try (Stream<Path> stream = Files.list(stylesDirectory)) {
 
-        	List<Path> cssFiles = stream
-        	        .filter(Files::isRegularFile)
-        	        .filter(this::isCssFile)
-        	        .sorted(Comparator.comparingInt((Path path) -> stylesheetPriority(path))
-        	                .thenComparing(path -> path.getFileName().toString().toLowerCase(Locale.ROOT)))
-        	        .toList();
-        	
+            List<Path> cssFiles = stream
+                    .filter(Files::isRegularFile)
+                    .filter(this::isCssFile)
+                    .sorted(Comparator.comparingInt((Path path) -> stylesheetPriority(path))
+                            .thenComparing(path -> path.getFileName().toString().toLowerCase(Locale.ROOT)))
+                    .toList();
+
             if (cssFiles.isEmpty()) return null;
 
             return cssFiles.get(0);
@@ -166,20 +241,40 @@ public final class EpubStylesheetResolver {
     }
 
     private boolean isCss(String href, String mediaType) {
+
         if (CSS_MEDIA_TYPE.equalsIgnoreCase(mediaType)) return true;
+
         return href != null && href.toLowerCase(Locale.ROOT).endsWith(".css");
     }
 
     private boolean isCssFile(Path path) {
-        return path != null && path.getFileName() != null && path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".css");
+
+        return path != null
+                && path.getFileName() != null
+                && path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".css");
     }
 
     private boolean isOpfFile(Path path) {
-        return path != null && path.getFileName() != null && path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".opf");
+
+        return path != null
+                && path.getFileName() != null
+                && path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".opf");
+    }
+
+    private boolean isNavigationStylesheet(String href) {
+
+        if (href == null || href.isBlank()) return false;
+
+        String normalized = href.trim().replace('\\', '/').toLowerCase(Locale.ROOT);
+        String fileName = normalized.substring(normalized.lastIndexOf('/') + 1);
+
+        return NAVIGATION_STYLESHEET_FILE_NAME.equals(fileName);
     }
 
     private int stylesheetPriority(Path path) {
+
         if (path == null || path.getFileName() == null) return 2;
+
         return stylesheetPriority(path.getFileName().toString());
     }
 
@@ -191,8 +286,9 @@ public final class EpubStylesheetResolver {
         String fileName = normalized.substring(normalized.lastIndexOf('/') + 1);
 
         if (DEFAULT_STYLESHEET_FILE_NAME.equals(fileName)) return 0;
-        if ("nav.css".equals(fileName) || "quiz.css".equals(fileName)) return 2;
+        if (NAVIGATION_STYLESHEET_FILE_NAME.equals(fileName) || "quiz.css".equals(fileName)) return 2;
 
         return 1;
     }
+
 }

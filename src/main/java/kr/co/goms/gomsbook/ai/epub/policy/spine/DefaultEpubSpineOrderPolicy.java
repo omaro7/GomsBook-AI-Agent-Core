@@ -10,6 +10,9 @@ package kr.co.goms.gomsbook.ai.epub.policy.spine;
 public class DefaultEpubSpineOrderPolicy implements EpubSpineOrderPolicy {
 
     private static final int COVER_ORDER = 10000;
+    private static final int NAV_ORDER = 11000;
+    private static final int LOI_ORDER = 12000;
+    private static final int LOT_ORDER = 13000;
     private static final int AUTHOR_ORDER = 20000;
     private static final int PROLOGUE_ORDER = 30000;
     private static final int CONTENT_BASE_ORDER = 100000;
@@ -26,10 +29,14 @@ public class DefaultEpubSpineOrderPolicy implements EpubSpineOrderPolicy {
         String fileName = getFileName(href).toLowerCase();
 
         if (isCover(fileName)) return COVER_ORDER;
+        if (isNav(fileName)) return NAV_ORDER;
+        if (isLoi(fileName)) return LOI_ORDER;
+        if (isLot(fileName)) return LOT_ORDER;
         if (isAuthor(fileName)) return AUTHOR_ORDER;
         if (isPrologue(fileName)) return PROLOGUE_ORDER;
 
         Integer contentOrder = getContentOrder(fileName);
+
         if (contentOrder != null) return contentOrder;
 
         if (isEpilogue(fileName)) return EPILOGUE_ORDER;
@@ -41,12 +48,14 @@ public class DefaultEpubSpineOrderPolicy implements EpubSpineOrderPolicy {
 
     @Override
     public boolean isOrderedBefore(String firstHref, String secondHref) {
+
         return getOrder(firstHref) <= getOrder(secondHref);
     }
 
     private Integer getContentOrder(String fileName) {
 
         Integer partOrder = getPartOrder(fileName);
+
         if (partOrder != null) return partOrder;
 
         return getChapterOrder(fileName);
@@ -92,26 +101,47 @@ public class DefaultEpubSpineOrderPolicy implements EpubSpineOrderPolicy {
     }
 
     private boolean isCover(String fileName) {
+
         return "cover.xhtml".equals(fileName);
     }
 
+    private boolean isNav(String fileName) {
+
+        return "nav.xhtml".equals(fileName);
+    }
+
+    private boolean isLoi(String fileName) {
+
+        return "loi.xhtml".equals(fileName);
+    }
+
+    private boolean isLot(String fileName) {
+
+        return "lot.xhtml".equals(fileName);
+    }
+
     private boolean isAuthor(String fileName) {
+
         return "author.xhtml".equals(fileName);
     }
 
     private boolean isPrologue(String fileName) {
+
         return "prologue.xhtml".equals(fileName) || "chapter00_1.xhtml".equals(fileName);
     }
 
     private boolean isEpilogue(String fileName) {
+
         return "epilogue.xhtml".equals(fileName);
     }
 
     private boolean isQuiz(String fileName) {
+
         return "quiz.xhtml".equals(fileName);
     }
 
     private boolean isCopyright(String fileName) {
+
         return "copyright.xhtml".equals(fileName);
     }
 
@@ -122,4 +152,5 @@ public class DefaultEpubSpineOrderPolicy implements EpubSpineOrderPolicy {
 
         return index >= 0 ? normalized.substring(index + 1) : normalized;
     }
+
 }

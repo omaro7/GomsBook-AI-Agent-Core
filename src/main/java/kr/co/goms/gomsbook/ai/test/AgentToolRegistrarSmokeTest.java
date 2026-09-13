@@ -9,10 +9,14 @@ import kr.co.goms.gomsbook.ai.epub.plan.project.DefaultCreateEpubProjectPlanServ
 import kr.co.goms.gomsbook.ai.epub.plan.project.InMemoryCreateEpubProjectPlanStore;
 import kr.co.goms.gomsbook.ai.epub.policy.spine.DefaultEpubSpineOrderPolicy;
 import kr.co.goms.gomsbook.ai.epub.policy.spine.EpubSpineOrderPolicy;
+import kr.co.goms.gomsbook.ai.epub.proofreading.DictionaryKoreanTypoChecker;
+import kr.co.goms.gomsbook.ai.epub.proofreading.KoreanTypoChecker;
 import kr.co.goms.gomsbook.ai.epub.publish.DefaultEpubArtifactFingerprintService;
 import kr.co.goms.gomsbook.ai.epub.publish.DefaultEpubPublisher;
 import kr.co.goms.gomsbook.ai.epub.publish.EpubArtifactFingerprintService;
 import kr.co.goms.gomsbook.ai.epub.publish.EpubPublisher;
+import kr.co.goms.gomsbook.ai.epub.release.DefaultEpubReleasePolicy;
+import kr.co.goms.gomsbook.ai.epub.release.EpubReleasePolicy;
 import kr.co.goms.gomsbook.ai.epub.service.EpubCheckRunner;
 import kr.co.goms.gomsbook.ai.epub.service.EpubStructureValidator;
 import kr.co.goms.gomsbook.ai.epub.service.LatestPublishedEpubResolver;
@@ -46,6 +50,11 @@ import kr.co.goms.gomsbook.ai.epub.validation.fix.EpubFileCheckFixPlan;
 import kr.co.goms.gomsbook.ai.epub.validation.fix.EpubFileCheckFixResolver;
 
 import com.google.gson.Gson;
+import kr.co.goms.gomsbook.ai.epub.updater.xhtml.EpubTypographyUpdater;
+import kr.co.goms.gomsbook.ai.epub.updater.xhtml.DefaultEpubTypographyUpdater;
+import kr.co.goms.gomsbook.ai.epub.release.FileSystemEpubReleaseRepository;
+import kr.co.goms.gomsbook.ai.epub.release.EpubReleaseRepository;
+
 public final class AgentToolRegistrarSmokeTest {
 
 	public static void main(String[] args) {
@@ -93,6 +102,13 @@ public final class AgentToolRegistrarSmokeTest {
 	    EpubFileCheckFixResolver fixResolver = new DefaultEpubFileCheckFixResolver();
 	    EpubFileCheckFixService epubFileCheckFixService = new DefaultEpubFileCheckFixService(issueAnalyzer, fixPlan, fixResolver);
 
+	    EpubTypographyUpdater typographyUpdater = new DefaultEpubTypographyUpdater();
+
+	    Path dictionaryPath = Path.of("C:\\1004.GomsBook\\dictionaries\\typo_ko.txt");
+	    KoreanTypoChecker koreanTypoChecker = new DictionaryKoreanTypoChecker(dictionaryPath);
+	    
+	    EpubReleaseRepository epubReleaseRepository = new FileSystemEpubReleaseRepository(publishDirectoryProvider.getPublishDirectory());
+	    EpubReleasePolicy epubReleasePolicy = new DefaultEpubReleasePolicy(epubReleaseRepository);
 	    
 	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(
 	    		currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
@@ -102,7 +118,10 @@ public final class AgentToolRegistrarSmokeTest {
 	    		gson,
 	    		epubProjectAccessibilityValidator, epubProjectValidator,
 	    		epubCheckRunner, epubFileCheckFixService,
-	    		epubArtifactFingerprintService
+	    		epubArtifactFingerprintService,
+	    		typographyUpdater,
+	    		koreanTypoChecker,
+	    		epubReleasePolicy
 	    );
 
 	    

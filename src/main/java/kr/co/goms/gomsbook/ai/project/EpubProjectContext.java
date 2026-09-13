@@ -18,6 +18,8 @@ import java.util.Objects;
  */
 public final class EpubProjectContext {
 
+    private final String projectId;
+    
     private final String projectName;
 
     private final Path projectRoot;
@@ -29,8 +31,10 @@ public final class EpubProjectContext {
     private final Path packageDocument;
 
 
-    public EpubProjectContext( String projectName, Path projectRoot, Path textDirectory, Path navigationFile, Path packageDocument) {
+    public EpubProjectContext(String projectId, String projectName, Path projectRoot, Path textDirectory, Path navigationFile, Path packageDocument) {
 
+        this.projectId = requireText(projectName, "projectId");
+        
         this.projectName = requireText(projectName, "projectName");
 
         this.projectRoot = Objects.requireNonNull(projectRoot, "projectRoot");
@@ -42,8 +46,14 @@ public final class EpubProjectContext {
         this.packageDocument = Objects.requireNonNull(packageDocument, "packageDocument");
     }
 
+    
 
-    public String getProjectName() {
+    public String getProjectId() {
+		return projectId;
+	}
+
+
+	public String getProjectName() {
 
         return projectName;
     }
@@ -138,9 +148,11 @@ public final class EpubProjectContext {
     public String toString() {
 
         return "EpubProjectContext{"
-                + "projectName='"
-                + projectName
+                + "projectId='"
+                + projectId
                 + '\''
+                + ", projectName="
+                + projectName
                 + ", projectRoot="
                 + projectRoot
                 + ", textDirectory="

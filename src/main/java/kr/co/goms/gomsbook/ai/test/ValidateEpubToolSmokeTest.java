@@ -32,6 +32,7 @@ public final class ValidateEpubToolSmokeTest {
 
         EpubProjectContext projectContext = new EpubProjectContext(
                 "epub-ai-agent",
+                "epub-ai-agent",
                 Path.of("C:\\1004.GomsBook\\03.Project\\epub-ai-agent"), 
                 null, null, null
         );

@@ -14,6 +14,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.gson.Gson;
 
+import kr.co.goms.gomsbook.ai.agent.event.AgentRagEventListener;
+import kr.co.goms.gomsbook.ai.agent.event.payload.RagContextPayload;
 import kr.co.goms.gomsbook.ai.agent.prompt.ToolResponsePromptResolver;
 import kr.co.goms.gomsbook.ai.llm.LlmClient;
 import kr.co.goms.gomsbook.ai.llm.LlmMessage;
@@ -44,6 +46,10 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
     private static final String PROJECT_ID_ATTRIBUTE = "projectId";
 
+    private static final String RAG_SEARCH_TOOL_NAME = "search_project_documents";
+
+    private static final String RAG_TOP_RESULTS = "topResults";
+
     private final LlmClient llmClient;
 
     private final ToolExecutor toolExecutor;
@@ -59,6 +65,8 @@ public final class DefaultAgentExecutor implements AgentExecutor {
     private final Gson gson = new Gson();
 
     private final List<AgentToolResultListener> toolResultListeners = new CopyOnWriteArrayList<>();
+
+    private final List<AgentRagEventListener> ragEventListeners = new CopyOnWriteArrayList<>();
 
     public DefaultAgentExecutor(
             LlmClient llmClient,
@@ -119,17 +127,13 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             ToolResponsePromptResolver toolResponsePromptResolver) {
 
         this.llmClient = Objects.requireNonNull(llmClient, "llmClient must not be null");
-
         this.toolExecutor = Objects.requireNonNull(toolExecutor, "toolExecutor must not be null");
-
         this.toolDefinitionProvider = Objects.requireNonNull(toolDefinitionProvider, "toolDefinitionProvider must not be null");
-
         this.chatModelProvider = Objects.requireNonNull(chatModelProvider, "chatModelProvider must not be null");
 
         if (maxIterations <= 0) throw new IllegalArgumentException("maxIterations must be greater than zero");
 
         this.maxIterations = maxIterations;
-
         this.toolResponsePromptResolver = toolResponsePromptResolver;
     }
 
@@ -351,13 +355,28 @@ public final class DefaultAgentExecutor implements AgentExecutor {
                 .arguments(arguments == null ? Map.of() : arguments)
                 .build();
 
-        ToolResult result = toolExecutor.execute(toolRequest, toolContext);
+        boolean ragSearch = isRagSearchTool(toolName);
 
-        if (result == null) throw new AgentException("Tool executor returned null. tool=" + toolName);
+        String runId = resolveRunId(agentRequest);
 
-        notifyToolResult(result);
+        if (ragSearch) notifyRagStarted(runId);
 
-        return result;
+        try {
+
+            ToolResult result = toolExecutor.execute(toolRequest, toolContext);
+
+            if (result == null) throw new AgentException("Tool executor returned null. tool=" + toolName);
+
+            notifyToolResult(result);
+
+            if (ragSearch) notifyRagContexts(runId, result);
+
+            return result;
+
+        } finally {
+
+            if (ragSearch) notifyRagCompleted(runId);
+        }
     }
 
     /**
@@ -461,15 +480,12 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             String toolName) {
 
         if (prompts == null) return;
-
         if (toolResponsePromptResolver == null) return;
-
         if (toolName == null || toolName.isBlank()) return;
 
         String prompt = toolResponsePromptResolver.resolve(toolName);
 
         if (prompt == null || prompt.isBlank()) return;
-
         if (prompts.contains(prompt)) return;
 
         prompts.add(prompt);
@@ -555,6 +571,22 @@ public final class DefaultAgentExecutor implements AgentExecutor {
         toolResultListeners.remove(listener);
     }
 
+    @Override
+    public void addRagEventListener(AgentRagEventListener listener) {
+
+        if (listener == null) return;
+
+        ragEventListeners.add(listener);
+    }
+
+    @Override
+    public void removeRagEventListener(AgentRagEventListener listener) {
+
+        if (listener == null) return;
+
+        ragEventListeners.remove(listener);
+    }
+
     private void notifyToolResult(ToolResult result) {
 
         if (result == null) return;
@@ -580,6 +612,197 @@ public final class DefaultAgentExecutor implements AgentExecutor {
                     "Tool result listener failed: " + exception.getMessage(),
                     exception
             );
+        }
+    }
+
+    private boolean isRagSearchTool(String toolName) {
+        return RAG_SEARCH_TOOL_NAME.equals(toolName);
+    }
+
+    private String resolveRunId(AgentRequest request) {
+
+        String runId = getStringAttribute(request, RUN_ID_ATTRIBUTE);
+
+        if (runId != null) return runId;
+
+        if (request == null || !request.hasRequestId()) return null;
+
+        String requestId = request.getRequestId();
+
+        return requestId == null || requestId.isBlank() ? null : requestId.trim();
+    }
+
+    private void notifyRagStarted(String runId) {
+
+        if (runId == null || runId.isBlank()) return;
+
+        for (AgentRagEventListener listener : ragEventListeners) notifyRagStarted(listener, runId);
+    }
+
+    private void notifyRagStarted(
+            AgentRagEventListener listener,
+            String runId) {
+
+        if (listener == null) return;
+
+        try {
+
+            listener.onStarted(runId);
+
+        } catch (RuntimeException exception) {
+
+            throw exception;
+
+        } catch (Exception exception) {
+
+            throw new AgentException(
+                    "RAG started listener failed: " + exception.getMessage(),
+                    exception
+            );
+        }
+    }
+
+    private void notifyRagContexts(
+            String runId,
+            ToolResult result) {
+
+        if (runId == null || runId.isBlank()) return;
+        if (result == null || !result.hasData() || result.getData() == null) return;
+
+        Object value = result.getData().get(RAG_TOP_RESULTS);
+
+        if (!(value instanceof List<?> items) || items.isEmpty()) return;
+
+        for (Object item : items) {
+
+            RagContextPayload payload = createRagContextPayload(item);
+
+            if (payload == null) continue;
+
+            notifyRagContext(runId, payload);
+        }
+    }
+
+    private RagContextPayload createRagContextPayload(Object value) {
+
+        if (!(value instanceof Map<?, ?> item)) return null;
+
+        String text = getMapString(item, "text");
+
+        if (text == null || text.isBlank()) return null;
+
+        String title = getMapString(item, "heading");
+
+        String sourcePath = getMapString(item, "sourcePath");
+
+        Double score = getMapDouble(item, "score");
+
+        return new RagContextPayload(
+                title,
+                text,
+                sourcePath,
+                score
+        );
+    }
+
+    private void notifyRagContext(
+            String runId,
+            RagContextPayload payload) {
+
+        if (runId == null || runId.isBlank()) return;
+        if (payload == null) return;
+
+        for (AgentRagEventListener listener : ragEventListeners) notifyRagContext(listener, runId, payload);
+    }
+
+    private void notifyRagContext(
+            AgentRagEventListener listener,
+            String runId,
+            RagContextPayload payload) {
+
+        if (listener == null) return;
+
+        try {
+
+            listener.onContext(runId, payload);
+
+        } catch (RuntimeException exception) {
+
+            throw exception;
+
+        } catch (Exception exception) {
+
+            throw new AgentException(
+                    "RAG context listener failed: " + exception.getMessage(),
+                    exception
+            );
+        }
+    }
+
+    private void notifyRagCompleted(String runId) {
+
+        if (runId == null || runId.isBlank()) return;
+
+        for (AgentRagEventListener listener : ragEventListeners) notifyRagCompleted(listener, runId);
+    }
+
+    private void notifyRagCompleted(
+            AgentRagEventListener listener,
+            String runId) {
+
+        if (listener == null) return;
+
+        try {
+
+            listener.onCompleted(runId);
+
+        } catch (RuntimeException exception) {
+
+            throw exception;
+
+        } catch (Exception exception) {
+
+            throw new AgentException(
+                    "RAG completed listener failed: " + exception.getMessage(),
+                    exception
+            );
+        }
+    }
+
+    private String getMapString(
+            Map<?, ?> values,
+            String name) {
+
+        if (values == null || name == null) return null;
+
+        Object value = values.get(name);
+
+        if (value == null) return null;
+
+        String text = String.valueOf(value).trim();
+
+        return text.isEmpty() ? null : text;
+    }
+
+    private Double getMapDouble(
+            Map<?, ?> values,
+            String name) {
+
+        if (values == null || name == null) return null;
+
+        Object value = values.get(name);
+
+        if (value instanceof Number number) return number.doubleValue();
+
+        if (value == null) return null;
+
+        try {
+
+            return Double.valueOf(String.valueOf(value).trim());
+
+        } catch (NumberFormatException exception) {
+
+            return null;
         }
     }
 
