@@ -5,65 +5,61 @@
 
 package kr.co.goms.gomsbook.ai.rag.eval;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
+import kr.co.goms.gomsbook.ai.rag.util.RagUtil;
+
 /**
- * RAG 평가용 단일 테스트 케이스.
- *
- * Golden Dataset의 질문과 기준 답변을 표현한다.
+ * Golden Dataset의 개별 RAG 평가 Case.
  */
 public final class RagEvaluationCase {
 
-    private final String id;
-    private final RagEvaluationCaseType type;
-    private final String question;
-    private final String referenceAnswer;
-    
-    public RagEvaluationCase(String id, RagEvaluationCaseType type, String question, String referenceAnswer) {
-        this.id = requireText(id, "id");
+	private final String id;
+	private final RagEvaluationCaseType type;
+	private final String question;
+	private final String referenceAnswer;
+	private final List<String> expectedDocuments;
 
-        if (type == null) {
-            throw new NullPointerException("type must not be null");
-        }
+	public RagEvaluationCase(String id, RagEvaluationCaseType type, String question, String referenceAnswer) {
+		this(id, type, question, referenceAnswer, Collections.emptyList());
+	}
 
-        this.type = type;
-        this.question = requireText(question, "question");
-        this.referenceAnswer = requireText(referenceAnswer, "referenceAnswer");
-    }
+	public RagEvaluationCase(String id, RagEvaluationCaseType type, String question, String referenceAnswer, List<String> expectedDocuments) {
+		this.id = RagUtil.requireText(id, "id");
+		this.type = Objects.requireNonNull(type, "type must not be null");
+		this.question = RagUtil.requireText(question, "question");
+		this.referenceAnswer = RagUtil.normalizeOptional(referenceAnswer);
+		this.expectedDocuments = RagUtil.normalizeExpectedDocuments(expectedDocuments);
+	}
 
-    public String getId() {
-        return id;
-    }
+	public String getId() {
+		return id;
+	}
 
-    public RagEvaluationCaseType getType() {
-        return type;
-    }
-    
-    public String getQuestion() {
-        return question;
-    }
+	public RagEvaluationCaseType getType() {
+		return type;
+	}
 
-    public String getReferenceAnswer() {
-        return referenceAnswer;
-    }
+	public String getQuestion() {
+		return question;
+	}
 
-    private static String requireText(String value, String fieldName) {
-        Objects.requireNonNull(value, fieldName + " must not be null");
+	public String getReferenceAnswer() {
+		return referenceAnswer;
+	}
 
-        String normalized = value.trim();
+	public List<String> getExpectedDocuments() {
+		return expectedDocuments;
+	}
 
-        if (normalized.isEmpty()) {
-            throw new IllegalArgumentException(fieldName + " must not be blank");
-        }
+	public boolean hasExpectedDocuments() {
+		return !expectedDocuments.isEmpty();
+	}
 
-        return normalized;
-    }
-
-    @Override
-    public String toString() {
-        return "RagEvaluationCase{" +
-                "id='" + id + '\'' +
-                ", question='" + question + '\'' +
-                '}';
-    }
+	@Override
+	public String toString() {
+		return "RagEvaluationCase{" + "id='" + id + '\'' + ", type='" + type + '\'' + ", question='" + question + '\'' + ", expectedDocuments=" + expectedDocuments + '}';
+	}
 }

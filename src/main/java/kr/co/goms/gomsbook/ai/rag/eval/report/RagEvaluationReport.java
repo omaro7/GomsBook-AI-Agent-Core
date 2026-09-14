@@ -8,9 +8,12 @@ package kr.co.goms.gomsbook.ai.rag.eval.report;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.rag.eval.RagEvaluationResult;
 import kr.co.goms.gomsbook.ai.rag.eval.RagMetricResult;
+import kr.co.goms.gomsbook.ai.rag.eval.model.RagRetrievalEvaluationResult;
+import kr.co.goms.gomsbook.ai.rag.eval.model.RagRetrievalSummary;
 
 /**
  * RAG Evaluation 전체 Report.
@@ -50,173 +53,174 @@ import kr.co.goms.gomsbook.ai.rag.eval.RagMetricResult;
  */
 public final class RagEvaluationReport {
 
-    private final String datasetName;
-    private final List<Entry> entries;
-    private final double averageScore;
+	private final String datasetName;
+	private final List<Entry> entries;
+	private final double averageScore;
+	private final RagRetrievalSummary retrievalSummary;
 
-    public RagEvaluationReport(String datasetName, List<Entry> entries) {
-        this.datasetName = requireText(datasetName, "datasetName");
-        this.entries = normalizeEntries(entries);
-        this.averageScore = calculateAverageScore(this.entries);
-    }
+	public RagEvaluationReport(String datasetName, List<Entry> entries) {
+		this.datasetName = requireText(datasetName, "datasetName");
+		this.entries = normalizeEntries(entries);
+		this.averageScore = calculateAverageScore(this.entries);
+		this.retrievalSummary = calculateRetrievalSummary(this.entries);
+	}
 
-    public double getAverageMetricScore(String metricName) {
-        if (metricName == null || metricName.trim().isEmpty()) {
-            throw new IllegalArgumentException("metricName must not be blank");
-        }
+	public double getAverageMetricScore(String metricName) {
+		if (metricName == null || metricName.trim().isEmpty()) throw new IllegalArgumentException("metricName must not be blank");
 
-        double total = 0.0;
-        int count = 0;
+		double total = 0.0;
+		int count = 0;
 
-        for (Entry entry : entries) {
-            RagMetricResult metricResult = entry.getResult().getMetricResult(metricName);
+		for (Entry entry : entries) {
+			RagMetricResult metricResult = entry.getResult().getMetricResult(metricName);
 
-            if (metricResult == null) {
-                continue;
-            }
+			if (metricResult == null) continue;
 
-            total += metricResult.getScore();
-            count++;
-        }
+			total += metricResult.getScore();
+			count++;
+		}
 
-        if (count == 0) {
-            throw new IllegalStateException(
-                    "Metric not found in evaluation report: " + metricName);
-        }
+		if (count == 0) throw new IllegalStateException("Metric not found in evaluation report: " + metricName);
 
-        return total / count;
-    }
-    
-    public String getDatasetName() {
-        return datasetName;
-    }
+		return total / count;
+	}
 
-    public List<Entry> getEntries() {
-        return entries;
-    }
+	public String getDatasetName() {
+		return datasetName;
+	}
 
-    public int size() {
-        return entries.size();
-    }
+	public List<Entry> getEntries() {
+		return entries;
+	}
 
-    public boolean isEmpty() {
-        return entries.isEmpty();
-    }
+	public int size() {
+		return entries.size();
+	}
 
-    public double getAverageScore() {
-        return averageScore;
-    }
+	public boolean isEmpty() {
+		return entries.isEmpty();
+	}
 
-    public Entry getEntry(String caseId) {
-        if (caseId == null || caseId.trim().isEmpty()) {
-            return null;
-        }
+	public double getAverageScore() {
+		return averageScore;
+	}
 
-        for (Entry entry : entries) {
-            if (caseId.equals(entry.getCaseId())) {
-                return entry;
-            }
-        }
+	public RagRetrievalSummary getRetrievalSummary() {
+		return retrievalSummary;
+	}
 
-        return null;
-    }
+	public Entry getEntry(String caseId) {
+		if (caseId == null || caseId.trim().isEmpty()) return null;
 
-    private static List<Entry> normalizeEntries(List<Entry> entries) {
-        if (entries == null || entries.isEmpty()) {
-            return Collections.emptyList();
-        }
+		for (Entry entry : entries) {
+			if (caseId.equals(entry.getCaseId())) return entry;
+		}
 
-        List<Entry> normalized = new ArrayList<>();
+		return null;
+	}
 
-        for (Entry entry : entries) {
-            if (entry != null) {
-                normalized.add(entry);
-            }
-        }
+	private static List<Entry> normalizeEntries(List<Entry> entries) {
+		if (entries == null || entries.isEmpty()) return Collections.emptyList();
 
-        return Collections.unmodifiableList(normalized);
-    }
+		List<Entry> normalized = new ArrayList<>();
 
-    private static double calculateAverageScore(List<Entry> entries) {
-        if (entries.isEmpty()) {
-            return 0.0;
-        }
+		for (Entry entry : entries) {
+			if (entry != null) normalized.add(entry);
+		}
 
-        double total = 0.0;
+		return Collections.unmodifiableList(normalized);
+	}
 
-        for (Entry entry : entries) {
-            total += entry.getResult().getOverallScore();
-        }
+	private static double calculateAverageScore(List<Entry> entries) {
+		if (entries.isEmpty()) return 0.0;
 
-        return total / entries.size();
-    }
+		double total = 0.0;
 
-    private static String requireText(String value, String fieldName) {
-        if (value == null) {
-            throw new NullPointerException(fieldName + " must not be null");
-        }
+		for (Entry entry : entries) {
+			total += entry.getResult().getOverallScore();
+		}
 
-        String normalized = value.trim();
+		return total / entries.size();
+	}
 
-        if (normalized.isEmpty()) {
-            throw new IllegalArgumentException(
-                    fieldName + " must not be blank");
-        }
+	private static RagRetrievalSummary calculateRetrievalSummary(List<Entry> entries) {
+		int evaluatedCases = 0;
+		int hitCount = 0;
+		double recallTotal = 0.0;
+		double mrrTotal = 0.0;
 
-        return normalized;
-    }
+		for (Entry entry : entries) {
+			RagRetrievalEvaluationResult retrievalResult = entry.getRetrievalEvaluationResult();
 
-    @Override
-    public String toString() {
-        return "RagEvaluationReport{" +
-                "datasetName='" + datasetName + '\'' +
-                ", size=" + entries.size() +
-                ", averageScore=" + averageScore +
-                '}';
-    }
+			if (!retrievalResult.isApplicable()) continue;
 
-    /**
-     * 개별 Evaluation Case의 Report Entry.
-     */
-    public static final class Entry {
+			evaluatedCases++;
 
-        private final String caseId;
-        private final String question;
-        private final RagEvaluationResult result;
+			if (retrievalResult.isHitAtK()) hitCount++;
 
-        public Entry(
-                String caseId,
-                String question,
-                RagEvaluationResult result) {
+			recallTotal += retrievalResult.getRecallAtK();
+			mrrTotal += retrievalResult.getMrr();
+		}
 
-            this.caseId = requireText(caseId, "caseId");
-            this.question = requireText(question, "question");
+		if (evaluatedCases == 0) return RagRetrievalSummary.empty();
 
-            if (result == null) {
-                throw new NullPointerException("result must not be null");
-            }
+		double hitRateAtK = (double) hitCount / evaluatedCases;
+		double averageRecallAtK = recallTotal / evaluatedCases;
+		double meanReciprocalRank = mrrTotal / evaluatedCases;
 
-            this.result = result;
-        }
+		return new RagRetrievalSummary(evaluatedCases, hitCount, hitRateAtK, averageRecallAtK, meanReciprocalRank);
+	}
 
-        public String getCaseId() {
-            return caseId;
-        }
+	private static String requireText(String value, String fieldName) {
+		if (value == null) throw new NullPointerException(fieldName + " must not be null");
 
-        public String getQuestion() {
-            return question;
-        }
+		String normalized = value.trim();
 
-        public RagEvaluationResult getResult() {
-            return result;
-        }
+		if (normalized.isEmpty()) throw new IllegalArgumentException(fieldName + " must not be blank");
 
-        @Override
-        public String toString() {
-            return "Entry{" +
-                    "caseId='" + caseId + '\'' +
-                    ", overallScore=" + result.getOverallScore() +
-                    '}';
-        }
-    }
+		return normalized;
+	}
+
+	@Override
+	public String toString() {
+		return "RagEvaluationReport{" + "datasetName='" + datasetName + '\'' + ", size=" + entries.size() + ", averageScore=" + averageScore + ", retrievalSummary=" + retrievalSummary + '}';
+	}
+
+	/**
+	 * 개별 Evaluation Case의 Report Entry.
+	 */
+	public static final class Entry {
+
+		private final String caseId;
+		private final String question;
+		private final RagEvaluationResult result;
+		private final RagRetrievalEvaluationResult retrievalEvaluationResult;
+
+		public Entry(String caseId, String question, RagEvaluationResult result) {
+			this(caseId, question, result, RagRetrievalEvaluationResult.notApplicable());
+		}
+
+		public Entry(String caseId, String question, RagEvaluationResult result, RagRetrievalEvaluationResult retrievalEvaluationResult) {
+			this.caseId = Objects.requireNonNull(caseId, "caseId must not be null");
+			this.question = Objects.requireNonNull(question, "question must not be null");
+			this.result = Objects.requireNonNull(result, "result must not be null");
+			this.retrievalEvaluationResult = Objects.requireNonNull(retrievalEvaluationResult, "retrievalEvaluationResult must not be null");
+		}
+
+		public String getCaseId() {
+			return caseId;
+		}
+
+		public String getQuestion() {
+			return question;
+		}
+
+		public RagEvaluationResult getResult() {
+			return result;
+		}
+
+		public RagRetrievalEvaluationResult getRetrievalEvaluationResult() {
+			return retrievalEvaluationResult;
+		}
+	}
 }

@@ -1335,22 +1335,19 @@ public final class DefaultProjectRagIndexer implements ProjectRagIndexer {
 
     private List<Path> findXhtmlFiles(Path textDirectory) {
 
-        try (Stream<Path> stream = Files.walk(textDirectory)) {
-            return stream
-                    .filter(Files::isRegularFile)
-                    .filter(this::isXhtmlFile)
-                    .sorted(
-                            Comparator.comparing(
-                                    path -> path.toAbsolutePath().normalize().toString()
-                            )
-                    )
-                    .toList();
+    	try (Stream<Path> stream = Files.walk(textDirectory)) {
+    		return stream
+    				.filter(Files::isRegularFile)
+    				.filter(this::isXhtmlFile)
+    				.filter(path -> !RagUtil.isExcludedDocument(path.toString()))
+    				.sorted(Comparator.comparing(path -> path.toAbsolutePath().normalize().toString()))
+    				.toList();
 
-        } catch (Exception exception) {
-            throw new IllegalStateException("Failed to scan TEXT directory: " + textDirectory, exception);
-        }
+    	} catch (Exception exception) {
+    		throw new IllegalStateException("Failed to scan TEXT directory: " + textDirectory, exception);
+    	}
     }
-
+    
     private boolean isXhtmlFile(Path path) {
 
         if (path == null || path.getFileName() == null) {

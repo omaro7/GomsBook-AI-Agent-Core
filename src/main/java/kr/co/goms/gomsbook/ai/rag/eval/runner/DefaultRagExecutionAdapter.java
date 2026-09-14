@@ -15,6 +15,8 @@ import kr.co.goms.gomsbook.ai.llm.LlmRequest;
 import kr.co.goms.gomsbook.ai.llm.LlmResponse;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
+import kr.co.goms.gomsbook.ai.rag.eval.mapper.RagRetrievalResultMapper;
+import kr.co.goms.gomsbook.ai.rag.eval.model.RagRetrievalResult;
 import kr.co.goms.gomsbook.ai.rag.expansion.ContextExpander;
 import kr.co.goms.gomsbook.ai.rag.expansion.ContextExpansionRequest;
 import kr.co.goms.gomsbook.ai.rag.index.ProjectIndexException;
@@ -33,267 +35,174 @@ import kr.co.goms.gomsbook.ai.rag.vector.VectorSearchResult;
  */
 public final class DefaultRagExecutionAdapter implements RagExecutionAdapter {
 
-    private static final int DEFAULT_TOP_K = 5;
-    private static final double DEFAULT_TEMPERATURE = 0.0;
-    private static final int DEFAULT_MAX_TOKENS = 1024;
+	private static final int DEFAULT_TOP_K = 5;
+	private static final double DEFAULT_TEMPERATURE = 0.0;
+	private static final int DEFAULT_MAX_TOKENS = 1024;
 
-    private final CurrentProjectProvider projectProvider;
-    private final ProjectRagIndexer projectRagIndexer;
-    private final Retriever retriever;
-    private final ContextExpander contextExpander;
-    private final LlmClient llmClient;
-    private final String model;
+	private final CurrentProjectProvider projectProvider;
+	private final ProjectRagIndexer projectRagIndexer;
+	private final Retriever retriever;
+	private final RagRetrievalResultMapper retrievalResultMapper;
+	private final ContextExpander contextExpander;
+	private final LlmClient llmClient;
+	private final String model;
 
-    public DefaultRagExecutionAdapter(
-            CurrentProjectProvider projectProvider,
-            ProjectRagIndexer projectRagIndexer,
-            Retriever retriever,
-            ContextExpander contextExpander,
-            LlmClient llmClient,
-            String model) {
+	public DefaultRagExecutionAdapter(CurrentProjectProvider projectProvider, ProjectRagIndexer projectRagIndexer, Retriever retriever, RagRetrievalResultMapper retrievalResultMapper, ContextExpander contextExpander, LlmClient llmClient, String model) {
+		this.projectProvider = Objects.requireNonNull(projectProvider, "projectProvider must not be null");
+		this.projectRagIndexer = Objects.requireNonNull(projectRagIndexer, "projectRagIndexer must not be null");
+		this.retriever = Objects.requireNonNull(retriever, "retriever must not be null");
+		this.retrievalResultMapper = Objects.requireNonNull(retrievalResultMapper, "retrievalResultMapper must not be null");
+		this.contextExpander = Objects.requireNonNull(contextExpander, "contextExpander must not be null");
+		this.llmClient = Objects.requireNonNull(llmClient, "llmClient must not be null");
+		this.model = normalizeOptional(model);
+	}
 
-        this.projectProvider = Objects.requireNonNull(projectProvider, "projectProvider must not be null");
-        this.projectRagIndexer = Objects.requireNonNull(projectRagIndexer, "projectRagIndexer must not be null");
-        this.retriever = Objects.requireNonNull(retriever, "retriever must not be null");
-        this.contextExpander = Objects.requireNonNull(contextExpander, "contextExpander must not be null");
-        this.llmClient = Objects.requireNonNull(llmClient, "llmClient must not be null");
-        this.model = normalizeOptional(model);
-    }
+	@Override
+	public RagExecutionResult execute(String question) {
+		String normalizedQuestion = requireText(question, "question");
+		EpubProjectContext project = projectProvider.getCurrentProject();
 
-    @Override
-    public RagExecutionResult execute(String question) {
-        String normalizedQuestion = requireText(question, "question");
+		if (project == null) throw new IllegalStateException("Current EPUB project is not available");
 
-        EpubProjectContext project = projectProvider.getCurrentProject();
+		System.out.println("[RAG-EVAL] Current Project Root = " + project.getProjectRoot());
 
-        if (project == null) {
-            throw new IllegalStateException("Current EPUB project is not available");
-        }
-        
-        System.out.println( "[RAG-EVAL] Current Project Root = " + project.getProjectRoot());
-        
+		try {
+			ProjectIndexResult indexResult = projectRagIndexer.synchronize(project);
 
-        try {
-            ProjectIndexResult indexResult = projectRagIndexer.synchronize(project);
+			if (indexResult == null) throw new IllegalStateException("Project RAG index result must not be null");
 
-            if (indexResult == null) {
-                throw new IllegalStateException("Project RAG index result must not be null");
-            }
+			String projectId = requireText(indexResult.getProjectId(), "projectId");
 
-            String projectId = requireText(indexResult.getProjectId(), "projectId");
+			System.out.println("[RAG-EVAL] Current Project ID   = " + projectId);
 
-            System.out.println( "[RAG-EVAL] Current Project ID   = " + indexResult.getProjectId());
-            
-            RetrievalRequest request = RetrievalRequest.builder()
-                    .projectId(projectId)
-                    .query(normalizedQuestion)
-                    .topK(DEFAULT_TOP_K)
-                    .build();
+			RetrievalRequest request = RetrievalRequest.builder().projectId(projectId).query(normalizedQuestion).topK(DEFAULT_TOP_K).build();
+			RetrievalResult retrievalResult = retriever.retrieve(request);
 
-            RetrievalResult retrievalResult = retriever.retrieve(request);
+			if (retrievalResult == null) throw new IllegalStateException("Retriever returned null result");
 
-            if (retrievalResult == null) {
-                throw new IllegalStateException("Retriever returned null result");
-            }
-            
+			RagRetrievalResult ragRetrievalResult = retrievalResultMapper.map(retrievalResult);
 
-            List<RetrievedDocument> retrievedDocuments = toRetrievedDocuments(projectId, retrievalResult);
-            ContextExpansionRequest expansionRequest = new ContextExpansionRequest(projectId, retrievedDocuments, 1, 1);
-            List<RetrievedDocument> expandedDocuments = contextExpander.expand(expansionRequest);
-            List<String> retrievedContexts = extractContexts(expandedDocuments);
-            String answer = generateAnswer(normalizedQuestion, retrievedContexts);
+			List<RetrievedDocument> retrievedDocuments = toRetrievedDocuments(projectId, retrievalResult);
+			ContextExpansionRequest expansionRequest = new ContextExpansionRequest(projectId, retrievedDocuments, 1, 1);
+			List<RetrievedDocument> expandedDocuments = contextExpander.expand(expansionRequest);
+			List<String> retrievedContexts = extractContexts(expandedDocuments);
+			String answer = generateAnswer(normalizedQuestion, retrievedContexts);
 
-            System.out.println("[RAG-EVAL] Retrieved Count = " + retrievedDocuments.size());
-            System.out.println("[RAG-EVAL] Expanded Count  = " + expandedDocuments.size());
-            
-            for (RetrievedDocument document : expandedDocuments) {
+			return new RagExecutionResult(retrievedContexts, answer, ragRetrievalResult);
 
-                if (document == null) {
-                    continue;
-                }
+		} catch (ProjectIndexException e) {
+			throw new IllegalStateException("Failed to synchronize project RAG index: " + e.getMessage(), e);
 
-                System.out.println(
-                    "[RAG-EVAL] Context"
-                    + " sourcePath=" + document.getSourcePath()
-                    + " sequence=" + document.getSequence()
-                    + " expanded=" + document.isExpanded()
-                    + " retrievalScore=" + document.getRetrievalScore()
-                    + " parentRetrievalScore=" + document.getParentRetrievalScore()
-                    + " parentChunkId=" + document.getParentChunkId()
-                );
-            }
+		} catch (RetrievalException e) {
+			throw new IllegalStateException("Failed to retrieve RAG contexts: " + e.getMessage(), e);
+		}
+	}
 
-            return new RagExecutionResult(retrievedContexts, answer);
+	@Override
+	public void validateProject(String expectedProjectId) {
 
-        } catch (ProjectIndexException e) {
-            throw new IllegalStateException(
-                    "Failed to synchronize project RAG index: " + e.getMessage(),
-                    e);
+		EpubProjectContext project = projectProvider.getCurrentProject();
 
-        } catch (RetrievalException e) {
-            throw new IllegalStateException(
-                    "Failed to retrieve RAG contexts: " + e.getMessage(),
-                    e);
-        }
-    }
+		if (project == null) throw new IllegalStateException("Current EPUB project is not available");
 
-    @Override
-    public void validateProject(String expectedProjectId) {
-        EpubProjectContext project = projectProvider.getCurrentProject();
+		String datasetProjectId = requireText(expectedProjectId, "expectedProjectId");
+		String currentProjectId = requireText(project.getProjectName(), "projectName");
 
-        if (project == null) {
-            throw new IllegalStateException("Current EPUB project is not available");
-        }
+		System.out.println("[RAG-EVAL] Dataset Project ID = " + datasetProjectId);
+		System.out.println("[RAG-EVAL] Current Project ID = " + currentProjectId);
 
-        try {
-            ProjectIndexResult indexResult = projectRagIndexer.synchronize(project);
+		if (!datasetProjectId.equals(currentProjectId)) throw new IllegalStateException("[RAG-EVAL] Project mismatch. Dataset Project ID = " + datasetProjectId + " Current Project ID = " + currentProjectId);
+	}
 
-            String currentProjectId = requireText(indexResult.getProjectId(), "projectId");
+	private String generateAnswer(String question, List<String> contexts) {
+		LlmRequest.Builder builder = LlmRequest.builder().systemMessage(buildSystemPrompt()).userMessage(buildUserPrompt(question, contexts)).temperature(DEFAULT_TEMPERATURE).maxTokens(DEFAULT_MAX_TOKENS).stream(false);
 
-            if (!expectedProjectId.equals(currentProjectId)) {
-                throw new IllegalStateException(
-                        "[RAG-EVAL] Project mismatch. "
-                                + "Dataset Project ID = "
-                                + expectedProjectId
-                                + " Current Project ID = "
-                                + currentProjectId);
-            }
+		if (model != null) builder.model(model);
 
-        } catch (ProjectIndexException e) {
-            throw new IllegalStateException( "Failed to synchronize project RAG index", e);
-        }
-    }
+		llmClient.requireAvailable();
 
-    private String generateAnswer(String question, List<String> contexts) {
-        LlmRequest.Builder builder = LlmRequest.builder()
-                .systemMessage(buildSystemPrompt())
-                .userMessage(buildUserPrompt(question, contexts))
-                .temperature(DEFAULT_TEMPERATURE)
-                .maxTokens(DEFAULT_MAX_TOKENS)
-                .stream(false);
+		LlmResponse response = llmClient.chat(builder.build());
 
-        if (model != null) {
-            builder.model(model);
-        }
+		if (response == null) throw new IllegalStateException("LLM returned null response");
+		if (!response.hasContent()) throw new IllegalStateException("LLM returned empty response");
 
-        llmClient.requireAvailable();
+		return requireText(response.getContent(), "answer");
+	}
 
-        LlmResponse response = llmClient.chat(builder.build());
+	private String buildSystemPrompt() {
+		return "You are a RAG question answering assistant.\n"
+				+ "Answer the user's question using only the retrieved project contexts.\n"
+				+ "Do not use external knowledge.\n"
+				+ "If the contexts do not contain enough information, clearly say so.";
+	}
 
-        if (response == null) {
-            throw new IllegalStateException("LLM returned null response");
-        }
+	private String buildUserPrompt(String question, List<String> contexts) {
+		StringBuilder builder = new StringBuilder();
 
-        if (!response.hasContent()) {
-            throw new IllegalStateException("LLM returned empty response");
-        }
+		builder.append("[RETRIEVED CONTEXTS]\n\n");
 
-        return requireText(response.getContent(), "answer");
-    }
+		for (int i = 0; i < contexts.size(); i++) {
+			builder.append("[Context ");
+			builder.append(i + 1);
+			builder.append("]\n");
+			builder.append(contexts.get(i));
+			builder.append("\n\n");
+		}
 
-    private String buildSystemPrompt() {
-        return "You are a RAG question answering assistant.\n"
-                + "Answer the user's question using only the retrieved project contexts.\n"
-                + "Do not use external knowledge.\n"
-                + "If the contexts do not contain enough information, clearly say so.";
-    }
+		builder.append("[QUESTION]\n");
+		builder.append(question);
 
-    private String buildUserPrompt(String question, List<String> contexts) {
-        StringBuilder builder = new StringBuilder();
+		return builder.toString();
+	}
 
-        builder.append("[RETRIEVED CONTEXTS]\n\n");
+	private static String requireText(String value, String fieldName) {
+		if (value == null) throw new NullPointerException(fieldName + " must not be null");
 
-        for (int i = 0; i < contexts.size(); i++) {
-            builder.append("[Context ");
-            builder.append(i + 1);
-            builder.append("]\n");
-            builder.append(contexts.get(i));
-            builder.append("\n\n");
-        }
+		String normalized = value.trim();
 
-        builder.append("[QUESTION]\n");
-        builder.append(question);
+		if (normalized.isEmpty()) throw new IllegalArgumentException(fieldName + " must not be blank");
 
-        return builder.toString();
-    }
+		return normalized;
+	}
 
-    private static String requireText(String value, String fieldName) {
-        if (value == null) {
-            throw new NullPointerException(fieldName + " must not be null");
-        }
+	private static String normalizeOptional(String value) {
+		if (value == null) return null;
 
-        String normalized = value.trim();
+		String normalized = value.trim();
 
-        if (normalized.isEmpty()) {
-            throw new IllegalArgumentException(fieldName + " must not be blank");
-        }
+		return normalized.isEmpty() ? null : normalized;
+	}
 
-        return normalized;
-    }
+	private List<RetrievedDocument> toRetrievedDocuments(String projectId, RetrievalResult retrievalResult) {
+		if (retrievalResult == null || retrievalResult.isEmpty()) return List.of();
 
-    private static String normalizeOptional(String value) {
-        if (value == null) {
-            return null;
-        }
+		List<RetrievedDocument> documents = new ArrayList<>();
 
-        String normalized = value.trim();
+		for (VectorSearchResult result : retrievalResult.getSearchResults()) {
+			if (result == null || result.getChunk() == null) continue;
 
-        return normalized.isEmpty() ? null : normalized;
-    }
-    
-    private List<RetrievedDocument> toRetrievedDocuments(String projectId, RetrievalResult retrievalResult) {
+			DocumentChunk chunk = result.getChunk();
+			RetrievedDocument document = new RetrievedDocument(projectId, chunk.getId(), chunk.getSourcePath(), chunk.getSequence(), chunk.getTitle(), chunk.getContent(), result.getScore());
 
-    	if (retrievalResult == null || retrievalResult.isEmpty()) {
-    	    return List.of();
-    	}
+			documents.add(document);
+		}
 
-        List<RetrievedDocument> documents = new ArrayList<>();
+		return List.copyOf(documents);
+	}
 
-        for (VectorSearchResult result : retrievalResult.getSearchResults()) {
+	private List<String> extractContexts(List<RetrievedDocument> documents) {
+		if (documents == null || documents.isEmpty()) return Collections.emptyList();
 
-        	if (result == null || result.getChunk() == null) {
-        	    continue;
-        	}
+		List<String> contexts = new ArrayList<>();
 
-            DocumentChunk chunk = result.getChunk();
+		for (RetrievedDocument document : documents) {
+			if (document == null) continue;
 
-            RetrievedDocument document = new RetrievedDocument(
-                projectId,
-                chunk.getId(),
-                chunk.getSourcePath(),
-                chunk.getSequence(),
-                chunk.getTitle(),
-                chunk.getContent(),
-                result.getScore()
-            );
+			String text = normalizeOptional(document.getText());
 
-            documents.add(document);
-        }
+			if (text != null) contexts.add(text);
+		}
 
-        return List.copyOf(documents);
-    }
-    
-    private List<String> extractContexts(List<RetrievedDocument> documents) {
-
-        if (documents == null || documents.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<String> contexts = new ArrayList<>();
-
-        for (RetrievedDocument document : documents) {
-
-            if (document == null) {
-                continue;
-            }
-
-            String text = normalizeOptional(document.getText());
-
-            if (text != null) {
-                contexts.add(text);
-            }
-        }
-
-        return Collections.unmodifiableList(contexts);
-    }
+		return Collections.unmodifiableList(contexts);
+	}
 }

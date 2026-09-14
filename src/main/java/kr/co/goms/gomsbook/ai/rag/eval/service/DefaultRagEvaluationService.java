@@ -13,54 +13,72 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
+import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
 import kr.co.goms.gomsbook.ai.rag.eval.path.RagEvaluationPathResolver;
 import kr.co.goms.gomsbook.ai.rag.eval.report.RagEvaluationReport;
 import kr.co.goms.gomsbook.ai.rag.eval.runtime.RagEvaluationRuntime;
+import kr.co.goms.gomsbook.ai.rag.util.RagUtil;
 
+/**
+ * RAG Evaluation 기본 Service.
+ */
 public final class DefaultRagEvaluationService implements RagEvaluationService {
 
-    private final CurrentProjectProvider projectProvider;
-    private final RagEvaluationPathResolver pathResolver;
-    private final RagEvaluationRuntime runtime;
+	private static final int DEFAULT_GOLDEN_VERSION = 1;
 
-    public DefaultRagEvaluationService(CurrentProjectProvider projectProvider, RagEvaluationPathResolver pathResolver, RagEvaluationRuntime runtime) {
-        this.projectProvider = Objects.requireNonNull(projectProvider, "projectProvider must not be null");
-        this.pathResolver = Objects.requireNonNull(pathResolver, "pathResolver must not be null");
-        this.runtime = Objects.requireNonNull(runtime, "runtime must not be null");
-    }
+	private final CurrentProjectProvider projectProvider;
+	private final RagEvaluationPathResolver pathResolver;
+	private final RagEvaluationRuntime runtime;
 
-    @Override
-    public RagEvaluationReport evaluateGolden() throws IOException {
-        String projectId = resolveProjectId();
-        Path datasetPath = pathResolver.resolveGoldenDataset(projectId);
+	public DefaultRagEvaluationService(CurrentProjectProvider projectProvider, RagEvaluationPathResolver pathResolver, RagEvaluationRuntime runtime) {
+		this.projectProvider = Objects.requireNonNull(projectProvider, "projectProvider must not be null");
+		this.pathResolver = Objects.requireNonNull(pathResolver, "pathResolver must not be null");
+		this.runtime = Objects.requireNonNull(runtime, "runtime must not be null");
+	}
 
-        if (!Files.isRegularFile(datasetPath)) {
-            throw new IllegalStateException("RAG Golden Dataset not found: " + datasetPath);
-        }
+	@Override
+	public RagEvaluationReport evaluateGolden() throws IOException {
+		return evaluateGolden(DEFAULT_GOLDEN_VERSION);
+	}
 
-        Path reportPath = pathResolver.resolveGoldenReport(projectId);
-        Path parent = reportPath.getParent();
+	@Override
+	public RagEvaluationReport evaluateGolden(int version) throws IOException {
+		String projectId = resolveProjectId();
+		return evaluateGolden(projectId, version);
+	}
 
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
+	@Override
+	public RagEvaluationReport evaluateLatestGolden() throws IOException {
+		String projectId = resolveProjectId();
+		int version = pathResolver.resolveLatestGoldenVersion(projectId);
+		return evaluateGolden(projectId, version);
+	}
 
-        return runtime.evaluate(datasetPath, reportPath);
-    }
+	private RagEvaluationReport evaluateGolden(String projectId, int version) throws IOException {
+		Path datasetPath = pathResolver.resolveGoldenDataset(projectId, version);
+		Path reportPath = pathResolver.resolveGoldenReport(projectId, version);
+		return evaluate(datasetPath, reportPath);
+	}
 
-    private String resolveProjectId() {
-        var project = projectProvider.getCurrentProject();
+	private RagEvaluationReport evaluate(Path datasetPath, Path reportPath) throws IOException {
+		if (!Files.isRegularFile(datasetPath)) throw new IllegalStateException("RAG Golden Dataset not found: " + datasetPath);
 
-        if (project == null) {
-            throw new IllegalStateException("Current project is not available.");
-        }
+		Path parent = reportPath.getParent();
 
-        String projectId = project.getProjectId();
+		if (parent != null) Files.createDirectories(parent);
 
-        if (projectId == null || projectId.isBlank()) {
-            throw new IllegalStateException("Current projectId is not available.");
-        }
+		return runtime.evaluate(datasetPath, reportPath);
+	}
 
-        return projectId.trim();
-    }
+	private String resolveProjectId() {
+		EpubProjectContext project = projectProvider.getCurrentProject();
+
+		if (project == null) throw new IllegalStateException("Current EPUB project is not available.");
+
+		String projectId = RagUtil.normalizeOptional(project.getProjectId());
+
+		if (projectId == null) throw new IllegalStateException("Current projectId is not available.");
+
+		return projectId;
+	}
 }

@@ -11,8 +11,14 @@ import java.io.IOException;
 
 import kr.co.goms.gomsbook.ai.rag.eval.report.RagEvaluationReport;
 
+/**
+ * RAG Evaluation Service.
+ */
 public interface RagEvaluationService {
 
-    RagEvaluationReport evaluateGolden()
-            throws IOException;
+	RagEvaluationReport evaluateGolden() throws IOException;
+
+	RagEvaluationReport evaluateGolden(int version) throws IOException;
+
+	RagEvaluationReport evaluateLatestGolden() throws IOException;
 }

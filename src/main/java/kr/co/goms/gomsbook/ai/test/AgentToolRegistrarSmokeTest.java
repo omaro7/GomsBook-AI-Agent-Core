@@ -27,6 +27,7 @@ import kr.co.goms.gomsbook.ai.project.DefaultCurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.InMemoryCurrentProjectStore;
 import kr.co.goms.gomsbook.ai.rag.DefaultRagService;
 import kr.co.goms.gomsbook.ai.rag.RagService;
+import kr.co.goms.gomsbook.ai.rag.eval.service.RagEvaluationService;
 import kr.co.goms.gomsbook.ai.rag.index.DefaultProjectRagIndexer;
 import kr.co.goms.gomsbook.ai.rag.index.ProjectRagIndexer;
 import kr.co.goms.gomsbook.ai.tool.ToolRegistry;
@@ -118,6 +119,8 @@ public final class AgentToolRegistrarSmokeTest {
 	    RagService ragService = null;
 	    ProjectRagIndexer projectRagIndexer = null;
 	    
+        RagEvaluationService evaluationService = null;
+	    
 	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(
 	    		currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
 	    		approvalService, eventPublisher, 
@@ -131,7 +134,8 @@ public final class AgentToolRegistrarSmokeTest {
 	    		koreanTypoChecker,
 	    		epubReleasePolicy,
 	            ragService,
-	            projectRagIndexer
+	            projectRagIndexer,
+	            evaluationService
 	    );
 
 	    

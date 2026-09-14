@@ -8,6 +8,9 @@ package kr.co.goms.gomsbook.ai.rag.eval.runner;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+
+import kr.co.goms.gomsbook.ai.rag.eval.model.RagRetrievalResult;
 
 /**
  * RAG 실행 결과.
@@ -16,63 +19,38 @@ import java.util.List;
  */
 public final class RagExecutionResult {
 
-    private final List<String> retrievedContexts;
-    private final String answer;
+	private final List<String> retrievedContexts;
+	private final String answer;
+	private final RagRetrievalResult retrievalResult;
 
-    public RagExecutionResult(List<String> retrievedContexts, String answer) {
-        this.retrievedContexts = normalizeContexts(retrievedContexts);
-        this.answer = requireText(answer, "answer");
-    }
+	public RagExecutionResult(List<String> retrievedContexts, String answer) {
+		this(retrievedContexts, answer, null);
+	}
 
-    public List<String> getRetrievedContexts() {
-        return retrievedContexts;
-    }
+	public RagExecutionResult(List<String> retrievedContexts, String answer, RagRetrievalResult retrievalResult) {
+		this.retrievedContexts = immutableCopy(retrievedContexts);
+		this.answer = Objects.requireNonNull(answer, "answer must not be null");
+		this.retrievalResult = retrievalResult;
+	}
 
-    public String getAnswer() {
-        return answer;
-    }
+	public List<String> getRetrievedContexts() {
+		return retrievedContexts;
+	}
 
-    private static List<String> normalizeContexts(List<String> contexts) {
-        if (contexts == null || contexts.isEmpty()) {
-            return Collections.emptyList();
-        }
+	public String getAnswer() {
+		return answer;
+	}
 
-        List<String> normalized = new ArrayList<>();
+	public RagRetrievalResult getRetrievalResult() {
+		return retrievalResult;
+	}
 
-        for (String context : contexts) {
-            if (context == null) {
-                continue;
-            }
+	public boolean hasRetrievalResult() {
+		return retrievalResult != null;
+	}
 
-            String value = context.trim();
-
-            if (!value.isEmpty()) {
-                normalized.add(value);
-            }
-        }
-
-        return Collections.unmodifiableList(normalized);
-    }
-
-    private static String requireText(String value, String fieldName) {
-        if (value == null) {
-            throw new NullPointerException(fieldName + " must not be null");
-        }
-
-        String normalized = value.trim();
-
-        if (normalized.isEmpty()) {
-            throw new IllegalArgumentException(fieldName + " must not be blank");
-        }
-
-        return normalized;
-    }
-
-    @Override
-    public String toString() {
-        return "RagExecutionResult{" +
-                "retrievedContexts=" + retrievedContexts.size() +
-                ", answer='" + answer + '\'' +
-                '}';
-    }
+	private static <T> List<T> immutableCopy(List<T> values) {
+		if (values == null || values.isEmpty()) return Collections.emptyList();
+		return Collections.unmodifiableList(new ArrayList<>(values));
+	}
 }
