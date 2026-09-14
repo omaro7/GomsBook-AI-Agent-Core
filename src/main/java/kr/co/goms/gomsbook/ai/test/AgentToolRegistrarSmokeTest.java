@@ -25,6 +25,10 @@ import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.project.DefaultCurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.InMemoryCurrentProjectStore;
+import kr.co.goms.gomsbook.ai.rag.DefaultRagService;
+import kr.co.goms.gomsbook.ai.rag.RagService;
+import kr.co.goms.gomsbook.ai.rag.index.DefaultProjectRagIndexer;
+import kr.co.goms.gomsbook.ai.rag.index.ProjectRagIndexer;
 import kr.co.goms.gomsbook.ai.tool.ToolRegistry;
 import kr.co.goms.gomsbook.ai.accessibility.validation.AccessibilityValidator;
 import kr.co.goms.gomsbook.ai.accessibility.validation.DefaultAccessibilityValidator;
@@ -109,6 +113,10 @@ public final class AgentToolRegistrarSmokeTest {
 	    
 	    EpubReleaseRepository epubReleaseRepository = new FileSystemEpubReleaseRepository(publishDirectoryProvider.getPublishDirectory());
 	    EpubReleasePolicy epubReleasePolicy = new DefaultEpubReleasePolicy(epubReleaseRepository);
+
+	    // TODO 우선 정합성만 맞춤.
+	    RagService ragService = null;
+	    ProjectRagIndexer projectRagIndexer = null;
 	    
 	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(
 	    		currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
@@ -121,7 +129,9 @@ public final class AgentToolRegistrarSmokeTest {
 	    		epubArtifactFingerprintService,
 	    		typographyUpdater,
 	    		koreanTypoChecker,
-	    		epubReleasePolicy
+	    		epubReleasePolicy,
+	            ragService,
+	            projectRagIndexer
 	    );
 
 	    

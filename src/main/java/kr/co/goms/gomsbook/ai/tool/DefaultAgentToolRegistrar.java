@@ -21,6 +21,8 @@ import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectAccessibilityValidator;
 import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectValidator;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
+import kr.co.goms.gomsbook.ai.rag.RagService;
+import kr.co.goms.gomsbook.ai.rag.index.ProjectRagIndexer;
 import kr.co.goms.gomsbook.ai.tool.accessibility.ValidateAccessibilityTool;
 import kr.co.goms.gomsbook.ai.tool.epub.author.CreateEpubAuthorTool;
 import kr.co.goms.gomsbook.ai.tool.epub.author.DeleteEpubAuthorTool;
@@ -78,6 +80,8 @@ import kr.co.goms.gomsbook.ai.tool.epub.xhtml.UpdateEpubXhtmlAttributeTool;
 import kr.co.goms.gomsbook.ai.tool.epub.xhtml.CleanEpubTypographyTool;
 import kr.co.goms.gomsbook.ai.tool.epub.xhtml.CleanEpubXhtmlTool;
 import kr.co.goms.gomsbook.ai.tool.image.InspectEpubImagesTool;
+import kr.co.goms.gomsbook.ai.tool.rag.IndexProjectDocumentsTool;
+import kr.co.goms.gomsbook.ai.tool.rag.SearchProjectDocumentsTool;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
 import kr.co.goms.gomsbook.ai.agent.event.AgentEventPublisher;
 import com.google.gson.Gson;
@@ -120,6 +124,9 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     
     private final EpubReleasePolicy epubReleasePolicy;
     
+    private final RagService ragService;
+    private final ProjectRagIndexer projectRagIndexer;
+    
     public DefaultAgentToolRegistrar(CurrentProjectProvider currentProjectProvider, PublishDirectoryProvider publishDirectoryProvider, EpubCheckValidator epubCheckValidator, 
     		AccessibilityValidator accessibilityValidator,
             AgentApprovalService approvalService,
@@ -132,7 +139,9 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
             EpubArtifactFingerprintService epubArtifactFingerprintService,
             EpubTypographyUpdater epubTypographyUpdate,
             KoreanTypoChecker koreanTypoChecker,
-            EpubReleasePolicy epubReleasePolicy
+            EpubReleasePolicy epubReleasePolicy,
+            RagService ragService,
+            ProjectRagIndexer projectRagIndexer
             ) {
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
@@ -154,6 +163,8 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         this.epubTypographyUpdate = Objects.requireNonNull(epubTypographyUpdate, "epubTypographyUpdate must not be null");
         this.koreanTypoChecker = Objects.requireNonNull(koreanTypoChecker, "koreanTypoChecker must not be null");
         this.epubReleasePolicy = Objects.requireNonNull(epubReleasePolicy, "epubReleasePolicy must not be null");
+        this.ragService = Objects.requireNonNull(ragService, "ragService must not be null");
+        this.projectRagIndexer = Objects.requireNonNull(projectRagIndexer, "projectRagIndexer must not be null");
                
      }
 
@@ -246,6 +257,9 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new FixEpubFileCheckTool(currentProjectProvider, publishDirectoryProvider, epubCheckRunner, epubFileCheckFixService));	// EPUB .epub 파일 검증 후 Fix하기
         
         registerIfAbsent(registry, new ReleaseEpubTool(currentProjectProvider, publishDirectoryProvider, latestPublishedEpubResolver, epubArtifactFingerprintService, epubReleasePolicy, approvalService, gson));        // EPUB Release
+    
+        registerIfAbsent(registry, new IndexProjectDocumentsTool(currentProjectProvider, projectRagIndexer, eventPublisher));				// RAG Index 하기
+        registerIfAbsent(registry, new SearchProjectDocumentsTool(ragService, currentProjectProvider, projectRagIndexer, eventPublisher));	// RAG Search 하기
     }
 
     private void registerIfAbsent(ToolRegistry registry, AgentTool tool) {

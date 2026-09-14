@@ -68,6 +68,24 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
     private final List<AgentRagEventListener> ragEventListeners = new CopyOnWriteArrayList<>();
 
+    private static final List<String> DEFERRED_RESPONSE_PHRASES = List.of(
+            "잠시만 기다려 주십시오.",
+            "잠시만 기다려 주세요.",
+            "잠시 기다려 주십시오.",
+            "잠시 기다려 주세요.",
+            "다시 동기화를 진행하겠습니다.",
+            "동기화를 진행하겠습니다.",
+            "계속 진행하겠습니다.",
+            "이어서 진행하겠습니다.",
+            "곧 완료하겠습니다.",
+            "잠시 후 결과를 알려드리겠습니다.",
+            "Please wait.",
+            "Please wait a moment.",
+            "I will continue.",
+            "I will proceed.",
+            "I will provide the result shortly."
+    );
+    
     public DefaultAgentExecutor(
             LlmClient llmClient,
             ToolExecutor toolExecutor,
@@ -522,11 +540,13 @@ public final class DefaultAgentExecutor implements AgentExecutor {
             int iterations,
             long startedNanos) {
 
+    	String content = guardFinalResponse(llmResponse.getContent());
+    	
         return AgentResponse.builder()
                 .requestId(request.getRequestId())
                 .sessionId(request.getSessionId())
                 .status(AgentStatus.COMPLETED)
-                .content(llmResponse.getContent())
+                .content(content)
                 .model(llmResponse.getModel())
                 .toolResults(toolResults)
                 .iterations(iterations)
@@ -818,4 +838,40 @@ public final class DefaultAgentExecutor implements AgentExecutor {
 
         return text.trim();
     }
+    
+    private String guardFinalResponse(String content) {
+
+        if (content == null || content.isBlank()) return content;
+
+        String result = content.trim();
+
+        for (String phrase : DEFERRED_RESPONSE_PHRASES) result = removeSentenceContaining(result, phrase);
+
+        return result.trim();
+    }
+    
+    private String removeSentenceContaining(String content, String phrase) {
+
+        if (content == null || phrase == null || !content.contains(phrase)) return content;
+
+        String[] lines = content.split("\\R");
+
+        StringBuilder result = new StringBuilder();
+
+        for (String line : lines) {
+
+            String trimmed = line.trim();
+
+            if (trimmed.isEmpty()) continue;
+
+            if (trimmed.contains(phrase)) continue;
+
+            if (result.length() > 0) result.append(System.lineSeparator());
+
+            result.append(trimmed);
+        }
+
+        return result.toString();
+    }
+    
 }

@@ -214,6 +214,7 @@ public final class CreateBasicXhtmlTool implements AgentTool {
                             AgentEventType.APPROVAL_REQUIRED,
                             approval.getMessage(),
                             null,
+                            null,
                             TOOL_NAME,
                             approval.getApprovalId(),
                             approval.getTitle(),

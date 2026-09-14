@@ -13,6 +13,7 @@ public class AgentEvent {
     private final String runId;
     private final AgentEventType type;
     private final String message;
+    private final Object data;
     private final String approvalId;
     private final String title;
     private final String fileName;
@@ -22,13 +23,14 @@ public class AgentEvent {
     private final Instant createdAt;
 
     public AgentEvent(String runId, AgentEventType type, String message) {
-        this(runId, type, message, null, null, null, null, null, null);
+        this(runId, type, message, null, null, null, null, null, null, null);
     }
 
-    public AgentEvent(String runId, AgentEventType type, String message, String approvalId, String title, String fileName, String content, String approveLabel, String rejectLabel) {
+    public AgentEvent(String runId, AgentEventType type, String message, Object data, String approvalId, String title, String fileName, String content, String approveLabel, String rejectLabel) {
         this.runId = runId;
         this.type = type;
         this.message = message;
+        this.data = data;
         this.approvalId = approvalId;
         this.title = title;
         this.fileName = fileName;
@@ -43,6 +45,8 @@ public class AgentEvent {
     public AgentEventType getType() { return type; }
 
     public String getMessage() { return message; }
+    
+    public Object getData() { return data; }
 
     public String getApprovalId() { return approvalId; }
 
@@ -64,11 +68,31 @@ public class AgentEvent {
         return new AgentEvent(runId, AgentEventType.MESSAGE, message);
     }
 
+    public static AgentEvent ragProgress(
+            String runId,
+            String message,
+            Object data) {
+
+        return new AgentEvent(
+                runId,
+                AgentEventType.RAG_PROGRESS,
+                message,
+                data,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+    
     public static AgentEvent approvalRequired(AgentApproval approval) {
         return new AgentEvent(
                 approval.getRunId(),
                 AgentEventType.APPROVAL_REQUIRED,
                 approval.getMessage(),
+                null,
                 approval.getApprovalId(),
                 approval.getTitle(),
                 approval.getFileName(),
