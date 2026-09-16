@@ -9,11 +9,27 @@ package kr.co.goms.gomsbook.ai.rag.eval.path;
 
 import java.nio.file.Path;
 
+import kr.co.goms.gomsbook.ai.rag.eval.profile.RagEvaluationProfile;
+
 /**
  * RAG Evaluation 경로 Resolver.
  *
- * 기존 버전 미지정 호출은 v1을 사용한다.
- * 버전 지정 호출은 v2, v3 등 향후 Golden Dataset 버전 확장에 사용한다.
+ * Golden Dataset 버전과 Evaluation Profile 버전을 분리하여 관리한다.
+ *
+ * <pre>
+ * Dataset
+ * rag-{projectId}-golden-v1.json
+ * rag-{projectId}-golden-v2.json
+ *
+ * Report
+ * reports/
+ * ├─ vector-only-v1/
+ * │  └─ rag-{projectId}-vector-only-v1-report.json
+ * ├─ vector-graph-v1/
+ * │  └─ rag-{projectId}-vector-graph-v1-report.json
+ * └─ vector-graph-v2/
+ *    └─ rag-{projectId}-vector-graph-v2-report.json
+ * </pre>
  */
 public interface RagEvaluationPathResolver {
 
@@ -35,11 +51,7 @@ public interface RagEvaluationPathResolver {
 
 	Path resolveResultDirectory(String projectId);
 
-	default Path resolveGoldenReport(String projectId) {
-		return resolveGoldenReport(projectId, 1);
-	}
-
-	Path resolveGoldenReport(String projectId, int version);
+	Path resolveGoldenReport(String projectId, RagEvaluationProfile profile);
 
 	Path resolveBaselineDirectory(String projectId);
 

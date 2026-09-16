@@ -27,7 +27,10 @@ import kr.co.goms.gomsbook.ai.project.DefaultCurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.InMemoryCurrentProjectStore;
 import kr.co.goms.gomsbook.ai.rag.DefaultRagService;
 import kr.co.goms.gomsbook.ai.rag.RagService;
+import kr.co.goms.gomsbook.ai.rag.eval.comparison.RagEvaluationComparisonService;
+import kr.co.goms.gomsbook.ai.rag.eval.profile.RagEvaluationProfile;
 import kr.co.goms.gomsbook.ai.rag.eval.service.RagEvaluationService;
+import kr.co.goms.gomsbook.ai.rag.eval.service.RagRetrievalEvaluationService;
 import kr.co.goms.gomsbook.ai.rag.index.DefaultProjectRagIndexer;
 import kr.co.goms.gomsbook.ai.rag.index.ProjectRagIndexer;
 import kr.co.goms.gomsbook.ai.tool.ToolRegistry;
@@ -120,6 +123,9 @@ public final class AgentToolRegistrarSmokeTest {
 	    ProjectRagIndexer projectRagIndexer = null;
 	    
         RagEvaluationService evaluationService = null;
+        RagEvaluationProfile ragEvaluationProfile = null;
+        RagRetrievalEvaluationService ragRetrievalEvaluationService = null;
+        RagEvaluationComparisonService ragEvaluationComparisonService = null;
 	    
 	    AgentToolRegistrar registrar = new DefaultAgentToolRegistrar(
 	    		currentProjectProvider, publishDirectoryProvider, epubCheckValidator, accessibilityValidator,
@@ -135,7 +141,10 @@ public final class AgentToolRegistrarSmokeTest {
 	    		epubReleasePolicy,
 	            ragService,
 	            projectRagIndexer,
-	            evaluationService
+	            evaluationService,
+	            ragEvaluationProfile,
+	            ragRetrievalEvaluationService,
+	            ragEvaluationComparisonService
 	    );
 
 	    

@@ -19,6 +19,9 @@ import kr.co.goms.gomsbook.ai.rag.eval.dataset.RagEvaluationDataset;
 import kr.co.goms.gomsbook.ai.rag.eval.model.RagRetrievalEvaluationResult;
 import kr.co.goms.gomsbook.ai.rag.eval.report.RagEvaluationReport;
 import kr.co.goms.gomsbook.ai.rag.eval.retrieval.RagRetrievalEvaluator;
+import kr.co.goms.gomsbook.ai.rag.eval.model.RagEvaluationRetrievedDocument;
+import kr.co.goms.gomsbook.ai.rag.retrieval.RetrievalResult;
+import kr.co.goms.gomsbook.ai.rag.vector.VectorSearchResult;
 
 /**
  * Golden Dataset 전체를 대상으로 RAG 평가를 실행한다.
@@ -107,6 +110,7 @@ public final class RagEvaluationRunner {
 	}
 
 	private RagEvaluationReport.Entry evaluateCase(RagEvaluationCase evaluationCase) {
+
 		Objects.requireNonNull(evaluationCase, "evaluationCase must not be null");
 
 		RagExecutionResult executionResult = executionAdapter.execute(evaluationCase.getQuestion());
@@ -115,10 +119,31 @@ public final class RagEvaluationRunner {
 
 		RagEvaluationResult evaluationResult = evaluateAnswer(evaluationCase, executionResult);
 		RagRetrievalEvaluationResult retrievalEvaluationResult = evaluateRetrieval(evaluationCase, executionResult);
+		List<RagEvaluationRetrievedDocument> retrievedDocuments = createRetrievedDocuments(executionResult);
 
-		return new RagEvaluationReport.Entry(evaluationCase.getId(), evaluationCase.getQuestion(), evaluationResult, retrievalEvaluationResult);
+		return new RagEvaluationReport.Entry(evaluationCase.getId(), evaluationCase.getQuestion(), evaluationResult, retrievalEvaluationResult, evaluationCase.getExpectedDocuments(), retrievedDocuments);
 	}
+	
+	private List<RagEvaluationRetrievedDocument> createRetrievedDocuments(RagExecutionResult executionResult) {
 
+		if (executionResult == null || !executionResult.hasRawRetrievalResult()) return List.of();
+
+		RetrievalResult retrievalResult = executionResult.getRawRetrievalResult();
+
+		if (retrievalResult == null || retrievalResult.isEmpty()) return List.of();
+
+		List<RagEvaluationRetrievedDocument> retrievedDocuments = new ArrayList<>();
+
+		for (VectorSearchResult searchResult : retrievalResult.getSearchResults()) {
+
+			if (searchResult == null || searchResult.getChunk() == null) continue;
+
+			retrievedDocuments.add(RagEvaluationRetrievedDocument.from(searchResult));
+		}
+
+		return List.copyOf(retrievedDocuments);
+	}
+	
 	private RagEvaluationResult evaluateAnswer(RagEvaluationCase evaluationCase, RagExecutionResult executionResult) {
 		RagEvaluationContext context = new RagEvaluationContext(evaluationCase.getType(), evaluationCase.getQuestion(), executionResult.getRetrievedContexts(), executionResult.getAnswer(), evaluationCase.getReferenceAnswer());
 		return evaluator.evaluate(context);

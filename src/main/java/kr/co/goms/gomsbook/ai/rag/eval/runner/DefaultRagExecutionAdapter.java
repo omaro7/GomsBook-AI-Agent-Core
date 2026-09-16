@@ -88,7 +88,7 @@ public final class DefaultRagExecutionAdapter implements RagExecutionAdapter {
 			List<String> retrievedContexts = extractContexts(expandedDocuments);
 			String answer = generateAnswer(normalizedQuestion, retrievedContexts);
 
-			return new RagExecutionResult(retrievedContexts, answer, ragRetrievalResult);
+			return new RagExecutionResult(retrievedContexts, answer, ragRetrievalResult, retrievalResult);
 
 		} catch (ProjectIndexException e) {
 			throw new IllegalStateException("Failed to synchronize project RAG index: " + e.getMessage(), e);

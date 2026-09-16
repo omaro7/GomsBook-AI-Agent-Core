@@ -15,6 +15,7 @@ import java.util.Objects;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.EpubProjectContext;
 import kr.co.goms.gomsbook.ai.rag.eval.path.RagEvaluationPathResolver;
+import kr.co.goms.gomsbook.ai.rag.eval.profile.RagEvaluationProfile;
 import kr.co.goms.gomsbook.ai.rag.eval.report.RagEvaluationReport;
 import kr.co.goms.gomsbook.ai.rag.eval.runtime.RagEvaluationRuntime;
 import kr.co.goms.gomsbook.ai.rag.util.RagUtil;
@@ -29,13 +30,15 @@ public final class DefaultRagEvaluationService implements RagEvaluationService {
 	private final CurrentProjectProvider projectProvider;
 	private final RagEvaluationPathResolver pathResolver;
 	private final RagEvaluationRuntime runtime;
-
-	public DefaultRagEvaluationService(CurrentProjectProvider projectProvider, RagEvaluationPathResolver pathResolver, RagEvaluationRuntime runtime) {
+	private final RagEvaluationProfile evaluationProfile;
+	
+	public DefaultRagEvaluationService(CurrentProjectProvider projectProvider, RagEvaluationPathResolver pathResolver, RagEvaluationRuntime runtime, RagEvaluationProfile evaluationProfile) {
 		this.projectProvider = Objects.requireNonNull(projectProvider, "projectProvider must not be null");
 		this.pathResolver = Objects.requireNonNull(pathResolver, "pathResolver must not be null");
 		this.runtime = Objects.requireNonNull(runtime, "runtime must not be null");
+		this.evaluationProfile = Objects.requireNonNull(evaluationProfile, "evaluationProfile must not be null");
 	}
-
+	
 	@Override
 	public RagEvaluationReport evaluateGolden() throws IOException {
 		return evaluateGolden(DEFAULT_GOLDEN_VERSION);
@@ -56,7 +59,7 @@ public final class DefaultRagEvaluationService implements RagEvaluationService {
 
 	private RagEvaluationReport evaluateGolden(String projectId, int version) throws IOException {
 		Path datasetPath = pathResolver.resolveGoldenDataset(projectId, version);
-		Path reportPath = pathResolver.resolveGoldenReport(projectId, version);
+		Path reportPath = pathResolver.resolveGoldenReport(projectId, evaluationProfile);
 		return evaluate(datasetPath, reportPath);
 	}
 

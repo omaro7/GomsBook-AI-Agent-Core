@@ -22,7 +22,10 @@ import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectValidator;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.rag.RagService;
+import kr.co.goms.gomsbook.ai.rag.eval.comparison.RagEvaluationComparisonService;
+import kr.co.goms.gomsbook.ai.rag.eval.profile.RagEvaluationProfile;
 import kr.co.goms.gomsbook.ai.rag.eval.service.RagEvaluationService;
+import kr.co.goms.gomsbook.ai.rag.eval.service.RagRetrievalEvaluationService;
 import kr.co.goms.gomsbook.ai.rag.index.ProjectRagIndexer;
 import kr.co.goms.gomsbook.ai.tool.accessibility.ValidateAccessibilityTool;
 import kr.co.goms.gomsbook.ai.tool.epub.author.CreateEpubAuthorTool;
@@ -81,7 +84,9 @@ import kr.co.goms.gomsbook.ai.tool.epub.xhtml.UpdateEpubXhtmlAttributeTool;
 import kr.co.goms.gomsbook.ai.tool.epub.xhtml.CleanEpubTypographyTool;
 import kr.co.goms.gomsbook.ai.tool.epub.xhtml.CleanEpubXhtmlTool;
 import kr.co.goms.gomsbook.ai.tool.image.InspectEpubImagesTool;
+import kr.co.goms.gomsbook.ai.tool.rag.CompareRagEvaluationReportsTool;
 import kr.co.goms.gomsbook.ai.tool.rag.EvaluateRagGoldenTool;
+import kr.co.goms.gomsbook.ai.tool.rag.EvaluateRagRetrievalTool;
 import kr.co.goms.gomsbook.ai.tool.rag.IndexProjectDocumentsTool;
 import kr.co.goms.gomsbook.ai.tool.rag.SearchProjectDocumentsTool;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
@@ -129,6 +134,9 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     private final RagService ragService;
     private final ProjectRagIndexer projectRagIndexer;
     private final RagEvaluationService evaluationService;
+    private final RagEvaluationProfile ragEvaluationProfile;
+    private final RagRetrievalEvaluationService ragRetrievalEvaluationService;
+    private final RagEvaluationComparisonService ragEvaluationComparisonService;
     
     public DefaultAgentToolRegistrar(CurrentProjectProvider currentProjectProvider, PublishDirectoryProvider publishDirectoryProvider, EpubCheckValidator epubCheckValidator, 
     		AccessibilityValidator accessibilityValidator,
@@ -145,7 +153,10 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
             EpubReleasePolicy epubReleasePolicy,
             RagService ragService,
             ProjectRagIndexer projectRagIndexer,
-            RagEvaluationService evaluationService
+            RagEvaluationService evaluationService,
+            RagEvaluationProfile ragEvaluationProfile,
+            RagRetrievalEvaluationService ragRetrievalEvaluationService,
+            RagEvaluationComparisonService ragEvaluationComparisonService
             ) {
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
@@ -170,6 +181,9 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         this.ragService = Objects.requireNonNull(ragService, "ragService must not be null");
         this.projectRagIndexer = Objects.requireNonNull(projectRagIndexer, "projectRagIndexer must not be null");
         this.evaluationService = Objects.requireNonNull(evaluationService, "evaluationService must not be null");
+        this.ragEvaluationProfile = Objects.requireNonNull(ragEvaluationProfile, "ragEvaluationProfile must not be null");
+        this.ragRetrievalEvaluationService = Objects.requireNonNull(ragRetrievalEvaluationService, "ragRetrievalEvaluationService must not be null");
+        this.ragEvaluationComparisonService = Objects.requireNonNull(ragEvaluationComparisonService, "ragEvaluationComparisonService must not be null");
                
      }
 
@@ -265,7 +279,10 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     
         registerIfAbsent(registry, new IndexProjectDocumentsTool(currentProjectProvider, projectRagIndexer, eventPublisher));				// RAG Index 하기
         registerIfAbsent(registry, new SearchProjectDocumentsTool(ragService, currentProjectProvider, projectRagIndexer, eventPublisher));	// RAG Search 하기
-        registerIfAbsent(registry, new EvaluateRagGoldenTool(evaluationService));															// RAG Golden 평가
+        registerIfAbsent(registry, new EvaluateRagGoldenTool(evaluationService, ragEvaluationProfile));										// RAG Golden 평가
+
+        registerIfAbsent(registry, new EvaluateRagRetrievalTool(ragRetrievalEvaluationService, ragEvaluationProfile));						// RAG Retrieval 바로 평가. LLM 호출하지 않음.
+        registerIfAbsent(registry, new CompareRagEvaluationReportsTool(ragEvaluationComparisonService, ragEvaluationProfile));
         
     }
 

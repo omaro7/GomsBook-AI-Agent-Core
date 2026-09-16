@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import kr.co.goms.gomsbook.ai.epub.service.PublishDirectoryProvider;
+import kr.co.goms.gomsbook.ai.rag.eval.profile.RagEvaluationProfile;
 import kr.co.goms.gomsbook.ai.rag.util.RagUtil;
 
 /**
@@ -49,6 +50,7 @@ public final class DefaultRagEvaluationPathResolver implements RagEvaluationPath
 
 	private static final String EVAL_DIRECTORY = "eval";
 	private static final String DATASET_DIRECTORY = "dataset";
+	private static final String REPORTS_DIRECTORY = "reports";
 	private static final String RESULT_DIRECTORY = "result";
 	private static final String BASELINE_DIRECTORY = "baseline";
 	private static final String REGRESSION_DIRECTORY = "regression";
@@ -71,14 +73,17 @@ public final class DefaultRagEvaluationPathResolver implements RagEvaluationPath
 
 	@Override
 	public Path resolveGoldenDataset(String projectId, int version) {
-		String normalizedProjectId = RagUtil.requireText(projectId, "projectId");
+
+		String normalizedProjectId = RagUtil.requireProjectId(projectId);
 		int normalizedVersion = requireVersion(version);
+
 		return resolveDatasetDirectory(normalizedProjectId).resolve("rag-" + normalizedProjectId + "-golden-v" + normalizedVersion + ".json");
 	}
 
 	@Override
 	public int resolveLatestGoldenVersion(String projectId) {
-		String normalizedProjectId = RagUtil.requireText(projectId, "projectId");
+
+		String normalizedProjectId = RagUtil.requireProjectId(projectId);
 		Path datasetDirectory = resolveDatasetDirectory(normalizedProjectId);
 
 		if (!Files.isDirectory(datasetDirectory)) throw new IllegalStateException("RAG evaluation dataset directory does not exist: " + datasetDirectory);
@@ -87,8 +92,8 @@ public final class DefaultRagEvaluationPathResolver implements RagEvaluationPath
 
 		try (Stream<Path> paths = Files.list(datasetDirectory)) {
 			return paths.filter(Files::isRegularFile).map(Path::getFileName).map(Path::toString).map(pattern::matcher).filter(Matcher::matches).mapToInt(matcher -> parseVersion(matcher.group(1))).max().orElseThrow(() -> new IllegalStateException("RAG Golden Dataset not found: " + datasetDirectory));
-		} catch (IOException e) {
-			throw new IllegalStateException("Failed to resolve latest RAG Golden Dataset version: " + datasetDirectory, e);
+		} catch (IOException exception) {
+			throw new IllegalStateException("Failed to resolve latest RAG Golden Dataset version: " + datasetDirectory, exception);
 		}
 	}
 
@@ -98,10 +103,13 @@ public final class DefaultRagEvaluationPathResolver implements RagEvaluationPath
 	}
 
 	@Override
-	public Path resolveGoldenReport(String projectId, int version) {
-		String normalizedProjectId = RagUtil.requireText(projectId, "projectId");
-		int normalizedVersion = requireVersion(version);
-		return resolveResultDirectory(normalizedProjectId).resolve("rag-" + normalizedProjectId + "-golden-v" + normalizedVersion + "-report.json");
+	public Path resolveGoldenReport(String projectId, RagEvaluationProfile profile) {
+
+		String normalizedProjectId = RagUtil.requireProjectId(projectId);
+		RagEvaluationProfile normalizedProfile = Objects.requireNonNull(profile, "profile must not be null");
+		String reportName = normalizedProfile.getReportName();
+
+		return resolveReportsDirectory(normalizedProjectId).resolve(reportName).resolve("rag-" + normalizedProjectId + "-" + reportName + "-report.json").normalize();
 	}
 
 	@Override
@@ -111,8 +119,10 @@ public final class DefaultRagEvaluationPathResolver implements RagEvaluationPath
 
 	@Override
 	public Path resolveGoldenBaseline(String projectId, int version) {
-		String normalizedProjectId = RagUtil.requireText(projectId, "projectId");
+
+		String normalizedProjectId = RagUtil.requireProjectId(projectId);
 		int normalizedVersion = requireVersion(version);
+
 		return resolveBaselineDirectory(normalizedProjectId).resolve("rag-" + normalizedProjectId + "-baseline-v" + normalizedVersion + ".json");
 	}
 
@@ -123,13 +133,20 @@ public final class DefaultRagEvaluationPathResolver implements RagEvaluationPath
 
 	@Override
 	public Path resolveGoldenRegression(String projectId, int version) {
-		String normalizedProjectId = RagUtil.requireText(projectId, "projectId");
+
+		String normalizedProjectId = RagUtil.requireProjectId(projectId);
 		int normalizedVersion = requireVersion(version);
+
 		return resolveRegressionDirectory(normalizedProjectId).resolve("rag-" + normalizedProjectId + "-regression-v" + normalizedVersion + ".json");
 	}
 
+	private Path resolveReportsDirectory(String projectId) {
+		return resolveEvalDirectory(projectId).resolve(REPORTS_DIRECTORY);
+	}
+
 	private Path resolveProjectDirectory(String projectId) {
-		String normalizedProjectId = RagUtil.requireText(projectId, "projectId");
+
+		String normalizedProjectId = RagUtil.requireProjectId(projectId);
 		Path publishRoot = publishDirectoryProvider.getPublishDirectory();
 
 		if (publishRoot == null) throw new IllegalStateException("Publish directory is not available.");
@@ -138,15 +155,18 @@ public final class DefaultRagEvaluationPathResolver implements RagEvaluationPath
 	}
 
 	private static int requireVersion(int version) {
+
 		if (version <= 0) throw new IllegalArgumentException("version must be greater than zero");
+
 		return version;
 	}
 
 	private static int parseVersion(String value) {
+
 		try {
 			return Integer.parseInt(value);
-		} catch (NumberFormatException e) {
-			throw new IllegalStateException("Invalid RAG Golden Dataset version: " + value, e);
+		} catch (NumberFormatException exception) {
+			throw new IllegalStateException("Invalid RAG Golden Dataset version: " + value, exception);
 		}
 	}
 }

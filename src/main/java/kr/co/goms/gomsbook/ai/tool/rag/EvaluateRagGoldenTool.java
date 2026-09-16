@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.rag.eval.model.RagRetrievalEvaluationResult;
+import kr.co.goms.gomsbook.ai.rag.eval.profile.RagEvaluationProfile;
 import kr.co.goms.gomsbook.ai.rag.eval.report.RagEvaluationReport;
 import kr.co.goms.gomsbook.ai.rag.eval.service.RagEvaluationService;
 import kr.co.goms.gomsbook.ai.tool.AgentTool;
@@ -30,14 +31,12 @@ public final class EvaluateRagGoldenTool implements AgentTool {
 
     private static final String DESCRIPTION = "Evaluates the current project's RAG pipeline using its Golden Dataset and returns retrieval evaluation metrics including Hit Rate@K, Average Recall@K, and MRR. Use this tool when the user explicitly requests Golden Dataset evaluation, RAG baseline evaluation, or retrieval quality measurement.";
 
-    private static final String EXPERIMENT_ID = "VECTOR_ONLY_V1";
-
-    private static final String RETRIEVAL_TYPE = "VECTOR_ONLY";
-
     private final RagEvaluationService evaluationService;
+    private final RagEvaluationProfile evaluationProfile;
 
-    public EvaluateRagGoldenTool(RagEvaluationService evaluationService) {
-        this.evaluationService = Objects.requireNonNull(evaluationService, "evaluationService must not be null");
+    public EvaluateRagGoldenTool(RagEvaluationService evaluationService, RagEvaluationProfile evaluationProfile) {
+    	this.evaluationService = Objects.requireNonNull(evaluationService, "evaluationService must not be null");
+    	this.evaluationProfile = Objects.requireNonNull(evaluationProfile, "evaluationProfile must not be null");
     }
 
     @Override
@@ -80,8 +79,8 @@ public final class EvaluateRagGoldenTool implements AgentTool {
 
             Map<String, Object> data = new LinkedHashMap<>();
 
-            data.put("experimentId", EXPERIMENT_ID);
-            data.put("retrievalType", RETRIEVAL_TYPE);
+            data.put("experimentId", evaluationProfile.getExperimentId());
+            data.put("retrievalType", evaluationProfile.getRetrievalMode().name());
             data.put("datasetName", report.getDatasetName());
             data.put("totalCases", report.size());
             data.put("evaluatedCases", summary.evaluatedCases());

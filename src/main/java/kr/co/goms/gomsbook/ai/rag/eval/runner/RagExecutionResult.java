@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 
 import kr.co.goms.gomsbook.ai.rag.eval.model.RagRetrievalResult;
+import kr.co.goms.gomsbook.ai.rag.retrieval.RetrievalResult;
 
 /**
  * RAG 실행 결과.
@@ -22,15 +23,21 @@ public final class RagExecutionResult {
 	private final List<String> retrievedContexts;
 	private final String answer;
 	private final RagRetrievalResult retrievalResult;
+	private final RetrievalResult rawRetrievalResult;
 
 	public RagExecutionResult(List<String> retrievedContexts, String answer) {
-		this(retrievedContexts, answer, null);
+		this(retrievedContexts, answer, null, null);
 	}
 
 	public RagExecutionResult(List<String> retrievedContexts, String answer, RagRetrievalResult retrievalResult) {
-		this.retrievedContexts = immutableCopy(retrievedContexts);
-		this.answer = Objects.requireNonNull(answer, "answer must not be null");
+		this(retrievedContexts, answer, retrievalResult, null);
+	}
+
+	public RagExecutionResult(List<String> retrievedContexts, String answer, RagRetrievalResult retrievalResult, RetrievalResult rawRetrievalResult) {
+		this.retrievedContexts = normalizeContexts(retrievedContexts);
+		this.answer = requireText(answer, "answer");
 		this.retrievalResult = retrievalResult;
+		this.rawRetrievalResult = rawRetrievalResult;
 	}
 
 	public List<String> getRetrievedContexts() {
@@ -49,8 +56,40 @@ public final class RagExecutionResult {
 		return retrievalResult != null;
 	}
 
-	private static <T> List<T> immutableCopy(List<T> values) {
-		if (values == null || values.isEmpty()) return Collections.emptyList();
-		return Collections.unmodifiableList(new ArrayList<>(values));
+	public RetrievalResult getRawRetrievalResult() {
+		return rawRetrievalResult;
+	}
+
+	public boolean hasRawRetrievalResult() {
+		return rawRetrievalResult != null;
+	}
+
+	private static List<String> normalizeContexts(List<String> contexts) {
+
+		if (contexts == null || contexts.isEmpty()) return Collections.emptyList();
+
+		List<String> normalized = new java.util.ArrayList<>();
+
+		for (String context : contexts) {
+
+			if (context == null) continue;
+
+			String value = context.trim();
+
+			if (!value.isEmpty()) normalized.add(value);
+		}
+
+		return Collections.unmodifiableList(normalized);
+	}
+
+	private static String requireText(String value, String fieldName) {
+
+		Objects.requireNonNull(value, fieldName + " must not be null");
+
+		String normalized = value.trim();
+
+		if (normalized.isEmpty()) throw new IllegalArgumentException(fieldName + " must not be blank");
+
+		return normalized;
 	}
 }
