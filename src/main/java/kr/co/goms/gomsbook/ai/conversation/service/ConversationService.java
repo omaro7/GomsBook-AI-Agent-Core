@@ -9,11 +9,13 @@ package kr.co.goms.gomsbook.ai.conversation.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import kr.co.goms.gomsbook.ai.conversation.exception.ConversationProjectMismatchException;
 import kr.co.goms.gomsbook.ai.conversation.model.AiConversation;
 import kr.co.goms.gomsbook.ai.conversation.model.AiConversationMessage;
 import kr.co.goms.gomsbook.ai.conversation.model.AiConversationMessageRole;
@@ -247,15 +249,11 @@ public class ConversationService {
             AiConversation conversation,
             String projectId) {
 
-        if (
-                conversation
-                        .getProjectId()
-                        .equals(projectId)
-        ) {
+        if (Objects.equals(conversation.getProjectId(), projectId)) {
             return;
         }
 
-        throw new IllegalArgumentException(
+        throw new ConversationProjectMismatchException(
                 "Conversation project does not match."
                         + " conversationId="
                         + conversation.getConversationId()

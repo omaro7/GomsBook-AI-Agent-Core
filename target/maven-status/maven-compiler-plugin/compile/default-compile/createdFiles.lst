@@ -14,6 +14,7 @@ kr\co\goms\gomsbook\ai\rag\eval\comparison\RagEvaluationComparisonResult.class
 kr\co\goms\gomsbook\ai\epub\validation\fix\DefaultEpubFileCheckFixService.class
 kr\co\goms\gomsbook\ai\tool\accessibility\ValidateAccessibilityTool.class
 kr\co\goms\gomsbook\ai\tool\epub\metadata\ReadEpubFileMetadataTool.class
+kr\co\goms\gomsbook\ai\rag\retrieval\DefaultRetriever$QueryIntent.class
 kr\co\goms\gomsbook\ai\tool\epub\inspect\InspectEpubTool.class
 kr\co\goms\gomsbook\ai\agent\event\AgentEvent.class
 kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalRequest.class
@@ -42,6 +43,7 @@ kr\co\goms\gomsbook\ai\accessibility\validation\DefaultEpubProjectValidator.clas
 kr\co\goms\gomsbook\ai\conversation\model\ConversationHistoryMessage.class
 kr\co\goms\gomsbook\ai\test\DefaultAgentToolCallingSmokeTest$1.class
 kr\co\goms\gomsbook\ai\tool\epub\publish\PublishEpubTool.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\VectorStoreBenchmarkReportWriter.class
 kr\co\goms\gomsbook\ai\tool\rag\EvaluateRagRetrievalTool.class
 kr\co\goms\gomsbook\ai\rag\retrieval\RetrievedDocument.class
 kr\co\goms\gomsbook\ai\epub\generation\xhtml\DefaultBasicXhtmlService.class
@@ -93,6 +95,7 @@ kr\co\goms\gomsbook\ai\rag\eval\report\RagEvaluationReportWriter$MetricJson.clas
 kr\co\goms\gomsbook\ai\epub\validation\CompositeEpubValidator$Builder.class
 kr\co\goms\gomsbook\ai\rag\eval\comparison\RagEvaluationReportComparator$AnswerSummaryJson.class
 kr\co\goms\gomsbook\ai\epub\model\EpubMetadataItem$Builder.class
+kr\co\goms\gomsbook\ai\rag\embedding\DocumentEmbeddingTextBuilder.class
 kr\co\goms\gomsbook\ai\rag\eval\judge\RagJudgeResult.class
 kr\co\goms\gomsbook\ai\rag\runtime\RagRuntimeState.class
 kr\co\goms\gomsbook\ai\rag\retrieval\DefaultRetriever.class
@@ -127,6 +130,7 @@ kr\co\goms\gomsbook\ai\agent\approval\handler\FixEpubKoreanTypoApprovalHandler.c
 kr\co\goms\gomsbook\ai\rag\eval\metric\RagMetric.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubValidationIssue.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityValidationResult.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\VectorStoreBenchmarkReport.class
 kr\co\goms\gomsbook\ai\rag\eval\comparison\RagEvaluationComparison$1.class
 kr\co\goms\gomsbook\ai\epub\generation\navigation\DefaultEpubNavigationXhtmlGenerator.class
 kr\co\goms\gomsbook\ai\accessibility\validation\AccessibilityRule.class
@@ -136,6 +140,7 @@ kr\co\goms\gomsbook\ai\epub\model\EpubProjectValidationResult$Builder.class
 kr\co\goms\gomsbook\ai\conversation\model\AiConversationMessage.class
 kr\co\goms\gomsbook\ai\epub\reader\pkg\EpubSpineReader.class
 kr\co\goms\gomsbook\ai\rag\project\RagProjectIndexResult.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\DefaultVectorStoreBenchmarkExecutionService.class
 kr\co\goms\gomsbook\ai\tool\DefaultToolExecutor.class
 kr\co\goms\gomsbook\ai\epub\model\EpubTypographyUpdateResult.class
 kr\co\goms\gomsbook\ai\tool\epub\validation\ValidateEpubProjectTool.class
@@ -210,6 +215,7 @@ kr\co\goms\gomsbook\ai\rag\eval\dataset\RagEvaluationDatasetWriter$DatasetJson.c
 kr\co\goms\gomsbook\ai\epub\updater\xhtml\DefaultEpubXhtmlUpdater.class
 kr\co\goms\gomsbook\ai\rag\eval\comparison\RagEvaluationReportComparator.class
 kr\co\goms\gomsbook\ai\epub\validation\fix\EpubFileCheckFixResolver.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\VectorStoreBenchmarkService.class
 kr\co\goms\gomsbook\ai\tool\epub\manifest\CompareEpubFontManifestTool$ManifestFont.class
 kr\co\goms\gomsbook\ai\tool\rag\EvaluateRagGoldenTool$RetrievalSummary.class
 kr\co\goms\gomsbook\ai\rag\eval\dataset\RagEvaluationDatasetWriter$CaseJson.class
@@ -217,6 +223,7 @@ kr\co\goms\gomsbook\ai\rag\eval\regression\RagEvaluationRegressionResult.class
 kr\co\goms\gomsbook\ai\project\DefaultCurrentProjectProvider.class
 kr\co\goms\gomsbook\ai\rag\vector\qdrant\QdrantConfiguration.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubValidationIssue$Severity.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\VectorStoreBenchmarkExecutionService.class
 kr\co\goms\gomsbook\ai\rag\eval\runner\RagExecutionAdapter.class
 kr\co\goms\gomsbook\ai\epub\service\EpubLotService.class
 kr\co\goms\gomsbook\ai\rag\eval\comparison\RagEvaluationComparisonService.class
@@ -230,6 +237,7 @@ kr\co\goms\gomsbook\ai\epub\release\EpubReleaseRepository.class
 kr\co\goms\gomsbook\ai\rag\project\RagProjectIndexException.class
 kr\co\goms\gomsbook\ai\test\DefaultAgentExecutorSmokeTest$1.class
 kr\co\goms\gomsbook\ai\rag\project\RagProjectIndexer.class
+kr\co\goms\gomsbook\ai\tool\rag\benchmark\BenchmarkRagVectorStoreTool.class
 kr\co\goms\gomsbook\ai\tool\epub\manifest\CompareEpubStyleManifestTool$ManifestStyle.class
 kr\co\goms\gomsbook\ai\test\AgentToolRegistrarSmokeTest.class
 kr\co\goms\gomsbook\ai\conversation\service\ConversationService.class
@@ -256,6 +264,7 @@ kr\co\goms\gomsbook\ai\accessibility\validation\rule\HeadingAccessibilityRule$He
 kr\co\goms\gomsbook\ai\epub\model\EpubLotResult.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaConfiguration$Builder.class
 kr\co\goms\gomsbook\ai\rag\retrieval\RetrievalResult.class
+kr\co\goms\gomsbook\ai\tool\rag\index\DeleteRagProjectIndexTool.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaToolDefinition$FunctionDefinition.class
 kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalExecutor.class
 kr\co\goms\gomsbook\ai\rag\eval\report\RagEvaluationReportWriter$ReportJson.class
@@ -289,6 +298,7 @@ kr\co\goms\gomsbook\ai\epub\model\EpubStructureValidationResult.class
 kr\co\goms\gomsbook\ai\agent\approval\payload\UpdateEpubNavigationApprovalPayload.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubValidationResult$Builder.class
 kr\co\goms\gomsbook\ai\epub\model\EpubNavigationItem$TextDirection.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\DefaultVectorStoreBenchmarkService.class
 kr\co\goms\gomsbook\ai\agent\approval\handler\CleanEpubXhtmlApprovalHandler.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubProjectAccessibilityValidator.class
 kr\co\goms\gomsbook\ai\epub\validation\fix\EpubFileCheckFixService.class
@@ -307,6 +317,7 @@ kr\co\goms\gomsbook\ai\tool\epub\pkg\ReadEpubPackageTool.class
 kr\co\goms\gomsbook\ai\tool\rag\IndexProjectDocumentsTool.class
 kr\co\goms\gomsbook\ai\tool\epub\lot\CreateEpubLotTool.class
 kr\co\goms\gomsbook\ai\agent\approval\handler\DeleteEpubAuthorApprovalHandler.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\DefaultVectorStoreBenchmarkService$BenchmarkQuery.class
 kr\co\goms\gomsbook\ai\agent\AgentRequest.class
 kr\co\goms\gomsbook\ai\epub\plan\copyright\CreateEpubCopyrightPlan.class
 kr\co\goms\gomsbook\ai\rag\index\RagIndexOperation.class
@@ -321,6 +332,7 @@ kr\co\goms\gomsbook\ai\agent\approval\payload\UpdateEpubPartApprovalPayload.clas
 kr\co\goms\gomsbook\ai\agent\approval\handler\UpdateEpubNavigationApprovalHandler.class
 kr\co\goms\gomsbook\ai\agent\approval\payload\FixEpubKoreanTypoApprovalPayload.class
 kr\co\goms\gomsbook\ai\rag\eval\regression\RagEvaluationRegressionWriter$MetricJson.class
+kr\co\goms\gomsbook\ai\rag\index\DefaultProjectRagIndexer$ProjectIndexState.class
 kr\co\goms\gomsbook\ai\epub\model\EpubXhtmlCleanupFileResult.class
 kr\co\goms\gomsbook\ai\rag\eval\regression\RagEvaluationRegressionResult$MetricResult.class
 kr\co\goms\gomsbook\ai\tool\epub\author\UpdateEpubAuthorTool.class
@@ -400,6 +412,7 @@ kr\co\goms\gomsbook\ai\rag\eval\report\RagEvaluationAnswerSummary.class
 kr\co\goms\gomsbook\ai\rag\pipeline\RagPipeline.class
 kr\co\goms\gomsbook\ai\epub\service\PublishDirectoryProvider.class
 kr\co\goms\gomsbook\ai\rag\RagOperation.class
+kr\co\goms\gomsbook\ai\rag\retrieval\RagQueryIntentResolver.class
 kr\co\goms\gomsbook\ai\rag\context\RagSource.class
 kr\co\goms\gomsbook\ai\rag\eval\comparison\RagEvaluationComparisonWriter.class
 kr\co\goms\gomsbook\ai\conversation\repository\AiConversationMessageRepository.class
@@ -434,6 +447,7 @@ kr\co\goms\gomsbook\ai\epub\validation\EpubFileCheckIssue.class
 kr\co\goms\gomsbook\ai\llm\ollama\OllamaEmbeddingClient.class
 kr\co\goms\gomsbook\ai\tool\epub\manifest\CompareEpubJsManifestTool$ManifestScript.class
 kr\co\goms\gomsbook\ai\epub\service\LatestPublishedEpubResolver.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\VectorBenchmarkLatency.class
 kr\co\goms\gomsbook\ai\rag\retrieval\HybridRetriever.class
 kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalHandler.class
 kr\co\goms\gomsbook\ai\rag\document\DocumentSourceType.class
@@ -467,7 +481,6 @@ kr\co\goms\gomsbook\ai\rag\eval\metric\ContextPrecisionMetric.class
 kr\co\goms\gomsbook\ai\epub\generation\lot\EpubLotGenerator.class
 kr\co\goms\gomsbook\ai\conversation\repository\jdbc\JdbcAiConversationMessageRepository.class
 kr\co\goms\gomsbook\ai\epub\model\EpubCheckResult.class
-kr\co\goms\gomsbook\ai\rag\retrieval\DefaultRetriever$RerankScore.class
 kr\co\goms\gomsbook\ai\rag\pipeline\DefaultRagPipeline.class
 kr\co\goms\gomsbook\ai\epub\validation\fix\DefaultEpubFileCheckFixResolver.class
 kr\co\goms\gomsbook\ai\agent\approval\AgentApprovalService.class
@@ -488,6 +501,7 @@ kr\co\goms\gomsbook\ai\rag\eval\comparison\RagEvaluationReportComparator$ReportJ
 kr\co\goms\gomsbook\ai\agent\approval\payload\UpdateEpubMetadataApprovalPayload.class
 kr\co\goms\gomsbook\ai\logging\ExecutionLogContext.class
 kr\co\goms\gomsbook\ai\rag\eval\report\RagEvaluationReportWriter$EntryJson.class
+kr\co\goms\gomsbook\ai\agent\approval\payload\DeleteRagProjectIndexApprovalPayload.class
 kr\co\goms\gomsbook\ai\json\GsonFactory$InstantAdapter.class
 kr\co\goms\gomsbook\ai\accessibility\validation\rule\AriaAccessibilityRule.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubCheckRunnerValidator.class
@@ -544,8 +558,10 @@ kr\co\goms\gomsbook\ai\rag\context\RagContext.class
 kr\co\goms\gomsbook\ai\epub\copyright\EpubCopyrightLocator.class
 kr\co\goms\gomsbook\ai\tool\epub\inspect\InspectCurrentProjectTool.class
 kr\co\goms\gomsbook\ai\conversation\repository\AiConversationRepository.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\VectorStoreBenchmarkExecutionResult.class
 kr\co\goms\gomsbook\ai\rag\eval\metric\AnswerRelevancyMetric.class
 kr\co\goms\gomsbook\ai\epub\model\EpubPublicationType.class
+kr\co\goms\gomsbook\ai\rag\vector\qdrant\QdrantVectorStore.class
 kr\co\goms\gomsbook\ai\rag\eval\RagEvaluationContext.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubFileCheckIssueAnalyzer.class
 kr\co\goms\gomsbook\ai\epub\validation\fix\EpubFileCheckFixType.class
@@ -660,6 +676,7 @@ kr\co\goms\gomsbook\ai\epub\author\EpubAuthorPageInspector.class
 kr\co\goms\gomsbook\ai\agent\approval\DefaultAgentApprovalService.class
 kr\co\goms\gomsbook\ai\rag\index\RagIndexRequest.class
 kr\co\goms\gomsbook\ai\epub\author\EpubAuthorReader.class
+kr\co\goms\gomsbook\ai\rag\eval\benchmark\VectorBenchmarkResult.class
 kr\co\goms\gomsbook\ai\rag\vector\InMemoryVectorStore.class
 kr\co\goms\gomsbook\ai\agent\event\AgentEventPublisher.class
 kr\co\goms\gomsbook\ai\rag\index\DefaultRagIndexer$RagIndexState.class
@@ -677,6 +694,7 @@ kr\co\goms\gomsbook\ai\epub\model\EpubSpine.class
 kr\co\goms\gomsbook\ai\epub\generation\copyright\EpubCopyrightPage.class
 kr\co\goms\gomsbook\ai\epub\model\EpubImage.class
 kr\co\goms\gomsbook\ai\rag\eval\retrieval\DefaultRagRetrievalEvaluator.class
+kr\co\goms\gomsbook\ai\agent\approval\handler\DeleteRagProjectIndexApprovalHandler.class
 kr\co\goms\gomsbook\ai\epub\model\EpubNavigationCleanupResult.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubCheckValidator$ExecutionMode.class
 kr\co\goms\gomsbook\ai\rag\config\RagConfiguration.class
@@ -710,6 +728,7 @@ kr\co\goms\gomsbook\ai\llm\ollama\model\OllamaEmbeddingResponse.class
 kr\co\goms\gomsbook\ai\epub\generation\xhtml\DefaultBasicXhtmlGenerator.class
 kr\co\goms\gomsbook\ai\accessibility\validation\DefaultAccessibilityValidator.class
 kr\co\goms\gomsbook\ai\agent\event\AgentEventListener.class
+kr\co\goms\gomsbook\ai\conversation\exception\ConversationProjectMismatchException.class
 kr\co\goms\gomsbook\ai\tool\epub\part\ReadEpubPartTool.class
 kr\co\goms\gomsbook\ai\rag\eval\regression\RagEvaluationBaselineLoader$BaselineJson.class
 kr\co\goms\gomsbook\ai\rag\index\RagIndexResult.class
@@ -721,4 +740,5 @@ kr\co\goms\gomsbook\ai\epub\generation\author\EpubAuthorService.class
 kr\co\goms\gomsbook\ai\llm\model\DefaultChatModelProvider.class
 kr\co\goms\gomsbook\ai\agent\AgentStatus.class
 kr\co\goms\gomsbook\ai\epub\validation\EpubCheckValidator$Availability.class
+kr\co\goms\gomsbook\ai\rag\retrieval\RagQueryIntent.class
 kr\co\goms\gomsbook\ai\tool\epub\part\UpdateEpubPartTool.class

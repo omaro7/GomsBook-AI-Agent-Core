@@ -1,0 +1,231 @@
+Vector DB인 Qdrant 적용 테스트
+
+1. 프로젝트 선택
+  lunchwork_seoul
+2.인덱싱
+ 현재 프로젝트 문서를 RAG 인덱싱해줘
+
+3.PowerShell에서 
+Invoke-RestMethod http://localhost:6333/collections/gomsbook_rag
+
+3-1) $body 만들기
+
+$body = @{
+    limit = 20
+    with_payload = $true
+    with_vector = $false
+    filter = @{
+        must = @(
+            @{
+                key = "projectId"
+                match = @{
+                    value = "lunchwork_seoul"
+                }
+            },
+            @{
+                key = "sourcePath"
+                match = @{
+                    value = "OEBPS/Text/chapter10_4.xhtml"
+                }
+            }
+        )
+    }
+} | ConvertTo-Json -Depth 10
+
+
+ 3-2)검색 Response 만들기
+$response = Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://localhost:6333/collections/gomsbook_rag/points/scroll" `
+    -ContentType "application/json" `
+    -Body $body
+ 3-3) 검색
+$response | ConvertTo-Json -Depth 20
+ 3-4) 갯수 확인
+$response.result.points.Count
+ 3-5) 첫 번째 point
+$response.result.points[0] | Format-List *
+ 3-6) payload 내부도 펼쳐보세요.
+$response.result.points[0].payload | Format-List *
+
+4.Qdrant 검색
+ 4-1) 특정문서 찾기
+
+$body = @{
+    limit = 20
+    with_payload = $true
+    with_vector = $false
+    filter = @{
+        must = @(
+            @{
+                key = "projectId"
+                match = @{
+                    value = "lunchwork_seoul"
+                }
+            },
+            @{
+                key = "sourcePath"
+                match = @{
+                    value = "OEBPS/Text/chapter10_4.xhtml"
+                }
+            }
+        )
+    }
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://localhost:6333/collections/gomsbook_rag/points/scroll" `
+    -ContentType "application/json" `
+    -Body $body
+
+$response.result.points | ForEach-Object {
+    [PSCustomObject]@{
+        id         = $_.id
+        projectId  = $_.payload.projectId
+        sourcePath = $_.payload.sourcePath
+        model      = $_.payload.model
+        elementId  = $_.payload.elementId
+        content    = $_.payload.content
+    }
+} | Format-List
+
+
+ 4-2)파일의 Chunk 중 content에서 다음 문장
+     낮에는 공부를 하고, 시간이 날 때마다 무료 공연이나 전시를 찾아다녔다.
+
+$response.result.points |
+    Where-Object {
+        $_.payload.content -like "*무료 공연이나 전시*"
+    } |
+    ForEach-Object {
+        [PSCustomObject]@{
+            id         = $_.id
+            projectId  = $_.payload.projectId
+            sourcePath = $_.payload.sourcePath
+            elementId  = $_.payload.elementId
+            content    = $_.payload.content
+        }
+    } | Format-List
+
+
+5.content 한글 깨짐현상
+ PowerShell 버전 문제로 한글깨짐 발생함.
+ 
+Major  Minor  Build  Revision
+-----  -----  -----  --------
+5      1      26100  9444
+
+winget search --id Microsoft.PowerShell --exact
+winget install --id Microsoft.PowerShell --source winget
+pwsh
+$PSVersionTable.PSVersion
+Major  Minor  Patch
+-----  -----  -----
+7      6      6
+
+6.RAG-GOLD-008 HIt 테스트
+현재 프로젝트 문서를 RAG 인덱싱해줘
+RAG-GOLD-008만 Retrieval 평가해주세요
+RAG-GOLD-015만 Retrieval 평가해주세요.
+RAG-GOLD-028만 Retrieval 평가해주세요.
+RAG-GOLD-010만 Retrieval 평가해주세요.
+
+
+5. 타 프로젝트 인덱싱 처리 epub-ai-agent
+Project B = epub-ai-agent
+현재 프로젝트 문서를 RAG 인덱싱해줘
+
+ 5-1) lunchwork_seoul points 수량확인
+$bodyA = @{
+    exact = $true
+    filter = @{
+        must = @(
+            @{
+                key = "projectId"
+                match = @{
+                    value = "lunchwork_seoul"
+                }
+            }
+        )
+    }
+} | ConvertTo-Json -Depth 10
+
+$countA = Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://localhost:6333/collections/gomsbook_rag/points/count" `
+    -ContentType "application/json; charset=utf-8" `
+    -Body $bodyA
+
+$countA.result.count
+
+169
+ 5-2) epub-ai-agent points 수량확인
+$bodyB = @{
+    exact = $true
+    filter = @{
+        must = @(
+            @{
+                key = "projectId"
+                match = @{
+                    value = "epub-ai-agent"
+                }
+            }
+        )
+    }
+} | ConvertTo-Json -Depth 10
+
+$countB = Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://localhost:6333/collections/gomsbook_rag/points/count" `
+    -ContentType "application/json; charset=utf-8" `
+    -Body $bodyB
+
+$countB.result.count
+
+132
+
+
+ 5-3) epub-ai-agent projectId로 검색하기
+$scrollB = @{
+    limit = 10
+    with_payload = $true
+    with_vector = $false
+    filter = @{
+        must = @(
+            @{
+                key = "projectId"
+                match = @{
+                    value = "epub-ai-agent"
+                }
+            }
+        )
+    }
+} | ConvertTo-Json -Depth 10
+
+$resultB = Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://localhost:6333/collections/gomsbook_rag/points/scroll" `
+    -ContentType "application/json; charset=utf-8" `
+    -Body $scrollB
+
+$resultB.result.points | ForEach-Object {
+    [PSCustomObject]@{
+        id         = $_.id
+        projectId  = $_.payload.projectId
+        sourcePath = $_.payload.sourcePath
+        elementId  = $_.payload.elementId
+    }
+} | Format-Table
+
+ 5-4) epub-ai-agent projectId 확인
+
+$resultB.result.points |
+    ForEach-Object { $_.payload.projectId } |
+    Sort-Object -Unique
+
+
+6.프로젝트 indexing 삭제하기
+ 현재 프로젝트의 RAG 인덱스를 삭제해주세요.
+
+

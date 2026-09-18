@@ -1,0 +1,283 @@
+RAG-GOLD-008 MISS TO HIT 하기
+
+이전 문맥과 현재 문맥을 같이 처리
+
+다음 구현 순서는 DocumentEmbeddingTextBuilder.java 추가
+
+현재 프로젝트 문서를 RAG 인덱싱 삭제해주세요
+
+현재 프로젝트 문서를 RAG 인덱싱해줘
+Golden Dataset에서 RAG-GOLD-008 케이스만 Retrieval 평가해줘.
+
+
+
+
+HYBRID_V2 와 HYBRID_V3 Retrieval 평가 결과 비교해줘.
+
+지표				HYBRID_V2		HYBRID_V3		변화
+──────────────────────────────────────────────
+평가 건수			34	34	동일
+Hit Rate@K			0.9706	0.9706	동일
+Average Recall@K	0.9706	0.9706	동일
+MRR				0.9216	0.9412	+0.0196
+
+RAG-GOLD-008 Vector Rank	49	23	26계단 상승
+RAG-GOLD-008 HIT	MISS	MISS	동일
+
+
+
+
+지표			HYBRID_V3		HYBRID_V4		변화
+──────────────────────────────────────────────
+평가 건수		34			34			-
+HIT 수		33			29			-4
+Hit Rate@K		0.9706		0.8529		-0.1177
+Recall@K		0.9706		0.8529		-0.1177
+MRR			0.9412		0.6422		-0.2990
+RAG-GOLD-008	MISS	HIT / Rank 1	개선
+중요한 계산이 하나 있습니다. V3에서는 33 HIT + 1 MISS였고, V4에서는 총 29 HIT입니다. 
+그런데 기존 MISS였던 RAG-GOLD-008이 새로 HIT가 됐으므로, 기존 V3의 HIT 중 5건이 HIT → MISS로 회귀했습니다
+
+
+
+Windows PowerShell에서 아래를 실행하면 HIT_TO_MISS 5건 + MISS_TO_HIT 1건을 바로 뽑을 수 있습니다.
+
+$v3Path = ".\hybrid-v3\rag-lunchwork_seoul-hybrid-v3-report.json"
+$v4Path = ".\hybrid-v4\rag-lunchwork_seoul-hybrid-v4-report.json"
+
+$v3 = Get-Content $v3Path -Raw -Encoding UTF8 | ConvertFrom-Json
+$v4 = Get-Content $v4Path -Raw -Encoding UTF8 | ConvertFrom-Json
+
+$v3Map = @{}
+foreach ($entry in $v3.entries) {
+    $v3Map[$entry.caseId] = $entry
+}
+
+$v4Map = @{}
+foreach ($entry in $v4.entries) {
+    $v4Map[$entry.caseId] = $entry
+}
+
+function Get-ExpectedRank($entry) {
+
+    if ($null -eq $entry -or
+        $null -eq $entry.retrievedDocuments -or
+        $null -eq $entry.expectedDocuments) {
+        return $null
+    }
+
+    foreach ($document in $entry.retrievedDocuments) {
+
+        foreach ($expected in $entry.expectedDocuments) {
+
+            if ($document.chunkId -eq $expected -or
+                $document.sourcePath -eq $expected) {
+                return $document.rank
+            }
+
+            if ($null -ne $document.chunkId -and
+                $document.chunkId.StartsWith($expected + "#")) {
+                return $document.rank
+            }
+        }
+    }
+
+    return $null
+}
+
+$comparison = foreach ($caseId in $v3Map.Keys | Sort-Object) {
+
+    if (-not $v4Map.ContainsKey($caseId)) {
+        continue
+    }
+
+    $v3Entry = $v3Map[$caseId]
+    $v4Entry = $v4Map[$caseId]
+
+    $v3Hit = [bool]$v3Entry.retrieval.hitAtK
+    $v4Hit = [bool]$v4Entry.retrieval.hitAtK
+
+    $status =
+        if ($v3Hit -and -not $v4Hit) {
+            "HIT_TO_MISS"
+        }
+        elseif (-not $v3Hit -and $v4Hit) {
+            "MISS_TO_HIT"
+        }
+        elseif ($v3Hit -and $v4Hit) {
+            "STABLE_HIT"
+        }
+        else {
+            "STABLE_MISS"
+        }
+
+    [PSCustomObject]@{
+        caseId            = $caseId
+        status            = $status
+        question          = $v3Entry.question
+        expectedDocuments = ($v3Entry.expectedDocuments -join ", ")
+        v3Hit             = $v3Hit
+        v4Hit             = $v4Hit
+        v3Rank            = Get-ExpectedRank $v3Entry
+        v4Rank            = Get-ExpectedRank $v4Entry
+        v3Mrr             = $v3Entry.retrieval.mrr
+        v4Mrr             = $v4Entry.retrieval.mrr
+    }
+}
+
+"`n=== HIT_TO_MISS ==="
+$comparison |
+    Where-Object status -eq "HIT_TO_MISS" |
+    Format-Table caseId, v3Rank, v4Rank, v3Mrr, v4Mrr, question -AutoSize
+
+"`n=== MISS_TO_HIT ==="
+$comparison |
+    Where-Object status -eq "MISS_TO_HIT" |
+    Format-Table caseId, v3Rank, v4Rank, v3Mrr, v4Mrr, question -AutoSize
+
+
+caseId       		v3Rank 	v4Rank 	v3Mrr v4Mrr question
+------       		------ ------ ----- ----- --------
+RAG-GOLD-007      1         			1.00  	0.00 유영국의 산 그림을 보며 저자는 자신의 삶을 어떻게 돌아보게 되었나요?
+RAG-GOLD-023      1        			1.00  0.00 서소문성지 역사박물관 주변의 철길과 고가도로 기억은 저자에게 어떤 의미로 남아 있나요?
+RAG-GOLD-026      1         			1.00  0.00 서울시립미술관은 누구나 관람료 없이 들어갈 수 있는 공간으로 소개되나요?
+RAG-GOLD-028      1        			1.00  0.00 젊은 시절 저자가 무료 시사회를 보기 위해 찾았던 곳은 어디인가요?
+RAG-GOLD-032      1        			1.00  0.00 서소문성지 역사박물관에서 저자가 발걸음을 자연스럽게 늦추게 된 이유는 무엇인가요?
+
+5건에 대한 Row Score 확인하여 진단한다.
+
+Golden Dataset에서 RAG-GOLD-007 케이스만 Retrieval 평가해줘.
+Golden Dataset에서 RAG-GOLD-008 케이스만 Retrieval 평가해줘.
+Golden Dataset에서 RAG-GOLD-023 케이스만 Retrieval 평가해줘.
+Golden Dataset에서 RAG-GOLD-026 케이스만 Retrieval 평가해줘.
+Golden Dataset에서 RAG-GOLD-028 케이스만 Retrieval 평가해줘.
+Golden Dataset에서 RAG-GOLD-032 케이스만 Retrieval 평가해줘.
+
+
+[RAG-V4-REGRESSION][RAG-GOLD-007][FOUND] rank=9, score=0.902060, sourcePath=OEBPS/Text/chapter10_2.xhtml, chunkId=OEBPS/Text/chapter10_2.xhtml#p_07, searchedTopK=100
+[RAG-V4-REGRESSION][RAG-GOLD-023][FOUND] rank=6, score=0.913564, sourcePath=OEBPS/Text/chapter10_8.xhtml, chunkId=OEBPS/Text/chapter10_8.xhtml#p_19, searchedTopK=100
+[RAG-V4-REGRESSION][RAG-GOLD-026][FOUND] rank=6, score=0.906723, sourcePath=OEBPS/Text/chapter10_2.xhtml, chunkId=OEBPS/Text/chapter10_2.xhtml#p_13, searchedTopK=100
+[RAG-V4-REGRESSION][RAG-GOLD-028][FOUND] rank=16, score=0.898744, sourcePath=OEBPS/Text/chapter10_4.xhtml, chunkId=OEBPS/Text/chapter10_4.xhtml#p_04, searchedTopK=100
+[RAG-V4-REGRESSION][RAG-GOLD-032][FOUND] rank=6, score=0.906080, sourcePath=OEBPS/Text/chapter10_8.xhtml, chunkId=OEBPS/Text/chapter10_8.xhtml#p_11, searchedTopK=100
+
+Golden Dataset의 RAG-GOLD-007 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 0.2500
+
+Golden Dataset의 RAG-GOLD-008 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 0.3333
+
+Golden Dataset의 RAG-GOLD-023 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 1.0000
+
+Golden Dataset의 RAG-GOLD-026 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 1.0000
+
+Golden Dataset의 RAG-GOLD-028 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 0.0000
+Average Recall@K: 0.0000
+MRR: 0.0000
+
+Golden Dataset의 RAG-GOLD-032 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 1.0000
+
+
+0.58
+Golden Dataset의 RAG-GOLD-007 케이스에 대한 Retrieval 평가 결과입니다.
+평가 케이스 수: 1건
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 1.0000
+해당 케이스에 대해 완벽한 검색 성능을 보였습니다.
+
+Golden Dataset의 RAG-GOLD-008 케이스에 대한 Retrieval 평가 결과입니다.
+평가 케이스 수: 1건
+Hit Rate@K: 0.0000
+Average Recall@K: 0.0000
+MRR: 0.0000
+해당 케이스에 대해서는 검색 결과가 적절하지 않아 검색 성능이 낮은 것으로 나타났습니다.
+
+Golden Dataset의 RAG-GOLD-023 케이스에 대한 Retrieval 평가 결과입니다.
+평가 케이스 수: 1건
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 1.0000
+해당 케이스에 대해 완벽한 검색 성능을 보였습니다.
+
+Golden Dataset의 RAG-GOLD-026 케이스에 대한 Retrieval 평가 결과입니다.
+평가 케이스 수: 1건
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 1.0000
+해당 케이스에 대해 완벽한 검색 성능을 보였습니다.
+
+Golden Dataset의 RAG-GOLD-028 케이스에 대한 Retrieval 평가 결과입니다.
+평가 케이스 수: 1건
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 0.2000
+정답 문서가 검색 결과 내에 포함되어 Hit Rate와 Recall은 완벽하지만, 정답 문서의 순위가 낮아 MRR은 0.2000으로 낮게 측정되었습니다
+
+Golden Dataset의 RAG-GOLD-032 케이스에 대한 Retrieval 평가 결과입니다.
+평가 케이스 수: 1건
+Hit Rate@K: 1.0000
+Average Recall@K: 1.0000
+MRR: 1.0000
+해당 케이스에 대해 완벽한 검색 성능을 보였습니다.
+
+V6
+Golden Dataset의 RAG-GOLD-007 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000 (100%)
+Average Recall@K: 1.0000 (100%)
+MRR: 0.3333
+해당 케이스에서 정답 문서가 검색 결과 내에 포함되었으며(Hit Rate, Recall 모두 1.0), 정답 문서의 상대적 순위는 MRR 0.3333 수준으로 나타났습니다.
+
+Golden Dataset의 RAG-GOLD-008 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000 (100%)
+Average Recall@K: 1.0000 (100%)
+MRR: 0.3333
+해당 케이스에서도 정답 문서가 검색 결과에 포함되었으며(Hit Rate, Recall 모두 1.0), 정답 문서의 상대적 순위는 MRR 0.3333 수준으로 측정되었습니다.
+
+Golden Dataset의 RAG-GOLD-023 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000 (100%)
+Average Recall@K: 1.0000 (100%)
+MRR: 1.0000
+해당 케이스에서는 정답 문서가 검색 결과에 포함되었을 뿐만 아니라, 가장 높은 순위로 정확하게 검색(MRR 1.0)된 것으로 나타났습니다
+
+Golden Dataset의 RAG-GOLD-026 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000 (100%)
+Average Recall@K: 1.0000 (100%)
+MRR: 1.0000
+해당 케이스에서는 정답 문서가 검색 결과에 포함되었으며, 가장 높은 순위로 정확하게 검색(MRR 1.0)된 것으로 나타났습니다.
+
+Golden Dataset의 RAG-GOLD-028 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000 (100%)
+Average Recall@K: 1.0000 (100%)
+MRR: 0.2000
+해당 케이스에서 정답 문서가 검색 결과 내에 포함되었으나(Hit Rate, Recall 모두 1.0), 정답 문서의 상대적 순위는 MRR 0.2000 수준으로 나타났습니다.
+
+Golden Dataset의 RAG-GOLD-032 케이스에 대한 Retrieval 평가 결과입니다.
+Hit Rate@K: 1.0000 (100%)
+Average Recall@K: 1.0000 (100%)
+MRR: 1.0000
+해당 케이스에서는 정답 문서가 검색 결과에 포함되었을 뿐만 아니라, 가장 높은 순위로 정확하게 검색(MRR 1.0)된 것으로 나타났습니다.
+
+
+핵심 결과는 다음과 같습니다.
+지표				HYBRID_V3		HYBRID_V6		변화
+평가 케이스		34			34			동일
+Hit Rate@K			0.9706		1.0000		개선
+Average Recall@K	0.9706		1.0000		개선
+MRR				0.9412		0.9225		소폭 하락
+HIT 수			33/34			34/34			+1
+Stable Miss			1			0			해결
+

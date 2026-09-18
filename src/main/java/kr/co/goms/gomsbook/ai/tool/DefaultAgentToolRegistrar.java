@@ -22,6 +22,7 @@ import kr.co.goms.gomsbook.ai.epub.validation.EpubProjectValidator;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectProvider;
 import kr.co.goms.gomsbook.ai.project.CurrentProjectStore;
 import kr.co.goms.gomsbook.ai.rag.RagService;
+import kr.co.goms.gomsbook.ai.rag.eval.benchmark.VectorStoreBenchmarkExecutionService;
 import kr.co.goms.gomsbook.ai.rag.eval.comparison.RagEvaluationComparisonService;
 import kr.co.goms.gomsbook.ai.rag.eval.profile.RagEvaluationProfile;
 import kr.co.goms.gomsbook.ai.rag.eval.service.RagEvaluationService;
@@ -89,6 +90,8 @@ import kr.co.goms.gomsbook.ai.tool.rag.EvaluateRagGoldenTool;
 import kr.co.goms.gomsbook.ai.tool.rag.EvaluateRagRetrievalTool;
 import kr.co.goms.gomsbook.ai.tool.rag.IndexProjectDocumentsTool;
 import kr.co.goms.gomsbook.ai.tool.rag.SearchProjectDocumentsTool;
+import kr.co.goms.gomsbook.ai.tool.rag.benchmark.BenchmarkRagVectorStoreTool;
+import kr.co.goms.gomsbook.ai.tool.rag.index.DeleteRagProjectIndexTool;
 import kr.co.goms.gomsbook.ai.agent.approval.AgentApprovalService;
 import kr.co.goms.gomsbook.ai.agent.event.AgentEventPublisher;
 import com.google.gson.Gson;
@@ -137,6 +140,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
     private final RagEvaluationProfile ragEvaluationProfile;
     private final RagRetrievalEvaluationService ragRetrievalEvaluationService;
     private final RagEvaluationComparisonService ragEvaluationComparisonService;
+    private final VectorStoreBenchmarkExecutionService vectorStoreBenchmarkExecutionService;
     
     public DefaultAgentToolRegistrar(CurrentProjectProvider currentProjectProvider, PublishDirectoryProvider publishDirectoryProvider, EpubCheckValidator epubCheckValidator, 
     		AccessibilityValidator accessibilityValidator,
@@ -156,7 +160,8 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
             RagEvaluationService evaluationService,
             RagEvaluationProfile ragEvaluationProfile,
             RagRetrievalEvaluationService ragRetrievalEvaluationService,
-            RagEvaluationComparisonService ragEvaluationComparisonService
+            RagEvaluationComparisonService ragEvaluationComparisonService,
+            VectorStoreBenchmarkExecutionService vectorStoreBenchmarkExecutionService
             ) {
         this.currentProjectProvider = Objects.requireNonNull(currentProjectProvider, "currentProjectProvider must not be null");
         this.publishDirectoryProvider = Objects.requireNonNull(publishDirectoryProvider, "publishDirectoryProvider must not be null");
@@ -184,6 +189,7 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         this.ragEvaluationProfile = Objects.requireNonNull(ragEvaluationProfile, "ragEvaluationProfile must not be null");
         this.ragRetrievalEvaluationService = Objects.requireNonNull(ragRetrievalEvaluationService, "ragRetrievalEvaluationService must not be null");
         this.ragEvaluationComparisonService = Objects.requireNonNull(ragEvaluationComparisonService, "ragEvaluationComparisonService must not be null");
+        this.vectorStoreBenchmarkExecutionService = Objects.requireNonNull(vectorStoreBenchmarkExecutionService, "vectorStoreBenchmarkExecutionService must not be null");
                
      }
 
@@ -284,6 +290,8 @@ public final class DefaultAgentToolRegistrar implements AgentToolRegistrar {
         registerIfAbsent(registry, new EvaluateRagRetrievalTool(ragRetrievalEvaluationService, ragEvaluationProfile));						// RAG Retrieval 바로 평가. LLM 호출하지 않음.
         registerIfAbsent(registry, new CompareRagEvaluationReportsTool(ragEvaluationComparisonService, ragEvaluationProfile));
         
+        registerIfAbsent(registry, new BenchmarkRagVectorStoreTool(vectorStoreBenchmarkExecutionService));
+        registerIfAbsent(registry, new DeleteRagProjectIndexTool(approvalService, gson));
     }
 
     private void registerIfAbsent(ToolRegistry registry, AgentTool tool) {

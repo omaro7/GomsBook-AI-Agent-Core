@@ -70,12 +70,17 @@ public final class IndexProjectDocumentsTool implements AgentTool {
             "Synchronizes the RAG index for XHTML documents in the TEXT directory "
                     + "of the current EPUB project. "
                     + "Use this tool only when the user explicitly requests indexing, "
-                    + "reindexing, synchronization, or RAG index maintenance. "
-                    + "Optional excludeFiles can be used to exclude additional XHTML files "
-                    + "from the current synchronization. "
+                    + "reindexing, synchronization, or updating the existing RAG index. "
+                    + "Optional excludeFiles can be used only to skip additional XHTML files "
+                    + "during the current synchronization operation. "
+                    + "excludeFiles MUST NOT be used to delete, clear, remove, or reset "
+                    + "the existing RAG index. "
                     + "Files excluded by the indexer's default policy, such as quiz.xhtml, "
                     + "are excluded automatically. "
-                    + "Previously indexed vectors for deleted or excluded files are removed.";
+                    + "Files that no longer exist in the project may be removed from the index "
+                    + "as part of synchronization according to the indexer's deletion policy. "
+                    + "If the user explicitly requests deletion, clearing, removal, or reset "
+                    + "of the current project's RAG index, use delete_rag_project_index instead.";
 
     private final CurrentProjectProvider projectProvider;
     private final ProjectRagIndexer projectRagIndexer;

@@ -154,10 +154,12 @@ public final class DefaultRagProjectIndexer
 
     @Override
     public RagProjectIndexResult indexProject(
+    	String projectId,
         Path projectRoot
     ) throws RagProjectIndexException {
 
         return indexProject(
+        	projectId,
             projectRoot,
             defaultProjectRequest
         );
@@ -165,6 +167,7 @@ public final class DefaultRagProjectIndexer
 
     @Override
     public RagProjectIndexResult indexProject(
+    	String projectId,
         Path projectRoot,
         RagProjectIndexRequest request
     ) throws RagProjectIndexException {
@@ -188,6 +191,7 @@ public final class DefaultRagProjectIndexer
 
         List<RagIndexResult> results =
             indexDocuments(
+            	projectId,
                 normalizedRoot,
                 documents,
                 request.getIndexRequest(),
@@ -226,12 +230,14 @@ public final class DefaultRagProjectIndexer
 
     @Override
     public List<RagIndexResult> indexDocuments(
+    	String projectId,	
         Path projectRoot,
         List<Path> relativePaths,
         RagIndexRequest request
     ) throws RagProjectIndexException {
 
         return indexDocuments(
+        	projectId,
             projectRoot,
             relativePaths,
             request,
@@ -244,6 +250,7 @@ public final class DefaultRagProjectIndexer
      * 문서 목록을 순차적으로 로드하고 인덱싱합니다.
      */
     private List<RagIndexResult> indexDocuments(
+    	String projectId,	
         Path projectRoot,
         List<Path> relativePaths,
         RagIndexRequest request,
@@ -324,6 +331,7 @@ public final class DefaultRagProjectIndexer
 
                 results.add(
                     ragIndexer.index(
+                    	projectId,
                         source,
                         request
                     )
@@ -556,10 +564,12 @@ public final class DefaultRagProjectIndexer
 
     @Override
     public RagProjectSyncResult synchronize(
+    	String projectId,
         Path projectRoot
     ) throws RagProjectIndexException {
 
         return synchronize(
+        	projectId,
             projectRoot,
             defaultProjectRequest
         );
@@ -574,6 +584,7 @@ public final class DefaultRagProjectIndexer
      */
     @Override
     public RagProjectSyncResult synchronize(
+    	String projectId,
         Path projectRoot,
         RagProjectIndexRequest request
     ) throws RagProjectIndexException {
@@ -668,6 +679,7 @@ public final class DefaultRagProjectIndexer
          */
         List<RagIndexResult> indexResults =
             indexDocuments(
+            	projectId,
                 normalizedRoot,
                 currentDocuments,
                 request.getIndexRequest(),

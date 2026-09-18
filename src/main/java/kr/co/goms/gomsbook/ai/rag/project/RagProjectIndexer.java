@@ -48,6 +48,7 @@ public interface RagProjectIndexer {
      * @throws RagProjectIndexException 인덱싱 실패 시
      */
     RagProjectIndexResult indexProject(
+    	String projectId,
         Path projectRoot
     ) throws RagProjectIndexException;
 
@@ -60,6 +61,7 @@ public interface RagProjectIndexer {
      * @throws RagProjectIndexException 인덱싱 실패 시
      */
     RagProjectIndexResult indexProject(
+    	String projectId,
         Path projectRoot,
         RagProjectIndexRequest request
     ) throws RagProjectIndexException;
@@ -76,6 +78,7 @@ public interface RagProjectIndexer {
      * @throws RagProjectIndexException 인덱싱 실패 시
      */
     List<RagIndexResult> indexDocuments(
+    	String projectId,
         Path projectRoot,
         List<Path> relativePaths,
         RagIndexRequest request
@@ -90,11 +93,13 @@ public interface RagProjectIndexer {
      * @throws RagProjectIndexException 인덱싱 실패 시
      */
     default List<RagIndexResult> indexDocuments(
+    	String projectId,
         Path projectRoot,
         List<Path> relativePaths
     ) throws RagProjectIndexException {
 
         return indexDocuments(
+        	projectId,
             projectRoot,
             relativePaths,
             getDefaultIndexRequest()
@@ -111,6 +116,7 @@ public interface RagProjectIndexer {
      * @throws RagProjectIndexException 인덱싱 실패 시
      */
     default RagIndexResult indexDocument(
+    	String projectId,
         Path projectRoot,
         Path relativePath,
         RagIndexRequest request
@@ -123,6 +129,7 @@ public interface RagProjectIndexer {
 
         List<RagIndexResult> results =
             indexDocuments(
+            	projectId,
                 projectRoot,
                 List.of(relativePath),
                 request
@@ -151,11 +158,13 @@ public interface RagProjectIndexer {
      * @throws RagProjectIndexException 인덱싱 실패 시
      */
     default RagIndexResult indexDocument(
+    	String projectId,
         Path projectRoot,
         Path relativePath
     ) throws RagProjectIndexException {
 
         return indexDocument(
+        	projectId,
             projectRoot,
             relativePath,
             getDefaultIndexRequest()
@@ -186,6 +195,7 @@ public interface RagProjectIndexer {
      * @throws RagProjectIndexException 동기화 실패 시
      */
     RagProjectSyncResult synchronize(
+    	String projectId,
         Path projectRoot
     ) throws RagProjectIndexException;
 
@@ -198,6 +208,7 @@ public interface RagProjectIndexer {
      * @throws RagProjectIndexException 동기화 실패 시
      */
     RagProjectSyncResult synchronize(
+    	String projectId,    		
         Path projectRoot,
         RagProjectIndexRequest request
     ) throws RagProjectIndexException;

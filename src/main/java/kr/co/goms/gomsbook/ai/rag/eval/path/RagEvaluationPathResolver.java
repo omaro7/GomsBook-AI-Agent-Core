@@ -33,39 +33,47 @@ import kr.co.goms.gomsbook.ai.rag.eval.profile.RagEvaluationProfile;
  */
 public interface RagEvaluationPathResolver {
 
-	Path resolveEvalDirectory(String projectId);
+    Path resolveEvalDirectory(String projectId);
 
-	Path resolveDatasetDirectory(String projectId);
+    Path resolveGoldenReport(String projectId, RagEvaluationProfile profile);
 
-	default Path resolveGoldenDataset(String projectId) {
-		return resolveGoldenDataset(projectId, 1);
-	}
+    default Path resolveGoldenDataset(String projectId) {
+        return resolveGoldenDataset(projectId, 1);
+    }
 
-	Path resolveGoldenDataset(String projectId, int version);
+    Path resolveGoldenDataset(String projectId, int version);
 
-	int resolveLatestGoldenVersion(String projectId);
+    int resolveLatestGoldenVersion(String projectId);
 
-	default Path resolveLatestGoldenDataset(String projectId) {
-		return resolveGoldenDataset(projectId, resolveLatestGoldenVersion(projectId));
-	}
+    default Path resolveLatestGoldenDataset(String projectId) {
+        return resolveGoldenDataset(projectId, resolveLatestGoldenVersion(projectId));
+    }
 
-	Path resolveResultDirectory(String projectId);
+    Path resolveResultDirectory(String projectId);
 
-	Path resolveGoldenReport(String projectId, RagEvaluationProfile profile);
+    default Path resolveGoldenReport(String projectId) {
+        return resolveGoldenReport(projectId, 1);
+    }
 
-	Path resolveBaselineDirectory(String projectId);
+    Path resolveGoldenReport(String projectId, int version);
 
-	default Path resolveGoldenBaseline(String projectId) {
-		return resolveGoldenBaseline(projectId, 1);
-	}
+    Path resolveBaselineDirectory(String projectId);
 
-	Path resolveGoldenBaseline(String projectId, int version);
+    default Path resolveGoldenBaseline(String projectId) {
+        return resolveGoldenBaseline(projectId, 1);
+    }
 
-	Path resolveRegressionDirectory(String projectId);
+    Path resolveGoldenBaseline(String projectId, int version);
 
-	default Path resolveGoldenRegression(String projectId) {
-		return resolveGoldenRegression(projectId, 1);
-	}
+    Path resolveRegressionDirectory(String projectId);
 
-	Path resolveGoldenRegression(String projectId, int version);
+    default Path resolveGoldenRegression(String projectId) {
+        return resolveGoldenRegression(projectId, 1);
+    }
+
+    Path resolveGoldenRegression(String projectId, int version);
+
+    Path resolveBenchmarkDirectory(String projectId);
+
+    Path resolveVectorStoreBenchmarkReport(String projectId);
 }

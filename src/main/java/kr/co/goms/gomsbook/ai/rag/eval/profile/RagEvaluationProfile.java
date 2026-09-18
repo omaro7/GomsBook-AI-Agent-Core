@@ -23,6 +23,10 @@ public final class RagEvaluationProfile {
 
 	private static final int HYBRID_V1_BRANCH_CANDIDATE_MULTIPLIER = 1;
 	private static final int HYBRID_V2_BRANCH_CANDIDATE_MULTIPLIER = 2;
+	private static final int HYBRID_V3_BRANCH_CANDIDATE_MULTIPLIER = 2;
+	private static final int HYBRID_V4_BRANCH_CANDIDATE_MULTIPLIER = 2;
+	private static final int HYBRID_V5_BRANCH_CANDIDATE_MULTIPLIER = 2;
+	private static final int HYBRID_V6_BRANCH_CANDIDATE_MULTIPLIER = 2;
 
 	private static final double HYBRID_GRAPH_WEIGHT = 0.025;
 	private static final int HYBRID_GRAPH_SEED_LIMIT = 1;
@@ -123,6 +127,10 @@ public final class RagEvaluationProfile {
 		return switch (version) {
 			case V1 -> HYBRID_V1_BRANCH_CANDIDATE_MULTIPLIER;
 			case V2 -> HYBRID_V2_BRANCH_CANDIDATE_MULTIPLIER;
+	        case V3 -> HYBRID_V3_BRANCH_CANDIDATE_MULTIPLIER;
+	        case V4 -> HYBRID_V4_BRANCH_CANDIDATE_MULTIPLIER;
+	        case V5 -> HYBRID_V5_BRANCH_CANDIDATE_MULTIPLIER;
+	        case V6 -> HYBRID_V5_BRANCH_CANDIDATE_MULTIPLIER;
 			default -> throw new IllegalStateException("Unsupported HYBRID evaluation version: " + version);
 		};
 	}
@@ -139,7 +147,11 @@ public final class RagEvaluationProfile {
 
 		if (retrievalMode != RagRetrievalMode.HYBRID) return;
 
-		if (version != RagEvaluationVersion.V1 && version != RagEvaluationVersion.V2) {
+		if (version != RagEvaluationVersion.V1 && version != RagEvaluationVersion.V2 && version != RagEvaluationVersion.V3 
+				&& version != RagEvaluationVersion.V4
+				&& version != RagEvaluationVersion.V5
+				&& version != RagEvaluationVersion.V6
+				) {
 			throw new IllegalArgumentException("Unsupported HYBRID evaluation version: " + version);
 		}
 	}
